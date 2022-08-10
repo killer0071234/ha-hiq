@@ -1,7 +1,7 @@
 {
   "domain": "hiq",
   "version": "0.0.1",
-  "name": "HIQ",
+  "name": "HIQ-Home",
   "config_flow": true,
   "documentation": "https://github.com/killer0071234/ha-hiq",
   "issue_tracker": "https://github.com/killer0071234/ha-hiq/issues",

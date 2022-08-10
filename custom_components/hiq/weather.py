@@ -62,9 +62,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
 
     coordinator: HiqDataUpdateCoordinator
 
-    def __init__(
-        self, var_prefix: str, coordinator: HiqDataUpdateCoordinator
-    ) -> None:
+    def __init__(self, var_prefix: str, coordinator: HiqDataUpdateCoordinator) -> None:
         """Initialize."""
         super().__init__(coordinator)
         self._unit_system = CONF_UNIT_SYSTEM_METRIC
