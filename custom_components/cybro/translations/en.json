@@ -1,0 +1,23 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Device is already configured",
+      "cannot_connect": "Failed to connect",
+      "plc_not_existing": "PLC with address `{address}` does not exist",
+      "scgi_server_not_running": "scgi server is not running"
+    },
+    "error": {
+      "cannot_connect": "Failed to connect"
+    },
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        },
+        "description": "Set up your HIQ-Home control to integrate with Home Assistant."
+      }
+    }
+  }
+}
