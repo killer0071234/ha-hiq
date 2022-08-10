@@ -4,6 +4,9 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
+from cybro import Cybro
+from cybro import CybroConnectionError
+from cybro import Device
 from homeassistant.config_entries import ConfigFlow
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.const import CONF_HOST
@@ -13,9 +16,6 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DOMAIN
 from .const import LOGGER
-from cybro import Cybro
-from cybro import CybroConnectionError
-from cybro import Device
 
 
 class HiqFlowHandler(ConfigFlow, domain=DOMAIN):

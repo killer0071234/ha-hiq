@@ -3,6 +3,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from cybro import Cybro
+from cybro import CybroError
+from cybro import Device as HiqDevice
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.const import CONF_HOST
@@ -15,9 +18,6 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from .const import DOMAIN
 from .const import LOGGER
 from .const import SCAN_INTERVAL
-from cybro import Cybro
-from cybro import CybroError
-from cybro import Device as HiqDevice
 
 
 class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):

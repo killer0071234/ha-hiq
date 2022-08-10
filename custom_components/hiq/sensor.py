@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from cybro import VarType
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.sensor import STATE_CLASS_TOTAL_INCREASING
@@ -35,7 +36,6 @@ from .const import MANUFACTURER
 from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
-from cybro import VarType
 
 
 async def async_setup_entry(

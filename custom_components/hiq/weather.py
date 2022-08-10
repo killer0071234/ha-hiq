@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import cast
 
+from cybro import VarType
 from homeassistant.components.weather import WeatherEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_UNIT_SYSTEM_METRIC
@@ -22,7 +23,6 @@ from .const import DOMAIN
 from .const import MANUFACTURER
 from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
-from cybro import VarType
 
 PARALLEL_UPDATES = 1
 

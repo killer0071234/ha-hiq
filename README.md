@@ -16,7 +16,7 @@
 
 This integration is a local polling integration that connects to a running cybro-scgi-server from Cybrotech.
 To use this integration you need to have a running scgi server (it could be a docker container or native installed).
-Further informations of the docker container can be found here: [![dockerhub]][scgi-docker]
+Further informations of the docker container can be found here: [![dockerhub][scgi-docker-shield]][scgi-docker]
 
 ### binary_sensor
 
@@ -137,4 +137,5 @@ Code template was mainly taken from [@amosyuen](https://github.com/amosyuen)'s [
 [releases-shield]: https://img.shields.io/github/release/killer0071234/ha-hiq.svg?style=for-the-badge
 [releases]: https://github.com/killer0071234/ha-hiq/releases
 [user_profile]: https://github.com/killer0071234
+[scgi-docker-shield]: https://img.shields.io/badge/dockerhub-cybroscgiserver-brightgreen.svg?style=for-the-badge
 [scgi-docker]: https://hub.docker.com/r/killer007/cybroscgiserver
