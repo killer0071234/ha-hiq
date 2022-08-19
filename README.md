@@ -51,6 +51,10 @@ In addition to the diagnostic sensors, it will check if there are some more sens
 - humidity devices (eg: ts00_humidity)
 - energy meter device (eg: power_meter_power, power_meter_energy)
 
+### cover
+
+during creation of the device it scans for blind modules (eg: HIQ BC-5-IQ).
+
 #### Common Attributes
 
 | Attribute   | Example Values (comma separated)  |
@@ -59,7 +63,7 @@ In addition to the diagnostic sensors, it will check if there are some more sens
 
 ### Devices
 
-A device is created for each PLC.
+A device is created for each PLC (diagnostics) and for every light, blind.
 
 {% if not installed %}
 

@@ -1,9 +1,9 @@
 """Support for HIQ-Home blinds."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from homeassistant.components.cover import ATTR_POSITION
 from homeassistant.components.cover import CoverDeviceClass
 from homeassistant.components.cover import CoverEntity
 from homeassistant.components.cover import CoverEntityFeature
@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import AREA_LIGHTS
+from .const import AREA_BLINDS
 from .const import ATTR_DESCRIPTION
 from .const import DEVICE_DESCRIPTION
 from .const import DOMAIN
@@ -29,7 +29,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up HIQ-Home light based on a config entry."""
+    """Set up HIQ-Home blind based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     blinds = find_blinds(coordinator)
@@ -49,9 +49,8 @@ def find_blinds(
             dev_info = DeviceInfo(
                 identifiers={(DOMAIN, key)},
                 manufacturer=MANUFACTURER,
-                default_name=f"{key} blind channel",
-                suggested_area=AREA_LIGHTS,
-                enabled=is_general_error_ok(coordinator, key),
+                default_name=f"Blind {key}",
+                suggested_area=AREA_BLINDS,
                 model=DEVICE_DESCRIPTION,
                 configuration_url=MANUFACTURER_URL,
             )
@@ -60,13 +59,32 @@ def find_blinds(
             var_dn = _get_blind_var(coordinator, key, 2)
             res.append(
                 HiqUpdateCover(
-                    coordinator, key, var_sp, var_up, var_dn, dev_info=dev_info
+                    coordinator,
+                    key,
+                    var_sp,
+                    var_up,
+                    var_dn,
+                    enabled=is_general_error_ok(coordinator, key),
+                    dev_info=dev_info,
                 )
             )
-
     if len(res) > 0:
         return res
     return None
+
+
+def _get_blind_name(var: str) -> str:
+    """Generate default blind name."""
+    blind_name = var.split("_")
+    if blind_name is None:
+        return f"Blind {var}"
+    bc_no = blind_name[0].split("bc")
+    if bc_no is None:
+        return f"Blind {var}"
+    if len(blind_name) < 4 or len(bc_no) < 2:
+        return f"Blind {var}"
+    val = int(bc_no[1]) * 5 + int(blind_name[3])
+    return f"Blind {val:2.0f}"
 
 
 def _get_blind_var(
@@ -78,16 +96,16 @@ def _get_blind_var(
     type = 1: blind up output (bc01_qxs00_up)
     type = 2: blind down output (bc01_qxs00_dn)
     """
-    blind_name = re.findall(r".*\_", var)
+    blind_name = var.split("_")
     if blind_name is None:
         return ""
     if type == 0:
-        name_var = f"{blind_name[0]}blinds_setpoint_{blind_name[3]}"
+        name_var = f"{blind_name[0]}_blinds_setpoint_{blind_name[3]}"
     elif type == 1:
-        name_var = f"{blind_name[0]}qxs{blind_name[3]}_up"
+        name_var = f"{blind_name[0]}_qxs{blind_name[3]}_up"
     elif type == 2:
-        name_var = f"{blind_name[0]}qxs{blind_name[3]}_dn"
-    if coordinator.data.plc_info.plc_vars in (name_var):
+        name_var = f"{blind_name[0]}_qxs{blind_name[3]}_dn"
+    if name_var in coordinator.data.plc_info.plc_vars:
         return name_var
     return ""
 
@@ -106,7 +124,7 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
         var_setpoint_name: str = "",
         var_up_name: str = "",
         var_down_name: str = "",
-        attr_icon="mdi:blinds-horizontal",
+        enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Initialize HIQ-Home blind."""
@@ -115,11 +133,12 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
             return
         self._attr_unique_id = var_name
         self._attr_name = f"Blind {var_name}"
-        self._attr_icon = attr_icon
         self._attr_device_info = dev_info
         self._setpoint_var = var_setpoint_name
         self._moving_up_var = var_up_name
         self._moving_dn_var = var_down_name
+        if enabled is False:
+            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
         if self._moving_dn_var != "":
@@ -210,9 +229,16 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
             await self.coordinator.cybro.write_var(self._setpoint_var, "100")
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
-        """Stop the device."""
+        """Stop the cover."""
         if self._setpoint_var != "":
             await self.coordinator.cybro.write_var(self._setpoint_var, "-1")
+
+    async def async_set_cover_position(self, **kwargs: Any) -> None:
+        """Move the cover to a specific position."""
+        position = kwargs[ATTR_POSITION]
+        if self._setpoint_var != "":
+            pos = 100 - int(position)
+            await self.coordinator.cybro.write_var(self._setpoint_var, str(pos))
 
     @property
     def available(self) -> bool:

@@ -1,7 +1,6 @@
 """Support for HIQ-Home lights."""
 from __future__ import annotations
 
-import re
 from typing import Any
 from xmlrpc.client import Boolean
 
@@ -37,16 +36,16 @@ async def async_setup_entry(
 
 
 def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
-    ge_names = re.findall(r".*\_", var)
+    ge_names = var.split("_")
     if ge_names is None:
         return False
-    ge_name = f"{ge_names[0]}general_error"
+    ge_name = f"{ge_names[0]}_general_error"
     coordinator.data.add_var(ge_name)
     ge_val = coordinator.data.vars.get(ge_name, None)
     if ge_val is None:
         return False
     LOGGER.debug("%s -> %s", ge_name, ge_val.value)
-    return bool(ge_val.value == "1")
+    return bool(ge_val.value == "0")
 
 
 def find_on_off_lights(
