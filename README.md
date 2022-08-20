@@ -63,7 +63,7 @@ Possible commands for the blinds are:
 - stop cover
 - set position
 
-#### Common Attributes
+### Common Attributes
 
 | Attribute   | Example Values (comma separated)      |
 | ----------- | ------------------------------------- |
