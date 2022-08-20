@@ -73,20 +73,6 @@ def find_blinds(
     return None
 
 
-def _get_blind_name(var: str) -> str:
-    """Generate default blind name."""
-    blind_name = var.split("_")
-    if blind_name is None:
-        return f"Blind {var}"
-    bc_no = blind_name[0].split("bc")
-    if bc_no is None:
-        return f"Blind {var}"
-    if len(blind_name) < 4 or len(bc_no) < 2:
-        return f"Blind {var}"
-    val = int(bc_no[1]) * 5 + int(blind_name[3])
-    return f"Blind {val:2.0f}"
-
-
 def _get_blind_var(
     coordinator: HiqDataUpdateCoordinator, var: str, type: int = 0
 ) -> str:

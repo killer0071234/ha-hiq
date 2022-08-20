@@ -53,13 +53,21 @@ In addition to the diagnostic sensors, it will check if there are some more sens
 
 ### cover
 
-during creation of the device it scans for blind modules (eg: HIQ BC-5-IQ).
+During creation of the device it scans for blind modules (eg: HIQ BC-5-IQ) and creates it as covers in home assistant.
+If there are modules with a active general error the entities are disabled by default.
+
+Possible commands for the blinds are:
+
+- open cover
+- close cover
+- stop cover
+- set position
 
 #### Common Attributes
 
-| Attribute   | Example Values (comma separated)  |
-| ----------- | --------------------------------- |
-| description | the description text from the PLC |
+| Attribute   | Example Values (comma separated)      |
+| ----------- | ------------------------------------- |
+| description | the description text from the PLC tag |
 
 ### Devices
 
