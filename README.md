@@ -120,7 +120,7 @@ If you prefer new entities to be disabled by default:
 
 ## Tested Devices
 
-- HIQ v1 Software (on a Cybro-2 controller)
+- HC-HIQ v3.0.3 Software (on a Cybro-3 controller with FW: 3.2.0)
 
 ## Contributions are welcome!
 
