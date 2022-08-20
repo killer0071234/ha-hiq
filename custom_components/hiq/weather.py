@@ -53,7 +53,7 @@ async def async_setup_entry(
         coordinator.data.add_var(f"{var_prefix}pressure", var_type=VarType.INT)
         has_weather = true
 
-    if has_weather:
+    if has_weather is True:
         async_add_entities([HiqWeatherEntity(var_prefix, coordinator)])
 
 

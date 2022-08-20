@@ -14,6 +14,7 @@ from homeassistant.const import CONF_PORT
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
+from .const import CONF_IGNORE_GENERAL_ERROR
 from .const import DOMAIN
 from .const import LOGGER
 
@@ -62,6 +63,9 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_HOST: user_input[CONF_HOST],
                         CONF_PORT: user_input[CONF_PORT],
                         CONF_ADDRESS: user_input[CONF_ADDRESS],
+                        CONF_IGNORE_GENERAL_ERROR: user_input[
+                            CONF_IGNORE_GENERAL_ERROR
+                        ],
                     },
                 )
         else:
@@ -74,6 +78,7 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_HOST, default="localhost"): str,
                     vol.Required(CONF_PORT, default=4000): int,
                     vol.Required(CONF_ADDRESS, default=1000): int,
+                    vol.Required(CONF_IGNORE_GENERAL_ERROR, default=False): bool,
                 }
             ),
             errors=errors or {},

@@ -13,8 +13,10 @@
     "step": {
       "user": {
         "data": {
-          "host": "Host",
-          "port": "Port"
+          "host": "scgi server host",
+          "port": "scgi server port",
+          "address": "HIQ controller address",
+          "ignore_general_error": "Ignore general_error from expansion unit (if checked, all found devices will be add to home assistant, use at your own risk)"
         },
         "description": "Set up your HIQ-Home control to integrate with Home Assistant."
       }

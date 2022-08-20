@@ -15,6 +15,7 @@ LOGGER = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=10)
 
 # Options
+CONF_IGNORE_GENERAL_ERROR = "ignore_general_error"
 
 # Attributes
 AREA_SYSTEM = "System"

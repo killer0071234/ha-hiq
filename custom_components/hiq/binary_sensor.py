@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import AREA_SYSTEM
 from .const import ATTR_DESCRIPTION
+from .const import CONF_IGNORE_GENERAL_ERROR
 from .const import DEVICE_DESCRIPTION
 from .const import DOMAIN
 from .const import LOGGER
@@ -29,13 +30,14 @@ async def async_setup_entry(
     """Set up a HIQ binary sensor based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    sys_tags = add_system_tags(coordinator)
+    sys_tags = add_system_tags(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
     if sys_tags is not None:
         async_add_entities(sys_tags)
 
 
 def add_system_tags(
     coordinator: HiqDataUpdateCoordinator,
+    add_all: bool,
 ) -> list[HiqBinarySensor] | None:
     """Find system tags in the plc vars.
     eg: c1000.scan_time and so on
@@ -65,7 +67,7 @@ def add_system_tags(
                         dev_info=dev_info,
                     )
                 )
-            elif key.find("general_error") != -1:
+            if key.find("general_error") != -1:
                 res.append(
                     HiqBinarySensor(
                         coordinator,
@@ -98,6 +100,7 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
         var_name: str = "",
         attr_entity_category: EntityCategory = None,
         attr_device_class: BinarySensorDeviceClass = None,
+        enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Pass coordinator to CoordinatorEntity."""
@@ -109,6 +112,8 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
         self._attr_entity_category = attr_entity_category
         self._attr_device_class = attr_device_class
         self._attr_device_info = dev_info
+        if enabled is False:
+            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
 
