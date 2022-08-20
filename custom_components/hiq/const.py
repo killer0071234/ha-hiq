@@ -21,6 +21,7 @@ AREA_SYSTEM = "System"
 AREA_ENERGY = "Energy"
 AREA_WEATHER = "Weather"
 AREA_LIGHTS = "Lights"
+AREA_BLINDS = "Blinds"
 ATTR_DESCRIPTION = "description"
 
 # Device classes

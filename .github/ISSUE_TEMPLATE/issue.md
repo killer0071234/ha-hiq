@@ -18,7 +18,7 @@ Issues not containing the minimum requirements will be closed:
 If you are unsure about the version check the const.py file.
 -->
 
-## Deco Model
+## Controller Model
 
 ## Describe the bug
 
@@ -27,7 +27,7 @@ A clear and concise description of what the bug is.
 ## Debug log
 
 <!--
-Please follow steps in https://github.com/amosyuen/ha-tplink-deco/blob/master/DEBUGGING.md
+Please follow steps in https://github.com/killer0071234/ha-hiq/blob/master/DEBUGGING.md
 -->
 
 ```text

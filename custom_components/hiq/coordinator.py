@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from cybro import Cybro
+from cybro import CybroConnectionTimeoutError
 from cybro import CybroError
 from cybro import Device as HiqDevice
 from homeassistant.config_entries import ConfigEntry
@@ -56,6 +57,10 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         except CybroError as error:
             raise UpdateFailed(
                 f"Invalid response from Cybro scgi server: {error}"
+            ) from error
+        except CybroConnectionTimeoutError as error:
+            raise UpdateFailed(
+                f"Could not connect to Cybro scgi server: {error}"
             ) from error
 
         self.async_update_listeners()

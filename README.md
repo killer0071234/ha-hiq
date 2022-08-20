@@ -51,15 +51,27 @@ In addition to the diagnostic sensors, it will check if there are some more sens
 - humidity devices (eg: ts00_humidity)
 - energy meter device (eg: power_meter_power, power_meter_energy)
 
-#### Common Attributes
+### cover
 
-| Attribute   | Example Values (comma separated)  |
-| ----------- | --------------------------------- |
-| description | the description text from the PLC |
+During creation of the device it scans for blind modules (eg: HIQ BC-5-IQ) and creates it as covers in home assistant.
+If there are modules with a active general error the entities are disabled by default.
+
+Possible commands for the blinds are:
+
+- open cover
+- close cover
+- stop cover
+- set position
+
+### Common Attributes
+
+| Attribute   | Example Values (comma separated)      |
+| ----------- | ------------------------------------- |
+| description | the description text from the PLC tag |
 
 ### Devices
 
-A device is created for each PLC.
+A device is created for each PLC (diagnostics) and for every light, blind.
 
 {% if not installed %}
 
@@ -108,7 +120,7 @@ If you prefer new entities to be disabled by default:
 
 ## Tested Devices
 
-- HIQ v1 Software (on a Cybro-2 controller)
+- HC-HIQ v3.0.3 Software (on a Cybro-3 controller with FW: 3.2.0)
 
 ## Contributions are welcome!
 
