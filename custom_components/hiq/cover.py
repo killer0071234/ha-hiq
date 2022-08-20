@@ -14,6 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import AREA_BLINDS
 from .const import ATTR_DESCRIPTION
+from .const import CONF_IGNORE_GENERAL_ERROR
 from .const import DEVICE_DESCRIPTION
 from .const import DOMAIN
 from .const import LOGGER
@@ -31,14 +32,14 @@ async def async_setup_entry(
 ) -> None:
     """Set up HIQ-Home blind based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-
-    blinds = find_blinds(coordinator)
+    blinds = find_blinds(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
     if blinds is not None:
         async_add_entities(blinds)
 
 
 def find_blinds(
     coordinator: HiqDataUpdateCoordinator,
+    add_all: bool,
 ) -> list[HiqUpdateCover] | None:
     """Find blind objects in the plc vars.
     eg: c1000.bc00_blinds_position_00 and so on
@@ -46,28 +47,30 @@ def find_blinds(
     res: list[HiqUpdateCover] = []
     for key in coordinator.data.plc_info.plc_vars:
         if key.find(".bc") != -1 and key.find("_blinds_position") != -1:
-            dev_info = DeviceInfo(
-                identifiers={(DOMAIN, key)},
-                manufacturer=MANUFACTURER,
-                default_name=f"Blind {key}",
-                suggested_area=AREA_BLINDS,
-                model=DEVICE_DESCRIPTION,
-                configuration_url=MANUFACTURER_URL,
-            )
-            var_sp = _get_blind_var(coordinator, key, 0)
-            var_up = _get_blind_var(coordinator, key, 1)
-            var_dn = _get_blind_var(coordinator, key, 2)
-            res.append(
-                HiqUpdateCover(
-                    coordinator,
-                    key,
-                    var_sp,
-                    var_up,
-                    var_dn,
-                    enabled=is_general_error_ok(coordinator, key),
-                    dev_info=dev_info,
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                dev_info = DeviceInfo(
+                    identifiers={(DOMAIN, key)},
+                    manufacturer=MANUFACTURER,
+                    default_name=f"Blind {key}",
+                    suggested_area=AREA_BLINDS,
+                    model=DEVICE_DESCRIPTION,
+                    configuration_url=MANUFACTURER_URL,
                 )
-            )
+                var_sp = _get_blind_var(coordinator, key, 0)
+                var_up = _get_blind_var(coordinator, key, 1)
+                var_dn = _get_blind_var(coordinator, key, 2)
+                res.append(
+                    HiqUpdateCover(
+                        coordinator,
+                        key,
+                        var_sp,
+                        var_up,
+                        var_dn,
+                        enabled=ge_ok,
+                        dev_info=dev_info,
+                    )
+                )
     if len(res) > 0:
         return res
     return None

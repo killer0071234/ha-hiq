@@ -18,7 +18,41 @@ This integration is a local polling integration that connects to a running cybro
 To use this integration you need to have a running scgi server (it could be a docker container or native installed).
 Further informations of the docker container can be found here: [![dockerhub][scgi-docker-shield]][scgi-docker]
 
-### binary_sensor
+## Supported entities
+
+During creation of the device it scans for supported device types and creates it in home assistant.
+If the `general_error` of the HIQ expansion unit is set, the device will be ignored.
+To add all possible entities there exists a option.
+
+Currently supported are:
+
+- [light](#light)
+- [cover](#cover)
+- [binary_sensor](#binary_sensor)
+- [sensor](#sensor)
+
+---
+
+### light<a name="light"></a>
+
+Supported HIQ expansion units:
+
+- LC-10-IQ (light on / off supported)
+
+### cover<a name="cover"></a>
+
+Supported HIQ expansion units:
+
+- BC-5-IQ
+
+Possible commands for the blinds are:
+
+- open cover
+- close cover
+- stop cover
+- set position
+
+### binary_sensor<a name="binary_sensor"></a>
 
 There are some diagnostic binary sensors exposed:
 
@@ -31,7 +65,7 @@ There are some diagnostic binary sensors exposed:
 
 XXXX is the NAD of the controller, and YYYY is the IEX module prefix
 
-### sensor
+### sensor<a name="sensor"></a>
 
 There are some diagnostic sensors exposed:
 
@@ -50,18 +84,6 @@ In addition to the diagnostic sensors, it will check if there are some more sens
 - temperature devices (eg: op00_temperature, ..)
 - humidity devices (eg: ts00_humidity)
 - energy meter device (eg: power_meter_power, power_meter_energy)
-
-### cover
-
-During creation of the device it scans for blind modules (eg: HIQ BC-5-IQ) and creates it as covers in home assistant.
-If there are modules with a active general error the entities are disabled by default.
-
-Possible commands for the blinds are:
-
-- open cover
-- close cover
-- stop cover
-- set position
 
 ### Common Attributes
 

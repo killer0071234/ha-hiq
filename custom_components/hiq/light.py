@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from typing import Any
-from xmlrpc.client import Boolean
 
 from homeassistant.components.light import LightEntity
 from homeassistant.config_entries import ConfigEntry
@@ -13,6 +12,7 @@ from sqlalchemy import false
 
 from .const import AREA_LIGHTS
 from .const import ATTR_DESCRIPTION
+from .const import CONF_IGNORE_GENERAL_ERROR
 from .const import DEVICE_DESCRIPTION
 from .const import DOMAIN
 from .const import LOGGER
@@ -30,7 +30,7 @@ async def async_setup_entry(
     """Set up HIQ-Home light based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    lights = find_on_off_lights(coordinator)
+    lights = find_on_off_lights(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
     if lights is not None:
         async_add_entities(lights)
 
@@ -50,6 +50,7 @@ def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool
 
 def find_on_off_lights(
     coordinator: HiqDataUpdateCoordinator,
+    add_all: bool,
 ) -> list[HiqUpdateLight] | None:
     """Find simple light objects in the plc vars.
     eg: c1000.lc00_qx00 and so on
@@ -57,16 +58,18 @@ def find_on_off_lights(
     res: list[HiqUpdateLight] = []
     for key in coordinator.data.plc_info.plc_vars:
         if key.find(".lc") != -1 and key.find("_qx") != -1:
-            dev_info = DeviceInfo(
-                identifiers={(DOMAIN, key)},
-                manufacturer=MANUFACTURER,
-                default_name=f"{key} light output",
-                suggested_area=AREA_LIGHTS,
-                enabled=is_general_error_ok(coordinator, key),
-                model=DEVICE_DESCRIPTION,
-                configuration_url=MANUFACTURER_URL,
-            )
-            res.append(HiqUpdateLight(coordinator, key, dev_info=dev_info))
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                dev_info = DeviceInfo(
+                    identifiers={(DOMAIN, key)},
+                    manufacturer=MANUFACTURER,
+                    default_name=f"Light {key}",
+                    suggested_area=AREA_LIGHTS,
+                    enabled=ge_ok,
+                    model=DEVICE_DESCRIPTION,
+                    configuration_url=MANUFACTURER_URL,
+                )
+                res.append(HiqUpdateLight(coordinator, key, dev_info=dev_info))
 
     if len(res) > 0:
         return res
@@ -82,7 +85,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         var_name: str = "",
         attr_icon="mdi:lightbulb",
         dev_info: DeviceInfo = None,
-        enabled: Boolean = True,
+        enabled: bool = True,
     ) -> None:
         """Initialize HIQ-Home light."""
         super().__init__(coordinator=coordinator)
@@ -92,7 +95,8 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         self._attr_name = f"Light {var_name}"
         self._attr_icon = attr_icon
         self._attr_device_info = dev_info
-        self._attr_entity_registry_enabled_default = enabled
+        if enabled is False:
+            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
 

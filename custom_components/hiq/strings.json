@@ -6,7 +6,9 @@
         "description": "Set up your HIQ-Home control to integrate with Home Assistant.",
         "data": {
           "host": "[%key:common::config_flow::data::host%]",
-          "port": "[%key:common::config_flow::data::port%]"
+          "port": "[%key:common::config_flow::data::port%]",
+          "address": "[%key:common::config_flow::data::address%]",
+          "ignore_general_error": "Ignore general_error from expansion unit (if checked, all found devices will be add to home assistant, use at your own risk)"
         }
       }
     },
