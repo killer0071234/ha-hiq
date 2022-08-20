@@ -7,10 +7,13 @@ import voluptuous as vol
 from cybro import Cybro
 from cybro import CybroConnectionError
 from cybro import Device
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.config_entries import ConfigFlow
+from homeassistant.config_entries import OptionsFlow
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.const import CONF_HOST
 from homeassistant.const import CONF_PORT
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -25,6 +28,12 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
     VERSION = 1
     discovered_host: str
     discovered_device: Device
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> HiqOptionsFlowHandler:
+        """Get the options flow for this handler."""
+        return HiqOptionsFlowHandler(config_entry)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -89,3 +98,32 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
         session = async_get_clientsession(self.hass)
         cybro = Cybro(host, port=port, session=session, nad=address)
         return await cybro.update(plc_nad=address)
+
+
+class HiqOptionsFlowHandler(OptionsFlow):
+    """Handle HIQ-Home options."""
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        """Initialize HIQ-Home options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage HIQ-Home options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_IGNORE_GENERAL_ERROR,
+                        default=self.config_entry.options.get(
+                            CONF_IGNORE_GENERAL_ERROR, False
+                        ),
+                    ): bool,
+                }
+            ),
+        )

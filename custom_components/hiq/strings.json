@@ -20,6 +20,15 @@
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "scgi_server_not_running": "scgi server is not running",
       "plc_not_existing": "PLC with address `{address}` does not exist"
+    },
+    "options": {
+      "step": {
+        "init": {
+          "data": {
+            "ignore_general_error": "Ignore general_error from expansion unit (if checked, all found devices will be add to home assistant, use at your own risk)"
+          }
+        }
+      }
     }
   }
 }
