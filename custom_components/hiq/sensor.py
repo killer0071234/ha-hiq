@@ -347,8 +347,8 @@ def find_power_meter(
                 is_ok = _is_power_meter_ok(coordinator, key)
                 if is_ok or add_all:
                     fact = 1.0
-                    val = coordinator.data.vars.get(key, 0)
-                    if val > 300:
+                    val = coordinator.data.vars.get(key, None)
+                    if val is not None and val.value > 300:
                         fact = 0.1
                     res.append(
                         HiqSensorEntity(
