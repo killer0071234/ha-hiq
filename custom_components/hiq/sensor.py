@@ -327,84 +327,111 @@ def find_power_meter(
     for key in coordinator.data.plc_info.plc_vars:
         if key.find(var_prefix) != -1:
             if key.find("_power") != -1:
-                res.append(
-                    HiqSensorEntity(
-                        coordinator,
-                        key,
-                        "",
-                        POWER_WATT,
-                        VarType.FLOAT,
-                        None,
-                        SensorDeviceClass.POWER,
-                        1.0,
-                        True,
-                        dev_info,
+                is_ok = _is_power_meter_ok(coordinator, key)
+                if is_ok or add_all:
+                    res.append(
+                        HiqSensorEntity(
+                            coordinator,
+                            key,
+                            "",
+                            POWER_WATT,
+                            VarType.FLOAT,
+                            None,
+                            SensorDeviceClass.POWER,
+                            1.0,
+                            is_ok,
+                            dev_info,
+                        )
                     )
-                )
             elif key.find("_voltage") != -1:
-                res.append(
-                    HiqSensorEntity(
-                        coordinator,
-                        key,
-                        "",
-                        ELECTRIC_POTENTIAL_VOLT,
-                        VarType.FLOAT,
-                        None,
-                        SensorDeviceClass.VOLTAGE,
-                        0.1,
-                        False,
-                        dev_info,
+                is_ok = _is_power_meter_ok(coordinator, key)
+                if is_ok or add_all:
+                    fact = 1.0
+                    val = coordinator.data.vars.get(key, 0)
+                    if val > 300:
+                        fact = 0.1
+                    res.append(
+                        HiqSensorEntity(
+                            coordinator,
+                            key,
+                            "",
+                            ELECTRIC_POTENTIAL_VOLT,
+                            VarType.FLOAT,
+                            None,
+                            SensorDeviceClass.VOLTAGE,
+                            fact,
+                            False,
+                            dev_info,
+                        )
                     )
-                )
             elif key.find("_current") != -1:
-                res.append(
-                    HiqSensorEntity(
-                        coordinator,
-                        key,
-                        "",
-                        ELECTRIC_CURRENT_MILLIAMPERE,
-                        VarType.FLOAT,
-                        None,
-                        SensorDeviceClass.CURRENT,
-                        1.0,
-                        False,
-                        dev_info,
+                is_ok = _is_power_meter_ok(coordinator, key)
+                if is_ok or add_all:
+                    res.append(
+                        HiqSensorEntity(
+                            coordinator,
+                            key,
+                            "",
+                            ELECTRIC_CURRENT_MILLIAMPERE,
+                            VarType.FLOAT,
+                            None,
+                            SensorDeviceClass.CURRENT,
+                            1.0,
+                            False,
+                            dev_info,
+                        )
                     )
-                )
             elif key in (f"{var_prefix}_energy", f"{var_prefix}_energy_real"):
-                res.append(
-                    HiqSensorEntity(
-                        coordinator,
-                        key,
-                        "",
-                        ENERGY_KILO_WATT_HOUR,
-                        VarType.FLOAT,
-                        None,
-                        SensorDeviceClass.ENERGY,
-                        1.0,
-                        True,
-                        dev_info,
+                is_ok = _is_power_meter_ok(coordinator, key)
+                if is_ok or add_all:
+                    res.append(
+                        HiqSensorEntity(
+                            coordinator,
+                            key,
+                            "",
+                            ENERGY_KILO_WATT_HOUR,
+                            VarType.FLOAT,
+                            None,
+                            SensorDeviceClass.ENERGY,
+                            1.0,
+                            is_ok,
+                            dev_info,
+                        )
                     )
-                )
             elif key.find(f"{var_prefix}_energy_watthours") != -1:
-                res.append(
-                    HiqSensorEntity(
-                        coordinator,
-                        key,
-                        "",
-                        ENERGY_WATT_HOUR,
-                        VarType.FLOAT,
-                        None,
-                        SensorDeviceClass.ENERGY,
-                        1.0,
-                        False,
-                        dev_info,
+                is_ok = _is_power_meter_ok(coordinator, key)
+                if is_ok or add_all:
+                    res.append(
+                        HiqSensorEntity(
+                            coordinator,
+                            key,
+                            "",
+                            ENERGY_WATT_HOUR,
+                            VarType.FLOAT,
+                            None,
+                            SensorDeviceClass.ENERGY,
+                            1.0,
+                            False,
+                            dev_info,
+                        )
                     )
-                )
 
     if len(res) > 0:
         return res
     return None
+
+
+def _is_power_meter_ok(coordinator: HiqDataUpdateCoordinator, var: str):
+    ge_names = var.split("_")
+    if ge_names is None:
+        return False
+    ge_name = f"{ge_names[0]}_meter_error"
+    coordinator.data.add_var(ge_name)
+    ge_val = coordinator.data.vars.get(ge_name, None)
+    if ge_val is None:
+        return False
+    LOGGER.debug("%s -> %s", ge_name, ge_val.value)
+    return bool(ge_val.value == "0")
 
 
 class HiqSensorEntity(HiqEntity, SensorEntity):
