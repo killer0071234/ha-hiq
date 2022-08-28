@@ -6,7 +6,7 @@ from datetime import datetime
 from cybro import VarType
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.components.sensor import STATE_CLASS_TOTAL_INCREASING
+from homeassistant.components.sensor import SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ELECTRIC_CURRENT_MILLIAMPERE
 from homeassistant.const import ELECTRIC_POTENTIAL_VOLT
@@ -348,7 +348,7 @@ def find_power_meter(
                 if is_ok or add_all:
                     fact = 1.0
                     val = coordinator.data.vars.get(key, None)
-                    if val is not None and val.value > 300:
+                    if val is not None and float(val.value.replace(",", "")) > 300:
                         fact = 0.1
                     res.append(
                         HiqSensorEntity(
@@ -452,7 +452,6 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         val_fact: float = 1.0,
         enabled: bool = True,
         dev_info: DeviceInfo = None,
-        # attr_icon="mdi:lightbulb",
     ) -> None:
         """Initialize a HIQ-Home sensor entity."""
         super().__init__(coordinator=coordinator)
@@ -468,7 +467,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
 
         self._attr_device_class = attr_device_class
         if attr_device_class == SensorDeviceClass.ENERGY:
-            self._attr_state_class = STATE_CLASS_TOTAL_INCREASING
+            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         if enabled is False:
             self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
@@ -495,10 +494,13 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         return self._unit_of_measurement
 
     @property
-    def native_value(self) -> datetime | StateType:
+    def native_value(self) -> datetime | StateType | None:
         """Return the state of the sensor."""
         res = self.coordinator.data.vars.get(self._attr_unique_id, None)
         if res is None:
+            return None
+        if res.value == "?":
+            LOGGER.debug("got unknown value for %s", str(self._attr_unique_id))
             return None
         if self._var_type == VarType.INT:
             return int(int(res.value) * self._val_fact)
