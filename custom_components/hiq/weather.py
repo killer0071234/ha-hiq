@@ -7,14 +7,13 @@ from cybro import VarType
 from homeassistant.components.weather import WeatherEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_UNIT_SYSTEM_METRIC
+from homeassistant.const import PRESSURE_HPA
 from homeassistant.const import SPEED_KILOMETERS_PER_HOUR
 from homeassistant.const import TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from sqlalchemy import false
-from sqlalchemy import true
 
 from .const import AREA_WEATHER
 from .const import ATTRIBUTION_PLC
@@ -35,23 +34,23 @@ async def async_setup_entry(
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     var_prefix = f"c{coordinator.data.plc_info.nad}.weather_"
-    has_weather: bool = false
+    has_weather: bool = False
     # search for any weather station var and add it into the read list
     if coordinator.data.plc_info.plc_vars.__contains__(f"{var_prefix}temperature"):
         coordinator.data.add_var(f"{var_prefix}temperature", var_type=VarType.INT)
-        has_weather = true
+        has_weather = True
     if coordinator.data.plc_info.plc_vars.__contains__(f"{var_prefix}humidity"):
         coordinator.data.add_var(f"{var_prefix}humidity", var_type=VarType.INT)
-        has_weather = true
+        has_weather = True
     if coordinator.data.plc_info.plc_vars.__contains__(f"{var_prefix}wind_speed"):
         coordinator.data.add_var(f"{var_prefix}wind_speed", var_type=VarType.INT)
-        has_weather = true
+        has_weather = True
     if coordinator.data.plc_info.plc_vars.__contains__(f"{var_prefix}wind_direction"):
         coordinator.data.add_var(f"{var_prefix}wind_direction", var_type=VarType.INT)
-        has_weather = true
+        has_weather = True
     if coordinator.data.plc_info.plc_vars.__contains__(f"{var_prefix}pressure"):
         coordinator.data.add_var(f"{var_prefix}pressure", var_type=VarType.INT)
-        has_weather = true
+        has_weather = True
 
     if has_weather is True:
         async_add_entities([HiqWeatherEntity(var_prefix, coordinator)])
@@ -66,17 +65,17 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
         """Initialize."""
         super().__init__(coordinator)
         self._unit_system = CONF_UNIT_SYSTEM_METRIC
-        self._attr_name = (
-            f"User Weather Station connected to c{coordinator.data.plc_info.nad}"
-        )
+        self._attr_name = f"Weather c{coordinator.data.plc_info.nad}"
         self._attr_unique_id = var_prefix
-        self._attr_temperature_unit = TEMP_CELSIUS
+        # setup default units from HIQ-controller
+        self._attr_native_temperature_unit = TEMP_CELSIUS
+        self._attr_native_wind_speed_unit = SPEED_KILOMETERS_PER_HOUR
+        self._attr_native_pressure_unit = PRESSURE_HPA
         self._attr_attribution = ATTRIBUTION_PLC
-        self._attr_pressure_unit = SPEED_KILOMETERS_PER_HOUR
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, var_prefix)},
             manufacturer=MANUFACTURER,
-            default_name="HIQ-Home weather station",
+            default_name=f"Weather c{coordinator.data.plc_info.nad}",
             suggested_area=AREA_WEATHER,
             model=DEVICE_DESCRIPTION,
         )
@@ -90,7 +89,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
             identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
             manufacturer=MANUFACTURER,
             configuration_url=MANUFACTURER_URL,
-            name=f"PLC {self.coordinator.cybro.nad}",
+            name=f"Weather c{self.coordinator.cybro.nad}",
             model=DEVICE_DESCRIPTION,
         )
 
@@ -100,7 +99,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
         return ""
 
     @property
-    def temperature(self) -> float | None:
+    def native_temperature(self) -> float | None:
         """Return the temperature."""
         try:
             return cast(
@@ -114,7 +113,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
             return None
 
     @property
-    def pressure(self) -> float | None:
+    def native_pressure(self) -> float | None:
         """Return the pressure."""
         try:
             return cast(
@@ -140,7 +139,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
             return None
 
     @property
-    def wind_speed(self) -> float | None:
+    def native_wind_speed(self) -> float | None:
         """Return the wind speed."""
         try:
             return cast(
