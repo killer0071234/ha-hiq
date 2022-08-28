@@ -39,6 +39,8 @@ Supported HIQ expansion units:
 
 - LC-10-IQ (light on / off supported)
 
+---
+
 ### cover<a name="cover"></a>
 
 Supported HIQ expansion units:
@@ -51,6 +53,8 @@ Possible commands for the blinds are:
 - close cover
 - stop cover
 - set position
+
+---
 
 ### binary_sensor<a name="binary_sensor"></a>
 
@@ -71,6 +75,8 @@ To have a basic diagnostic, there are some `binary_sensor` Entities exposed.
 | `cXXXX.YYYY_general_error` | Combined system error (timeout or program error), module is not operational. | yes     |
 
 XXXX is the NAD of the controller, and YYYY is the IEX module prefix
+
+---
 
 ### sensor<a name="sensor"></a>
 
@@ -114,6 +120,8 @@ In presence of expansion units with temperature / humidity sensors, it will add 
 | `cXXXX.YYYY_humidity`    | Measured relative humidity (0..100%rh). | if module has no `general_error` |
 
 XXXX is the NAD of the controller, and YYYY is the IEX module prefix (eg: lc00, bc02..)
+
+---
 
 ### Common Attributes
 
