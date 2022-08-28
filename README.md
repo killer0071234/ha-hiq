@@ -54,36 +54,66 @@ Possible commands for the blinds are:
 
 ### binary_sensor<a name="binary_sensor"></a>
 
-There are some diagnostic binary sensors exposed:
+To have a basic diagnostic, there are some `binary_sensor` Entities exposed.
 
-| entity name              | Description                                                                        |
-| ------------------------ | ---------------------------------------------------------------------------------- |
-| cXXXX.general_error      | Logical or of IEX general errors, indicates that at least one module has an error. |
-| cXXXX.retentive_fail     | Indicates that retentive memory failed.                                            |
-| cXXXX.scan_overrun       | Too long scan execution caused scan overrun error.                                 |
-| cXXXX.YYYY_general_error | Combined system error (timeout or program error), module is not operational.       |
+#### For the controller:
+
+| Entity name            | Description                                                                        | Enabled |
+| ---------------------- | ---------------------------------------------------------------------------------- | ------- |
+| `cXXXX.general_error`  | Logical or of IEX general errors, indicates that at least one module has an error. | yes     |
+| `cXXXX.retentive_fail` | Indicates that retentive memory failed.                                            | yes     |
+| `cXXXX.scan_overrun`   | Too long scan execution caused scan overrun error.                                 | yes     |
+
+#### For every IEX expansion unit:
+
+| Entity name                | Description                                                                  | Enabled |
+| -------------------------- | ---------------------------------------------------------------------------- | ------- |
+| `cXXXX.YYYY_general_error` | Combined system error (timeout or program error), module is not operational. | yes     |
 
 XXXX is the NAD of the controller, and YYYY is the IEX module prefix
 
 ### sensor<a name="sensor"></a>
 
-There are some diagnostic sensors exposed:
+To have a basic diagnostic, there are some `sensor` Entities exposed.
 
-| entity name                 | Description                                                         |
-| --------------------------- | ------------------------------------------------------------------- |
-| cXXXX.scan_time             | Last scan execution time [ms].                                      |
-| cXXXX.scan_time_max         | Maximal scan execution time encountered since program started [ms]. |
-| cXXXX.scan_frequency        | Actual number of scans per second.                                  |
-| cXXXX.sys.ip_port           | IP address and UDP port of the controller.                          |
-| cXXXX.YYYY_iex_power_supply | Measured power supply voltage [V]. Measuring range is 0..40V.       |
+#### For the controller:
 
-XXXX is the NAD of the controller, and YYYY is the IEX module prefix
+| Entity name                | Description                                                         | Enabled |
+| -------------------------- | ------------------------------------------------------------------- | ------- |
+| `cXXXX.scan_time`          | Last scan execution time [ms].                                      | no      |
+| `cXXXX.scan_time_max`      | Maximal scan execution time encountered since program started [ms]. | no      |
+| `cXXXX.scan_frequency`     | Actual number of scans per second.                                  | no      |
+| `cXXXX.cybro_power_supply` | Measured power supply voltage [V]. Measuring range is 0..40V.       | no      |
+| `cXXXX.cybro_uptime`       | Number of operating hours since power-on [h].                       | no      |
+| `cXXXX.operating_hours`    | Total number of operating hours [h].                                | no      |
+| `cXXXX.sys.ip_port`        | IP address and UDP port of the controller.                          | yes     |
 
-In addition to the diagnostic sensors, it will check if there are some more sensors:
+#### For every IEX expansion unit:
 
-- temperature devices (eg: op00_temperature, ..)
-- humidity devices (eg: ts00_humidity)
-- energy meter device (eg: power_meter_power, power_meter_energy)
+| Entity name                   | Description                                                   | Enabled |
+| ----------------------------- | ------------------------------------------------------------- | ------- |
+| `cXXXX.YYYY_iex_power_supply` | Measured power supply voltage [V]. Measuring range is 0..40V. | no      |
+
+#### power meter:
+
+In presence of a power meter, it will add the following Entities:
+
+| Entity name                 | Description                     | Enabled |
+| --------------------------- | ------------------------------- | ------- |
+| `cXXXX.power_meter_power`   | Measured power consumption [W]. | yes     |
+| `cXXXX.power_meter_energy`  | Energy consumption total [kWh]. | yes     |
+| `cXXXX.power_meter_voltage` | Measured AC voltage [V].        | no      |
+
+#### temperatures:
+
+In presence of expansion units with temperature / humidity sensors, it will add the following Entities:
+
+| Entity name              | Description                             | Enabled                          |
+| ------------------------ | --------------------------------------- | -------------------------------- |
+| `cXXXX.YYYY_temperature` | Measured temperature [°C].              | if module has no `general_error` |
+| `cXXXX.YYYY_humidity`    | Measured relative humidity (0..100%rh). | if module has no `general_error` |
+
+XXXX is the NAD of the controller, and YYYY is the IEX module prefix (eg: lc00, bc02..)
 
 ### Common Attributes
 
@@ -93,7 +123,7 @@ In addition to the diagnostic sensors, it will check if there are some more sens
 
 ### Devices
 
-A device is created for each PLC (diagnostics) and for every light, blind.
+A device is created for each HIQ-controller (diagnostics) and for every light, blind.
 
 {% if not installed %}
 
@@ -142,7 +172,7 @@ If you prefer new entities to be disabled by default:
 
 ## Tested Devices
 
-- HC-HIQ v3.0.3 Software (on a Cybro-3 controller with FW: 3.2.0)
+- HC-HIQ v3.0.3 Software running on a Cybro-3 controller with FW: 3.2.0, cybroscgiserver v3.1.3 running in a docker container
 
 ## Contributions are welcome!
 
