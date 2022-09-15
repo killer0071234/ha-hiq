@@ -53,7 +53,9 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
     async def _async_update_data(self) -> HiqDevice:
         """Fetch data from HIQ Controller."""
         try:
-            device = await self.cybro.update(full_update=not self.last_update_success, device_type=1)
+            device = await self.cybro.update(
+                full_update=not self.last_update_success, device_type=1
+            )
         except CybroError as error:
             raise UpdateFailed(
                 f"Invalid response from Cybro scgi server: {error}"
