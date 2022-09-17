@@ -37,6 +37,10 @@ async def async_setup_entry(
     if lights is not None:
         async_add_entities(lights)
 
+    lights = find_dimm_lights(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
+    if lights is not None:
+        async_add_entities(lights)
+
 
 def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
     """Check if general error of own module is ok."""
@@ -48,7 +52,6 @@ def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool
     ge_val = coordinator.data.vars.get(ge_name, None)
     if ge_val is None:
         return False
-    LOGGER.debug("%s -> %s", ge_name, ge_val.value)
     return bool(ge_val.value == "0")
 
 
@@ -80,6 +83,62 @@ def find_on_off_lights(
     return None
 
 
+def find_dimm_lights(
+    coordinator: HiqDataUpdateCoordinator,
+    add_all: bool,
+) -> list[HiqUpdateLight] | None:
+    """Find dimmable light objects in the plc vars.
+    eg: c1000.ld00_qw00 and so on
+    """
+    res: list[HiqUpdateLight] = []
+    for key in coordinator.data.plc_info.plc_vars:
+        if key.find(".ld") != -1 and key.find("_qw") != -1:
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                is_rgb_light = _is_rgb_light(coordinator, key)
+                LOGGER.debug(is_rgb_light)
+                dev_info = DeviceInfo(
+                    identifiers={(DOMAIN, key)},
+                    manufacturer=MANUFACTURER,
+                    default_name=f"Light {key}",
+                    suggested_area=AREA_LIGHTS,
+                    enabled=ge_ok,
+                    model=DEVICE_DESCRIPTION,
+                    configuration_url=MANUFACTURER_URL,
+                )
+                res.append(HiqUpdateLight(coordinator, key, dev_info=dev_info))
+
+    if len(res) > 0:
+        return res
+    return None
+
+
+def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
+    var_names = var.split("_")
+    if var_names is None:
+        return False
+    if var_names[1] in ("qw00", "qw01", "qw02", "qw03"):
+        rgb_mode_var = f"{var_names[0]}_rgb_mode"
+        # white_mode_var = f"{var_names[0]}_white_channel"
+    elif var_names[1] in ("qw04", "qw05", "qw06", "qw07"):
+        rgb_mode_var = f"{var_names[0]}_rgb_mode_2"
+        # white_mode_var = f"{var_names[0]}_white_channel_2"
+    else:
+        return False
+    coordinator.data.add_var(rgb_mode_var)
+    # coordinator.data.add_var(white_mode_var)
+    rgb_val = coordinator.data.vars.get(rgb_mode_var, None)
+    # white_val = coordinator.data.vars.get(white_mode_var, None)
+    if rgb_val is None:
+        return False
+    LOGGER.debug(
+        "%s -> %s",
+        rgb_mode_var,
+        rgb_val.value,
+    )
+    return bool(rgb_val.value == "1")
+
+
 class HiqUpdateLight(HiqEntity, LightEntity):
     """Defines a Simple HIQ-Home light."""
 
@@ -90,12 +149,14 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         attr_icon="mdi:lightbulb",
         dev_info: DeviceInfo = None,
         enabled: bool = True,
+        dimming_out: str = "",
     ) -> None:
         """Initialize HIQ-Home light."""
         super().__init__(coordinator=coordinator)
         if var_name == "":
             return
         self._attr_unique_id = var_name
+        self._dimming_out = dimming_out
         self._attr_name = f"Light {var_name}"
         self._attr_icon = attr_icon
         self._attr_device_info = dev_info
@@ -118,9 +179,20 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         )
 
     @property
+    def brightness(self) -> int | None:
+        """Return the brightness of this light between 1..255."""
+        if self._dimming_out is None:
+            return None
+        res = self.coordinator.data.vars.get(self._dimming_out, None)
+        if res is None:
+            return None
+        return int(int(res.value) * 2.55)
+
+    @property
     def is_on(self) -> bool:
         """Return the state of the light."""
         res = self.coordinator.data.vars.get(self._attr_unique_id, None)
+        LOGGER.debug("res = ", res)
         if res is None:
             return False
         return bool(res.value == "1")
@@ -129,6 +201,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
     def available(self) -> bool:
         """Return if this light is available or not."""
         res = self.coordinator.data.vars.get(self._attr_unique_id, None)
+        LOGGER.debug("res = ", res)
         if res is None:
             return False
         return res.value != "?"
