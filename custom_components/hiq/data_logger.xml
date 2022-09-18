@@ -1,0 +1,78 @@
+<!--
+Data logger configuration
+
+Configuration file consist of <list>, <sample>, <event> and <alarm> sections.
+
+List is used for repeated names. List name in braces creates as many variables
+as there are items. Multiple lists can be used with the single variable:
+{cybro}.smb{smb}_current{input}. Nesting is not allowed.
+
+Variables in "sample" section are read and stored periodically. Period is defined
+for each task separately, units are s (seconds), min (minutes), h (hours), and d (days).
+
+Variables in "alarm" or "event" sections are read and stored when value is changed
+from 0 to 1. Alarm can be binary (false or true) or analog (high, low or range).
+Class and message are custom labels with no implied meaning. Priority is one of the
+following: low, medium and high; that corresponds to value of 0, 1 or 2.
+-->
+
+<configuration>
+  <list>
+    <group>
+      <name>cybro</name>
+      <item>c10000</item>
+      <item>c10001</item>
+      <item>c10002</item>
+    </group>
+  </list>
+
+  <sample>
+    <task>
+      <period>1s</period>
+      <enabled>true</enabled>
+      <variable>{cybro}.cybro_ix00</variable>
+      <variable>{cybro}.cybro_ix01</variable>
+    </task>
+    <task>
+      <period>10s</period>
+      <enabled>true</enabled>
+      <variable>{cybro}.cybro_iw12</variable>
+      <variable>{cybro}.cybro_iw13</variable>
+      <variable>{cybro}.cybro_iw14</variable>
+      <variable>{cybro}.cybro_iw15</variable>
+    </task>
+  </sample>
+
+  <event>
+    <task>
+      <period>5s</period>
+      <enabled>false</enabled>
+      <variable>{cybro}.cybro_qx00</variable>
+      <class>input</class>
+      <priority>low</priority>
+      <message>Cybro output is activated</message>
+    </task>
+  </event>
+
+  <alarm>
+    <task>
+      <period>5s</period>
+      <class>system</class>
+      <priority>high</priority>
+      <variable>{cybro}.retentive_fail</variable>
+      <message>Battery empty, retentive memory lost</message>
+      <enabled>true</enabled>
+    </task>
+    <task>
+      <period>5s</period>
+      <variable>{cybro}.cybro_qw12</variable>
+      <class>analog</class>
+      <priority>medium</priority>
+      <message>Output value is out of limits</message>
+      <lolimit>0</lolimit>
+      <hilimit>1000</hilimit>
+      <hysteresis>100</hysteresis>
+      <enabled>true</enabled>
+    </task>
+  </alarm>
+</configuration>

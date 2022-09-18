@@ -19,6 +19,8 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from .const import DOMAIN
 from .const import LOGGER
 from .const import SCAN_INTERVAL
+from .src.app import start_server
+from .src.app import stop_server
 
 
 class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
@@ -53,9 +55,13 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
     async def _async_update_data(self) -> HiqDevice:
         """Fetch data from HIQ Controller."""
         try:
+            kill_communication_loop = start_server()
+
             device = await self.cybro.update(
                 full_update=not self.last_update_success, device_type=1
             )
+
+            stop_server(kill_communication_loop)
         except CybroError as error:
             raise UpdateFailed(
                 f"Invalid response from Cybro scgi server: {error}"

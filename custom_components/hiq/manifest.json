@@ -5,7 +5,14 @@
   "config_flow": true,
   "documentation": "https://github.com/killer0071234/ha-hiq",
   "issue_tracker": "https://github.com/killer0071234/ha-hiq/issues",
-  "requirements": ["cybro==0.0.7", "xmltodict==0.13.0"],
+  "requirements": [
+    "cybro==0.0.7",
+    "xmltodict==0.13.0",
+    "rx~=3.1.1",
+    "aiomysql==0.0.20",
+    "watchdog==0.10.3",
+    "python-can~=3.3.3"
+  ],
   "codeowners": ["@killer0071234"],
   "iot_class": "local_push"
 }

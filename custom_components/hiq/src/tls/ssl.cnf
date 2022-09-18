@@ -1,0 +1,19 @@
+[req]
+default_bits        = 2048
+distinguished_name  = req_distinguished_name
+req_extensions      = req_ext
+prompt              = no
+
+[req_ext]
+subjectAltName      = @alt_names
+
+[req_distinguished_name]
+countryName         = UK
+stateOrProvinceName = Middlesex
+localityName        = London
+organizationName    = Cybrotech
+commonName          = www.cybrotech.com
+
+[alt_names]
+DNS.1               = localhost
+DNS.2               = 127.0.0.1
