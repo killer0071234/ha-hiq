@@ -1,11 +1,11 @@
 {
   "domain": "hiq",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "name": "HIQ-Home",
   "config_flow": true,
   "documentation": "https://github.com/killer0071234/ha-hiq",
   "issue_tracker": "https://github.com/killer0071234/ha-hiq/issues",
-  "requirements": ["cybro==0.0.7", "xmltodict==0.13.0"],
+  "requirements": ["cybro==0.0.8", "xmltodict==0.13.0"],
   "codeowners": ["@killer0071234"],
   "iot_class": "local_push"
 }

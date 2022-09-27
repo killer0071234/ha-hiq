@@ -97,7 +97,10 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
         """Get device information from Cybro device."""
         session = async_get_clientsession(self.hass)
         cybro = Cybro(host, port=port, session=session, nad=address)
-        return await cybro.update(plc_nad=address, device_type=1)
+        return await cybro.update(
+            plc_nad=address,
+            device_type=1,
+        )
 
 
 class HiqOptionsFlowHandler(OptionsFlow):
