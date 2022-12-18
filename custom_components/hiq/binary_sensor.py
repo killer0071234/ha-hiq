@@ -30,7 +30,9 @@ async def async_setup_entry(
     """Set up a HIQ binary sensor based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    sys_tags = add_system_tags(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
+    sys_tags = add_system_tags(
+        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR)
+    )
     if sys_tags is not None:
         async_add_entities(sys_tags)
 

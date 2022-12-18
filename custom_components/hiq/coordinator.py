@@ -56,13 +56,13 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
             device = await self.cybro.update(
                 full_update=not self.last_update_success, device_type=1
             )
-        except CybroError as error:
-            raise UpdateFailed(
-                f"Invalid response from Cybro scgi server: {error}"
-            ) from error
         except CybroConnectionTimeoutError as error:
             raise UpdateFailed(
                 f"Could not connect to Cybro scgi server: {error}"
+            ) from error
+        except CybroError as error:
+            raise UpdateFailed(
+                f"Invalid response from Cybro scgi server: {error}"
             ) from error
 
         self.async_update_listeners()

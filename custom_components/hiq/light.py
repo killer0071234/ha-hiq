@@ -30,7 +30,9 @@ async def async_setup_entry(
     """Set up HIQ-Home light based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    lights = find_on_off_lights(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
+    lights = find_on_off_lights(
+        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+    )
     if lights is not None:
         async_add_entities(lights)
 

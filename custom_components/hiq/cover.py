@@ -32,7 +32,9 @@ async def async_setup_entry(
 ) -> None:
     """Set up HIQ-Home blind based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    blinds = find_blinds(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
+    blinds = find_blinds(
+        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+    )
     if blinds is not None:
         async_add_entities(blinds)
 
