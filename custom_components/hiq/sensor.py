@@ -48,11 +48,15 @@ async def async_setup_entry(
     """Set up HIQ-Home sensor based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    sys_tags = add_system_tags(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
+    sys_tags = add_system_tags(
+        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+    )
     if sys_tags is not None:
         async_add_entities(sys_tags)
 
-    temps = find_temperatures(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
+    temps = find_temperatures(
+        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+    )
     if temps is not None:
         async_add_entities(temps)
 
@@ -60,7 +64,9 @@ async def async_setup_entry(
     # if weather is not None:
     #    async_add_entities(weather)
 
-    power_meter = find_power_meter(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
+    power_meter = find_power_meter(
+        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+    )
     if power_meter is not None:
         async_add_entities(power_meter)
 
