@@ -13,8 +13,8 @@
     "step": {
       "user": {
         "data": {
-          "host": "scgi server host",
-          "port": "scgi server port",
+          "host": "scgi server host (for cybroscgiserver addon use 'localhost')",
+          "port": "scgi server port (for cybroscgiserver addon use '4000')",
           "address": "HIQ controller address",
           "ignore_general_error": "Ignore general_error from expansion unit (if checked, all found devices will be add to home assistant, use at your own risk)"
         },

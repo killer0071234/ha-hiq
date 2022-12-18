@@ -14,14 +14,17 @@
 
 ## Functionality
 
-This integration is a local polling integration that connects to a running cybro-scgi-server from Cybrotech.
-To use this integration you need to have a running scgi server (it could be a docker container or native installed).
-Further informations of the docker container can be found here: [![dockerhub][scgi-docker-shield]][scgi-docker]
+This integration is a local polling integration that connects to a running CybroScgiServer from Cybrotech.
+To use this integration you need to have a running scgi server.
+
+- Homeassistant Addon CybroScgiServer (Recommended) [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fkiller0071234%2Fha-addon-repository)
+- Own Docker container on own Docker host. [![dockerhub][scgi-docker-shield]][scgi-docker]
+- Native manual install from source.
 
 ## Supported entities
 
 During creation of the device it scans for supported device types and creates it in home assistant.
-If the `general_error` of the HIQ expansion unit is set, the device will be ignored.
+If the `general_error` of the HIQ expansion unit is set, the device will be ignored (Default behaviour of hiq software).
 To add all possible entities there exists a option.
 
 Currently supported are:
