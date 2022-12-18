@@ -1,6 +1,6 @@
 {
   "domain": "hiq",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "name": "HIQ-Home",
   "config_flow": true,
   "documentation": "https://github.com/killer0071234/ha-hiq",
