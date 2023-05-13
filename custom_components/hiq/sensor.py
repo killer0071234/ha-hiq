@@ -76,7 +76,7 @@ def add_system_tags(
     add_all: bool = False,
 ) -> list[HiqSensorEntity] | None:
     """Find system tags in the plc vars.
-    eg: c1000.scan_time and so on
+    eg: c1000.scan_time and so on.
     """
     res: list[HiqSensorEntity] = []
     var_prefix = f"c{coordinator.cybro.nad}."
@@ -181,7 +181,7 @@ def find_temperatures(
     add_all: bool = False,
 ) -> list[HiqSensorEntity] | None:
     """Find simple temperature objects in the plc vars.
-    eg: c1000.th00_temperature and so on
+    eg: c1000.th00_temperature and so on.
     """
     res: list[HiqSensorEntity] = []
     dev_info = DeviceInfo(
@@ -243,7 +243,7 @@ def find_weather(
     add_all: bool = False,
 ) -> list[HiqSensorEntity] | None:
     """Find simple temperature objects in the plc vars.
-    eg: c1000.weather_temperature and so on
+    eg: c1000.weather_temperature and so on.
     """
     res: list[HiqSensorEntity] = []
     var_prefix = f"c{coordinator.data.plc_info.nad}.weather_"
@@ -317,7 +317,7 @@ def find_power_meter(
     add_all: bool = False,
 ) -> list[HiqSensorEntity] | None:
     """Find power meter objects in the plc vars.
-    eg: c1000.power_meter_power and so on
+    eg: c1000.power_meter_power and so on.
     """
     res: list[HiqSensorEntity] = []
     var_prefix = f"c{coordinator.data.plc_info.nad}.power_meter"
