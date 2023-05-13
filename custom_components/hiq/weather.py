@@ -81,7 +81,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
             identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
             manufacturer=MANUFACTURER,
             configuration_url=MANUFACTURER_URL,
-            name=f"Weather c{self.coordinator.cybro.nad}",
+            name=f"c{self.coordinator.cybro.nad} weather",
             model=DEVICE_DESCRIPTION,
         )
 
