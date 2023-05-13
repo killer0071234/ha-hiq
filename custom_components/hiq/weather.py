@@ -6,21 +6,14 @@ from typing import cast
 from cybro import VarType
 from homeassistant.components.weather import WeatherEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_UNIT_SYSTEM_METRIC
-from homeassistant.const import PRESSURE_HPA
-from homeassistant.const import SPEED_KILOMETERS_PER_HOUR
-from homeassistant.const import TEMP_CELSIUS
+from homeassistant.const import UnitOfPressure, UnitOfSpeed, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import AREA_WEATHER
-from .const import ATTRIBUTION_PLC
-from .const import DEVICE_DESCRIPTION
-from .const import DOMAIN
-from .const import MANUFACTURER
-from .const import MANUFACTURER_URL
+from .const import (AREA_WEATHER, ATTRIBUTION_PLC, DEVICE_DESCRIPTION, DOMAIN,
+                    MANUFACTURER, MANUFACTURER_URL)
 from .coordinator import HiqDataUpdateCoordinator
 
 PARALLEL_UPDATES = 1
@@ -64,18 +57,17 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
     def __init__(self, var_prefix: str, coordinator: HiqDataUpdateCoordinator) -> None:
         """Initialize."""
         super().__init__(coordinator)
-        self._unit_system = CONF_UNIT_SYSTEM_METRIC
-        self._attr_name = f"Weather c{coordinator.data.plc_info.nad}"
+        self._attr_name = f"c{coordinator.data.plc_info.nad} weather"
         self._attr_unique_id = var_prefix
         # setup default units from HIQ-controller
-        self._attr_native_temperature_unit = TEMP_CELSIUS
-        self._attr_native_wind_speed_unit = SPEED_KILOMETERS_PER_HOUR
-        self._attr_native_pressure_unit = PRESSURE_HPA
+        self._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+        self._attr_native_wind_speed_unit = UnitOfSpeed.KILOMETERS_PER_HOUR
+        self._attr_native_pressure_unit = UnitOfPressure.HPA
         self._attr_attribution = ATTRIBUTION_PLC
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, var_prefix)},
             manufacturer=MANUFACTURER,
-            default_name=f"Weather c{coordinator.data.plc_info.nad}",
+            default_name=f"c{coordinator.data.plc_info.nad} weather",
             suggested_area=AREA_WEATHER,
             model=DEVICE_DESCRIPTION,
         )
@@ -89,7 +81,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
             identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
             manufacturer=MANUFACTURER,
             configuration_url=MANUFACTURER_URL,
-            name=f"Weather c{self.coordinator.cybro.nad}",
+            name=f"c{self.coordinator.cybro.nad} weather",
             model=DEVICE_DESCRIPTION,
         )
 
