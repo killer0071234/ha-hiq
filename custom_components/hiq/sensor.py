@@ -4,37 +4,21 @@ from __future__ import annotations
 from datetime import datetime
 
 from cybro import VarType
-from homeassistant.components.sensor import SensorDeviceClass
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.components.sensor import SensorStateClass
+from homeassistant.components.sensor import (SensorDeviceClass, SensorEntity,
+                                             SensorStateClass)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ELECTRIC_CURRENT_MILLIAMPERE
-from homeassistant.const import ELECTRIC_POTENTIAL_VOLT
-from homeassistant.const import ENERGY_KILO_WATT_HOUR
-from homeassistant.const import ENERGY_WATT_HOUR
-from homeassistant.const import FREQUENCY_HERTZ
-from homeassistant.const import PERCENTAGE
-from homeassistant.const import POWER_WATT
-from homeassistant.const import SPEED_KILOMETERS_PER_HOUR
-from homeassistant.const import TEMP_CELSIUS
-from homeassistant.const import TIME_MILLISECONDS
-from homeassistant.const import TIME_MINUTES
+from homeassistant.const import (PERCENTAGE, UnitOfElectricCurrent,
+                                 UnitOfElectricPotential, UnitOfEnergy,
+                                 UnitOfFrequency, UnitOfPower, UnitOfSpeed,
+                                 UnitOfTemperature, UnitOfTime)
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import AREA_ENERGY
-from .const import AREA_SYSTEM
-from .const import AREA_WEATHER
-from .const import ATTR_DESCRIPTION
-from .const import CONF_IGNORE_GENERAL_ERROR
-from .const import DEVICE_DESCRIPTION
-from .const import DOMAIN
-from .const import LOGGER
-from .const import MANUFACTURER
-from .const import MANUFACTURER_URL
+from .const import (AREA_ENERGY, AREA_SYSTEM, AREA_WEATHER, ATTR_DESCRIPTION,
+                    CONF_IGNORE_GENERAL_ERROR, DEVICE_DESCRIPTION, DOMAIN,
+                    LOGGER, MANUFACTURER, MANUFACTURER_URL)
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
@@ -100,7 +84,7 @@ def add_system_tags(
             EntityCategory.DIAGNOSTIC,
             None,
             1.0,
-            True,
+            False,
             dev_info,
         )
     )
@@ -113,7 +97,7 @@ def add_system_tags(
                         coordinator,
                         key,
                         "",
-                        TIME_MILLISECONDS,
+                        UnitOfTime.MILLISECONDS,
                         VarType.INT,
                         EntityCategory.DIAGNOSTIC,
                         None,
@@ -128,10 +112,10 @@ def add_system_tags(
                         coordinator,
                         key,
                         "",
-                        TIME_MINUTES,
+                        UnitOfTime.MINUTES,
                         VarType.INT,
                         EntityCategory.DIAGNOSTIC,
-                        None,
+                        SensorDeviceClass.DURATION,
                         1.0,
                         add_all,
                         dev_info,
@@ -143,7 +127,7 @@ def add_system_tags(
                         coordinator,
                         key,
                         "",
-                        FREQUENCY_HERTZ,
+                        UnitOfFrequency.HERTZ,
                         VarType.INT,
                         EntityCategory.DIAGNOSTIC,
                         None,
@@ -161,10 +145,10 @@ def add_system_tags(
                         coordinator,
                         key,
                         "",
-                        ELECTRIC_POTENTIAL_VOLT,
+                        UnitOfElectricPotential.VOLT,
                         VarType.INT,
                         EntityCategory.DIAGNOSTIC,
-                        None,
+                        SensorDeviceClass.VOLTAGE,
                         0.1,
                         add_all,
                         dev_info,
@@ -208,7 +192,7 @@ def find_temperatures(
                             coordinator,
                             key,
                             "",
-                            TEMP_CELSIUS,
+                            UnitOfTemperature.CELSIUS,
                             VarType.FLOAT,
                             None,
                             SensorDeviceClass.TEMPERATURE,
@@ -267,7 +251,7 @@ def find_weather(
                             coordinator,
                             key,
                             "",
-                            TEMP_CELSIUS,
+                            UnitOfTemperature.CELSIUS,
                             VarType.FLOAT,
                             None,
                             SensorDeviceClass.TEMPERATURE,
@@ -297,10 +281,10 @@ def find_weather(
                             coordinator,
                             key,
                             "",
-                            SPEED_KILOMETERS_PER_HOUR,
+                            UnitOfSpeed.KILOMETERS_PER_HOUR,
                             VarType.FLOAT,
                             None,
-                            None,
+                            SensorDeviceClass.WIND_SPEED,
                             0.1,
                             ge_ok,
                             dev_info,
@@ -340,7 +324,7 @@ def find_power_meter(
                             coordinator,
                             key,
                             "",
-                            POWER_WATT,
+                            UnitOfPower.WATT,
                             VarType.FLOAT,
                             None,
                             SensorDeviceClass.POWER,
@@ -361,7 +345,7 @@ def find_power_meter(
                             coordinator,
                             key,
                             "",
-                            ELECTRIC_POTENTIAL_VOLT,
+                            UnitOfElectricPotential.VOLT,
                             VarType.FLOAT,
                             None,
                             SensorDeviceClass.VOLTAGE,
@@ -378,7 +362,7 @@ def find_power_meter(
                             coordinator,
                             key,
                             "",
-                            ELECTRIC_CURRENT_MILLIAMPERE,
+                            UnitOfElectricCurrent.MILLIAMPERE,
                             VarType.FLOAT,
                             None,
                             SensorDeviceClass.CURRENT,
@@ -395,7 +379,7 @@ def find_power_meter(
                             coordinator,
                             key,
                             "",
-                            ENERGY_KILO_WATT_HOUR,
+                            UnitOfEnergy.KILO_WATT_HOUR,
                             VarType.FLOAT,
                             None,
                             SensorDeviceClass.ENERGY,
@@ -412,7 +396,7 @@ def find_power_meter(
                             coordinator,
                             key,
                             "",
-                            ENERGY_WATT_HOUR,
+                            UnitOfEnergy.WATT_HOUR,
                             VarType.FLOAT,
                             None,
                             SensorDeviceClass.ENERGY,
