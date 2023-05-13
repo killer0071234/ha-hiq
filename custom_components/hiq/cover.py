@@ -44,7 +44,7 @@ def find_blinds(
     add_all: bool,
 ) -> list[HiqUpdateCover] | None:
     """Find blind objects in the plc vars.
-    eg: c1000.bc00_blinds_position_00 and so on
+    eg: c1000.bc00_blinds_position_00 and so on.
     """
     res: list[HiqUpdateCover] = []
     for key in coordinator.data.plc_info.plc_vars:
@@ -85,7 +85,7 @@ def _get_blind_var(
     Input is the position var (eg: bc01_blinds_position_00)
     type = 0: blind setpoint (bc01_blinds_setpoint_00)
     type = 1: blind up output (bc01_qxs00_up)
-    type = 2: blind down output (bc01_qxs00_dn)
+    type = 2: blind down output (bc01_qxs00_dn).
     """
     blind_name = var.split("_")
     if blind_name is None:

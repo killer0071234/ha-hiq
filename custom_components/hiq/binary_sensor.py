@@ -42,7 +42,7 @@ def add_system_tags(
     add_all: bool,
 ) -> list[HiqBinarySensor] | None:
     """Find system tags in the plc vars.
-    eg: c1000.scan_time and so on
+    eg: c1000.scan_time and so on.
     """
     res: list[HiqBinarySensor] = []
     var_prefix = f"c{coordinator.cybro.nad}."

@@ -38,6 +38,7 @@ async def async_setup_entry(
 
 
 def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
+    """Check if general error of own module is ok."""
     ge_names = var.split("_")
     if ge_names is None:
         return False
@@ -55,7 +56,7 @@ def find_on_off_lights(
     add_all: bool,
 ) -> list[HiqUpdateLight] | None:
     """Find simple light objects in the plc vars.
-    eg: c1000.lc00_qx00 and so on
+    eg: c1000.lc00_qx00 and so on.
     """
     res: list[HiqUpdateLight] = []
     for key in coordinator.data.plc_info.plc_vars:

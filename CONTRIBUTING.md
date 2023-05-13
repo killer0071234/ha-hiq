@@ -15,7 +15,7 @@ Pull requests are the best way to propose changes to the codebase.
 
 1. Fork the repo and create your branch from `master`.
 2. If you've changed something, update the documentation.
-3. Make sure your code lints (using black).
+3. Make sure your code lints (using `scripts/lint`).
 4. Test you contribution.
 5. Issue that pull request!
 
@@ -44,44 +44,17 @@ People _love_ thorough bug reports. I'm not even kidding.
 
 ## Use a Consistent Coding Style
 
-Use [black](https://github.com/ambv/black) and [prettier](https://prettier.io/)
-to make sure the code follows the style.
-
-Or use the `pre-commit` settings implemented in this repository
-(see deicated section below).
+Use [black](https://github.com/ambv/black) to make sure the code follows the style.
 
 ## Test your code modification
 
-This custom component is based on [integration_blueprint template](https://github.com/custom-components/integration_blueprint).
+This custom component is based on [integration_blueprint template](https://github.com/ludeeus/integration_blueprint).
 
 It comes with development environment in a container, easy to launch
 if you use Visual Studio Code. With this container you will have a stand alone
 Home Assistant instance running and already configured with the included
-[`.devcontainer/configuration.yaml`](./.devcontainer/configuration.yaml)
+[`configuration.yaml`](./config/configuration.yaml)
 file.
-
-You can use the `pre-commit` settings implemented in this repository to have
-linting tool checking your contributions (see deicated section below).
-
-## Pre-commit
-
-You can use the [pre-commit](https://pre-commit.com/) settings included in the
-repostory to have code style and linting checks.
-
-With `pre-commit` tool already installed,
-activate the settings of the repository:
-
-```console
-$ pre-commit install
-```
-
-Now the pre-commit tests will be done every time you commit.
-
-You can run the tests on all repository file with the command:
-
-```console
-$ pre-commit run --all-files
-```
 
 ## License
 
