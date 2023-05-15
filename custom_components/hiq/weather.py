@@ -13,7 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (AREA_WEATHER, ATTRIBUTION_PLC, DEVICE_DESCRIPTION, DOMAIN,
-                    MANUFACTURER, MANUFACTURER_URL)
+                    LOGGER, MANUFACTURER, MANUFACTURER_URL)
 from .coordinator import HiqDataUpdateCoordinator
 
 PARALLEL_UPDATES = 1
@@ -101,7 +101,8 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
                 ].value_float()
                 * 0.1,
             )
-        except KeyError:
+        except (KeyError, ValueError):
+            LOGGER.debug("got unknown value for %stemperature", str(self._attr_unique_id))
             return None
 
     @property
@@ -114,7 +115,8 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
                     f"{self._attr_unique_id}pressure"
                 ].value_float(),
             )
-        except KeyError:
+        except (KeyError, ValueError):
+            LOGGER.debug("got unknown value for %spressure", str(self._attr_unique_id))
             return None
 
     @property
@@ -127,7 +129,8 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
                     f"{self._attr_unique_id}humidity"
                 ].value_float(),
             )
-        except KeyError:
+        except (KeyError, ValueError):
+            LOGGER.debug("got unknown value for %shumidity", str(self._attr_unique_id))
             return None
 
     @property
@@ -141,7 +144,8 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
                 ].value_float()
                 * 0.1,
             )
-        except KeyError:
+        except (KeyError, ValueError):
+            LOGGER.debug("got unknown value for %swind_speed", str(self._attr_unique_id))
             return None
 
     @property
@@ -151,5 +155,6 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
             return self.coordinator.data.vars[
                 f"{self._attr_unique_id}wind_direction"
             ].value_int()
-        except KeyError:
+        except (KeyError, ValueError):
+            LOGGER.debug("got unknown value for %swind_direction", str(self._attr_unique_id))
             return None
