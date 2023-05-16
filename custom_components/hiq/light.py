@@ -64,7 +64,11 @@ def find_on_off_lights(
     """
     res: list[HiqUpdateLight] = []
     for key in coordinator.data.plc_info.plc_vars:
-        if key.find(".lc") != -1 and key.find("_qx") != -1:
+        if (
+            key.find(".lc") != -1
+            and key.find("_qx") != -1
+            and _is_dimm_light(key) is False
+        ):
             ge_ok = is_general_error_ok(coordinator, key)
             if add_all or ge_ok:
                 dev_info = DeviceInfo(
@@ -113,6 +117,11 @@ def find_dimm_lights(
     return None
 
 
+def _is_dimm_light(var: str) -> bool:
+    """Helper to check if there exists a dimming light of it."""
+    return var.find("qw") != -1
+
+
 def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
     var_names = var.split("_")
     if var_names is None:
@@ -149,7 +158,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         attr_icon="mdi:lightbulb",
         dev_info: DeviceInfo = None,
         enabled: bool = True,
-        dimming_out: str = "",
+        dimming_out: str | None = None,
     ) -> None:
         """Initialize HIQ-Home light."""
         super().__init__(coordinator=coordinator)
@@ -184,7 +193,8 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         if self._dimming_out is None:
             return None
         res = self.coordinator.data.vars.get(self._dimming_out, None)
-        if res is None:
+        if res is None or res.value == "?":
+            LOGGER.debug("%s -> unknown brightness", self._attr_unique_id)
             return None
         return int(int(res.value) * 2.55)
 
@@ -192,19 +202,18 @@ class HiqUpdateLight(HiqEntity, LightEntity):
     def is_on(self) -> bool:
         """Return the state of the light."""
         res = self.coordinator.data.vars.get(self._attr_unique_id, None)
-        LOGGER.debug("res = ", res)
-        if res is None:
+        if res is None or res.value != "1":
             return False
-        return bool(res.value == "1")
+        return True
 
     @property
     def available(self) -> bool:
         """Return if this light is available or not."""
         res = self.coordinator.data.vars.get(self._attr_unique_id, None)
-        LOGGER.debug("res = ", res)
-        if res is None:
+        if res is None or res.value == "?":
+            LOGGER.debug("%s -> not available", self._attr_unique_id)
             return False
-        return res.value != "?"
+        return True
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""
