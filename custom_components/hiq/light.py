@@ -135,10 +135,12 @@ class HiqUpdateLight(HiqEntity, LightEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""
         await self.coordinator.cybro.write_var(self.unique_id, "0")
+        await self.coordinator.async_refresh()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
         await self.coordinator.cybro.write_var(self.unique_id, "1")
+        await self.coordinator.async_refresh()
 
     @property
     def extra_state_attributes(self):
