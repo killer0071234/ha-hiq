@@ -95,7 +95,7 @@ To have a basic diagnostic, there are some `sensor` Entities exposed.
 | `cXXXX.cybro_power_supply` | Measured power supply voltage [V]. Measuring range is 0..40V.       | no      |
 | `cXXXX.cybro_uptime`       | Number of operating hours since power-on [h].                       | no      |
 | `cXXXX.operating_hours`    | Total number of operating hours [h].                                | no      |
-| `cXXXX.sys.ip_port`        | IP address and UDP port of the controller.                          | yes     |
+| `cXXXX.sys.ip_port`        | IP address and UDP port of the controller.                          | no      |
 
 #### For every IEX expansion unit:
 
@@ -135,6 +135,19 @@ XXXX is the NAD of the controller, and YYYY is the IEX module prefix (eg: lc00, 
 ### Devices
 
 A device is created for each HIQ-controller (diagnostics) and for every light, blind.
+
+### Services
+
+To forward some smartphone events directly to the HIQ-controller some services are exposed.
+
+| Service          | Description                                                                                            |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| Presence signal  | Set the smartphone presence signal                                                                     |
+| Charge on event  | Set the smartphone charge on (connect charger) event                                                   |
+| Charge off event | Set the smartphone charge off (disconnect charger) event                                               |
+| Home event       | Set the smartphone home event                                                                          |
+| Precede event    | Set the smartphone Precede event (used in advance for triggering some actions before the alarm occurs) |
+| Write tag        | Write a custom tag with a custom value in the controller (any accessible tag is allowed)               |
 
 {% if not installed %}
 

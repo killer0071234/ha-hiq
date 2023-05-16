@@ -1,0 +1,46 @@
+presence_signal:
+  name: Presence signal
+  description: Send smartphone presence signal to HIQ - controller.
+charge_on_event:
+  name: Charge on event
+  description: Send smartphone charge on event to HIQ - controller.
+charge_off_event:
+  name: Charge off event
+  description: Send smartphone charge off event to HIQ - controller.
+home_event:
+  name: Home event
+  description: Send smartphone home event to HIQ - controller.
+precede_event:
+  name: Precede event
+  description: Send smartphone Precede event to HIQ - controller.
+  fields:
+    time:
+      name: Time
+      description: The precede time in minutes.
+      required: true
+      example: 10
+      selector:
+        number:
+          min: 1
+          max: 3600
+          unit_of_measurement: "min"
+write_tag:
+  name: Write tag
+  description: Set tag in HIQ - controller.
+  fields:
+    tag:
+      name: Tag
+      description: Controller tag name.
+      required: true
+      example: "smartphone_presence_signal"
+      selector:
+        text:
+    value:
+      name: Value
+      description: Tag value to write.
+      required: true
+      example: 10
+      selector:
+        number:
+          min: 0
+          max: 1000
