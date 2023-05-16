@@ -27,3 +27,12 @@ ATTR_DESCRIPTION = "description"
 
 # Device classes
 DEVICE_CLASS_HIQ_LIVE_OVERRIDE: Final = "hiq__live_override"
+
+# Services
+SERVICE_PRESENCE_SIGNAL = "presence_signal"
+SERVICE_CHARGE_ON = "charge_on_event"
+SERVICE_CHARGE_OFF = "charge_off_event"
+SERVICE_HOME = "home_event"
+SERVICE_ALARM = "alarm_event"
+SERVICE_PRECEDE = "precede_event"
+SERVICE_WRITE_TAG = "write_tag"
