@@ -8,16 +8,17 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from sqlalchemy import false
 
-from .const import AREA_LIGHTS
-from .const import ATTR_DESCRIPTION
-from .const import CONF_IGNORE_GENERAL_ERROR
-from .const import DEVICE_DESCRIPTION
-from .const import DOMAIN
-from .const import LOGGER
-from .const import MANUFACTURER
-from .const import MANUFACTURER_URL
+from .const import (
+    AREA_LIGHTS,
+    ATTR_DESCRIPTION,
+    CONF_IGNORE_GENERAL_ERROR,
+    DEVICE_DESCRIPTION,
+    DOMAIN,
+    LOGGER,
+    MANUFACTURER,
+    MANUFACTURER_URL,
+)
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
 
@@ -121,7 +122,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         """Return the state of the light."""
         res = self.coordinator.data.vars.get(self._attr_unique_id, None)
         if res is None:
-            return false
+            return False
         return bool(res.value == "1")
 
     @property
@@ -129,7 +130,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         """Return if this light is available or not."""
         res = self.coordinator.data.vars.get(self._attr_unique_id, None)
         if res is None:
-            return false
+            return False
         return res.value != "?"
 
     async def async_turn_off(self, **kwargs: Any) -> None:
