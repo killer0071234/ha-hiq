@@ -8,7 +8,6 @@ presence_signal:
       integration: hiq
       domain:
        - binary_sensor
-      required: true
 charge_on_event:
   name: Charge on event
   description: Send smartphone charge on event to HIQ - controller.
@@ -19,7 +18,6 @@ charge_on_event:
       integration: hiq
       domain:
        - binary_sensor
-      required: true
 charge_off_event:
   name: Charge off event
   description: Send smartphone charge off event to HIQ - controller.
@@ -30,7 +28,6 @@ charge_off_event:
       integration: hiq
       domain:
        - binary_sensor
-      required: true
 home_event:
   name: Home event
   description: Send smartphone home event to HIQ - controller.
@@ -41,7 +38,6 @@ home_event:
       integration: hiq
       domain:
        - binary_sensor
-      required: true
 precede_event:
   name: Precede event
   description: Send smartphone Precede event to HIQ - controller.
@@ -52,7 +48,6 @@ precede_event:
       integration: hiq
       domain:
        - binary_sensor
-      required: true
   fields:
     time:
       name: Time
@@ -74,7 +69,6 @@ write_tag:
       integration: hiq
       domain:
        - binary_sensor
-      required: true
   fields:
     tag:
       name: Tag
