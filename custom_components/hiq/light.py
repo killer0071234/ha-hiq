@@ -3,7 +3,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.light import LightEntity
+from homeassistant.components.light import (
+    LightEntity,
+    ColorMode,
+    ATTR_BRIGHTNESS,
+    ATTR_HS_COLOR,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -100,7 +105,32 @@ def find_dimm_lights(
             ge_ok = is_general_error_ok(coordinator, key)
             if add_all or ge_ok:
                 is_rgb_light = _is_rgb_light(coordinator, key)
-                LOGGER.debug(is_rgb_light)
+                rgb_hue_out = None
+                rgb_sat_out = None
+                LOGGER.debug("%s is rgb light? -> %s", key, is_rgb_light)
+                if is_rgb_light:
+                    var_names = key.split("_")
+                    if var_names[1] in ("qw00"):
+                        rgb_hue_out = var_names[0] + "_qw01"
+                        rgb_sat_out = var_names[0] + "_qw02"
+                    elif var_names[1] in ("qw04"):
+                        rgb_hue_out = var_names[0] + "_qw05"
+                        rgb_sat_out = var_names[0] + "_qw06"
+                    elif var_names[1] in (
+                        "qw01",
+                        "qw02",
+                        "qw03",
+                        "qw05",
+                        "qw06",
+                        "qw07",
+                    ):
+                        continue
+                LOGGER.debug(
+                    "%s: rgb_hue_out -> %s, rgb_sat_out -> %s",
+                    key,
+                    rgb_hue_out,
+                    rgb_sat_out,
+                )
                 dev_info = DeviceInfo(
                     identifiers={(DOMAIN, key)},
                     manufacturer=MANUFACTURER,
@@ -110,7 +140,16 @@ def find_dimm_lights(
                     model=DEVICE_DESCRIPTION,
                     configuration_url=MANUFACTURER_URL,
                 )
-                res.append(HiqUpdateLight(coordinator, key, dev_info=dev_info))
+                res.append(
+                    HiqUpdateLight(
+                        coordinator,
+                        key,
+                        dev_info=dev_info,
+                        dimming_out=key,
+                        rgb_hue_out=rgb_hue_out,
+                        rgb_sat_out=rgb_sat_out,
+                    )
+                )
 
     if len(res) > 0:
         return res
@@ -119,7 +158,7 @@ def find_dimm_lights(
 
 def _is_dimm_light(var: str) -> bool:
     """Helper to check if there exists a dimming light of it."""
-    return var.find("qw") != -1
+    return var.find("_qw") != -1
 
 
 def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
@@ -128,16 +167,13 @@ def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
         return False
     if var_names[1] in ("qw00", "qw01", "qw02", "qw03"):
         rgb_mode_var = f"{var_names[0]}_rgb_mode"
-        # white_mode_var = f"{var_names[0]}_white_channel"
     elif var_names[1] in ("qw04", "qw05", "qw06", "qw07"):
         rgb_mode_var = f"{var_names[0]}_rgb_mode_2"
-        # white_mode_var = f"{var_names[0]}_white_channel_2"
     else:
         return False
+
     coordinator.data.add_var(rgb_mode_var)
-    # coordinator.data.add_var(white_mode_var)
     rgb_val = coordinator.data.vars.get(rgb_mode_var, None)
-    # white_val = coordinator.data.vars.get(white_mode_var, None)
     if rgb_val is None:
         return False
     LOGGER.debug(
@@ -159,6 +195,8 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         dev_info: DeviceInfo = None,
         enabled: bool = True,
         dimming_out: str | None = None,
+        rgb_hue_out: str | None = None,
+        rgb_sat_out: str | None = None,
     ) -> None:
         """Initialize HIQ-Home light."""
         super().__init__(coordinator=coordinator)
@@ -166,6 +204,8 @@ class HiqUpdateLight(HiqEntity, LightEntity):
             return
         self._attr_unique_id = var_name
         self._dimming_out = dimming_out
+        self._rgb_hue_out = rgb_hue_out
+        self._rgb_sat_out = rgb_sat_out
         self._attr_name = f"Light {var_name}"
         self._attr_icon = attr_icon
         self._attr_device_info = dev_info
@@ -173,6 +213,14 @@ class HiqUpdateLight(HiqEntity, LightEntity):
             self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
+        if dimming_out:
+            self._attr_color_mode = ColorMode.BRIGHTNESS
+            self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
+            LOGGER.debug("dimming light: %s", var_name)
+        if rgb_hue_out and rgb_sat_out:
+            self._attr_color_mode = ColorMode.HS
+            self._attr_supported_color_modes = {ColorMode.HS}
+            LOGGER.debug("rgb light: %s", var_name)
 
     @property
     def device_info(self):
@@ -186,6 +234,17 @@ class HiqUpdateLight(HiqEntity, LightEntity):
             name=f"c{self.coordinator.cybro.nad} light output",
             model=DEVICE_DESCRIPTION,
         )
+
+    @property
+    def hs_color(self) -> tuple[float, float] | None:
+        """Return the hue and saturation color value [float, float]."""
+        if self._rgb_hue_out is None or self._rgb_sat_out is None:
+            return None
+        hue = self.coordinator.data.vars.get(self._rgb_hue_out, None)
+        sat = self.coordinator.data.vars.get(self._rgb_sat_out, None)
+        if sat is None or sat.value == "?" or hue is None or hue.value == "?":
+            return None
+        return [int(int(hue.value) * 2.55), int(int(sat.value) * 2.55)]
 
     @property
     def brightness(self) -> int | None:
@@ -202,7 +261,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
     def is_on(self) -> bool:
         """Return the state of the light."""
         res = self.coordinator.data.vars.get(self._attr_unique_id, None)
-        if res is None or res.value != "1":
+        if res is None or res.value == "0" or res.value == "?":
             return False
         return True
 
@@ -222,7 +281,21 @@ class HiqUpdateLight(HiqEntity, LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
-        await self.coordinator.cybro.write_var(self.unique_id, "1")
+        LOGGER.debug("kwargs %s", kwargs)
+        if ATTR_BRIGHTNESS in kwargs:
+            await self.coordinator.cybro.write_var(
+                self._dimming_out, str(int(kwargs[ATTR_BRIGHTNESS]) / 2.55)
+            )
+        if ATTR_HS_COLOR in kwargs:
+            hue, sat = kwargs[ATTR_HS_COLOR]
+            await self.coordinator.cybro.write_var(
+                self._rgb_hue_out, str(int(int(hue) / 2.55))
+            )
+            await self.coordinator.cybro.write_var(
+                self._rgb_sat_out, str(int(int(sat) / 2.55))
+            )
+        if self._dimming_out is None:
+            await self.coordinator.cybro.write_var(self.unique_id, "1")
         await self.coordinator.async_refresh()
 
     @property
