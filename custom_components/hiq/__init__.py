@@ -1,8 +1,9 @@
 """Support for HIQ-Home."""
 from __future__ import annotations
 
+import homeassistant.helpers.device_registry as dr
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ADDRESS, Platform
+from homeassistant.const import ATTR_DEVICE_ID, ATTR_ENTITY_ID, CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 
 from .const import (
@@ -30,7 +31,7 @@ PLATFORMS = [
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HIQ from a config entry."""
     coordinator = HiqDataUpdateCoordinator(hass, entry=entry)
-    address = entry.data[CONF_ADDRESS]
+
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
@@ -44,73 +45,58 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Add service handler(s)
     async def handle_presence_signal(call: ServiceCall) -> None:
         """Handle service call for smartphone presence signal."""
-        LOGGER.debug(
-            "Call %s with tag c%s.smartphone_presence_signal",
-            SERVICE_PRESENCE_SIGNAL,
-            address,
-        )
-        await coordinator.cybro.write_var(f"c{address}.smartphone_presence_signal", "1")
+        write_tags = _get_tag_list(hass, call.data, "smartphone_presence_signal")
+        for write_tag in write_tags:
+            LOGGER.debug("Write tag '%s' to '1'", write_tag)
+            await coordinator.cybro.write_var(write_tag, "1")
 
     async def handle_charge_on_event(call: ServiceCall) -> None:
         """Handle service call for smartphone charge on event."""
-        LOGGER.debug(
-            "Call %s with tag c%s.smartphone_charge_on_event",
-            SERVICE_CHARGE_ON,
-            address,
-        )
-        await coordinator.cybro.write_var(f"c{address}.smartphone_charge_on_event", "1")
+        write_tags = _get_tag_list(hass, call.data, "smartphone_charge_on_event")
+        for write_tag in write_tags:
+            LOGGER.debug("Write tag '%s' to '1'", write_tag)
+            await coordinator.cybro.write_var(write_tag, "1")
 
     async def handle_charge_off_event(call: ServiceCall) -> None:
         """Handle service call for smartphone charge off event."""
-        LOGGER.debug(
-            "Call %s with tag c%s.smartphone_charge_off_event",
-            SERVICE_CHARGE_OFF,
-            address,
-        )
-        await coordinator.cybro.write_var(
-            f"c{address}.smartphone_charge_off_event", "1"
-        )
+        write_tags = _get_tag_list(hass, call.data, "smartphone_charge_off_event")
+        for write_tag in write_tags:
+            LOGGER.debug("Write tag '%s' to '1'", write_tag)
+            await coordinator.cybro.write_var(write_tag, "1")
 
     async def handle_home_event(call: ServiceCall) -> None:
         """Handle service call for smartphone home event."""
-        LOGGER.debug(
-            "Call %s with tag c%s.smartphone_home_event", SERVICE_HOME, address
-        )
-        await coordinator.cybro.write_var(f"c{address}.smartphone_home_event", "1")
+        write_tags = _get_tag_list(hass, call.data, "smartphone_home_event")
+        for write_tag in write_tags:
+            LOGGER.debug("Write tag '%s' to '1'", write_tag)
+            await coordinator.cybro.write_var(write_tag, "1")
 
     async def handle_alarm_event(call: ServiceCall) -> None:
         """Handle service call for smartphone alarm event."""
-        LOGGER.debug(
-            "Call %s with tag c%s.smartphone_alarm_event", SERVICE_ALARM, address
-        )
-        await coordinator.cybro.write_var(f"c{address}.smartphone_alarm_event", "1")
+        write_tags = _get_tag_list(hass, call.data, "smartphone_alarm_event")
+        for write_tag in write_tags:
+            LOGGER.debug("Write tag '%s' to '1'", write_tag)
+            await coordinator.cybro.write_var(write_tag, "1")
 
     async def handle_precede_event(call: ServiceCall) -> None:
         """Handle service call for smartphone precede event."""
-        LOGGER.debug(
-            "Call %s with tag c%s.smartphone_precede_event and c%s.smartphone_precede_minutes",
-            SERVICE_PRECEDE,
-            address,
-            call.data["time"],
-        )
-        await coordinator.cybro.write_var(
-            f"c{address}.smartphone_precede_minutes", call.data["time"]
-        )
-        await coordinator.cybro.write_var(f"c{address}.smartphone_precede_event", "1")
+        # first of all we write the configured minutes
+        write_tags = _get_tag_list(hass, call.data, "smartphone_precede_minutes")
+        for write_tag in write_tags:
+            LOGGER.debug("Write tag '%s' to '%s'", write_tag, call.data["time"])
+            await coordinator.cybro.write_var(write_tag, call.data["time"])
+        # and now the event trigger itself
+        write_tags = _get_tag_list(hass, call.data, "smartphone_precede_event")
+        for write_tag in write_tags:
+            LOGGER.debug("Write tag '%s' to '%s'", write_tag, "1")
+            await coordinator.cybro.write_var(write_tag, "1")
 
     async def handle_write_tag(call: ServiceCall) -> None:
-        """Handle service call to write a single tag in controller."""
-        LOGGER.debug(
-            "Call %s with tag c%s.%s and value = %s",
-            SERVICE_WRITE_TAG,
-            address,
-            call.data["tag"],
-            call.data["value"],
-        )
-        await coordinator.cybro.write_var(
-            f"c{address}.{call.data['tag']}", call.data["value"]
-        )
-        await coordinator.cybro.write_var(f"c{address}.smartphone_precede_event", "1")
+        """Handle service call to write a single tag in (one or more) controller(s)."""
+        write_tags = _get_tag_list(hass, call.data, call.data["tag"])
+        for write_tag in write_tags:
+            LOGGER.debug("Write tag '%s' to '%s'", write_tag, call.data["value"])
+            await coordinator.cybro.write_var(write_tag, call.data["value"])
 
     hass.services.async_register(
         DOMAIN, SERVICE_PRESENCE_SIGNAL, handle_presence_signal
@@ -152,3 +138,38 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload the config entry when it changed."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+def _get_tag_list(hass: HomeAssistant, data: dict, tag_name: str) -> list:
+    """Generate a tag list for write to the controller."""
+    # read all possible adresses from HA
+    addresses = [
+        f"c{entity_id.data[CONF_ADDRESS]}"
+        for entity_id in hass.config_entries.async_entries(DOMAIN)
+    ]
+    target_entities = []
+
+    if entity_ids := data.get(ATTR_ENTITY_ID):
+        for entity_id in entity_ids:
+            for address in addresses:
+                if address in entity_id:
+                    target_entities += [f"{address}.{tag_name}"]
+
+    if device_ids := data.get(ATTR_DEVICE_ID):
+        registry = dr.async_get(hass)
+        for target in device_ids:
+            device = registry.async_get(target)
+            if device:
+                for key in device.config_entries:
+                    entry = hass.config_entries.async_get_entry(key)
+                    if not entry:
+                        continue
+                    if entry.domain != DOMAIN:
+                        continue
+                    if addr := entry.data.get(CONF_ADDRESS):
+                        target_entities += [f"c{addr}.{tag_name}"]
+                        LOGGER.debug("addr = %s", addr)
+
+    if target_entities:
+        return list(dict.fromkeys(target_entities))
+    return []
