@@ -4,21 +4,40 @@ from __future__ import annotations
 from datetime import datetime
 
 from cybro import VarType
-from homeassistant.components.sensor import (SensorDeviceClass, SensorEntity,
-                                             SensorStateClass)
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (PERCENTAGE, UnitOfElectricCurrent,
-                                 UnitOfElectricPotential, UnitOfEnergy,
-                                 UnitOfFrequency, UnitOfPower, UnitOfSpeed,
-                                 UnitOfTemperature, UnitOfTime)
+from homeassistant.const import (
+    PERCENTAGE,
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfFrequency,
+    UnitOfPower,
+    UnitOfSpeed,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import (AREA_ENERGY, AREA_SYSTEM, AREA_WEATHER, ATTR_DESCRIPTION,
-                    CONF_IGNORE_GENERAL_ERROR, DEVICE_DESCRIPTION, DOMAIN,
-                    LOGGER, MANUFACTURER, MANUFACTURER_URL)
+from .const import (
+    AREA_ENERGY,
+    AREA_SYSTEM,
+    AREA_WEATHER,
+    ATTR_DESCRIPTION,
+    CONF_IGNORE_GENERAL_ERROR,
+    DEVICE_DESCRIPTION,
+    DOMAIN,
+    LOGGER,
+    MANUFACTURER,
+    MANUFACTURER_URL,
+)
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
@@ -79,7 +98,7 @@ def add_system_tags(
             coordinator,
             f"{var_prefix}sys.ip_port",
             "",
-            "",
+            None,
             VarType.STR,
             EntityCategory.DIAGNOSTIC,
             None,
@@ -435,7 +454,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         coordinator: HiqDataUpdateCoordinator,
         var_name: str = "",
         var_description: str = "",
-        var_unit: str = "",
+        var_unit: str | None = None,
         var_type: VarType = VarType.INT,
         attr_entity_category: EntityCategory = None,
         attr_device_class: SensorDeviceClass = None,
@@ -447,7 +466,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         super().__init__(coordinator=coordinator)
         if var_name == "":
             return
-        self._unit_of_measurement = var_unit
+        self._attr_native_unit_of_measurement = var_unit
         self._unique_id = var_name
         self._attr_unique_id = var_name
         self._attr_name = var_description if var_description != "" else var_name
@@ -477,11 +496,6 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
             name=f"PLC {self.coordinator.cybro.nad}",
             model=DEVICE_DESCRIPTION,
         )
-
-    @property
-    def native_unit_of_measurement(self):
-        """Return the unit of measurement of the device."""
-        return self._unit_of_measurement
 
     @property
     def native_value(self) -> datetime | StateType | None:
