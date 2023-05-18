@@ -41,6 +41,11 @@ Currently supported are:
 Supported HIQ expansion units:
 
 - LC-10-IQ (light on / off supported)
+- LC-8-IQ (light on / off supported)
+- LD-D10-IQ (light on / off, brightness and RGB supported)
+- LD-D8-IQ (light on / off and brightness supported)
+- LD-P4-IQ (light on / off, brightness and RGB supported)
+- LD-V4-IQ (light on / off, brightness and RGB supported)
 
 ---
 
@@ -135,6 +140,8 @@ XXXX is the NAD of the controller, and YYYY is the IEX module prefix (eg: lc00, 
 ### Devices
 
 A device is created for each HIQ-controller (diagnostics) and for every light, blind.
+
+---
 
 ### Services
 
