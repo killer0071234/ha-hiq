@@ -97,7 +97,7 @@ def find_dimm_lights(
     add_all: bool,
 ) -> list[HiqUpdateLight] | None:
     """Find dimmable light objects in the plc vars.
-    eg: c1000.ld00_qw00 and so on
+    eg: c1000.ld00_qw00 and so on.
     """
     res: list[HiqUpdateLight] = []
     for key in coordinator.data.plc_info.plc_vars:
@@ -157,11 +157,12 @@ def find_dimm_lights(
 
 
 def _is_dimm_light(var: str) -> bool:
-    """Helper to check if there exists a dimming light of it."""
+    """Check if tag is a dimmer output."""
     return var.find("_qw") != -1
 
 
 def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
+    """Check if we had a rgb light."""
     var_names = var.split("_")
     if var_names is None:
         return False
