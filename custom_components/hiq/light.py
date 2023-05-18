@@ -244,7 +244,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         sat = self.coordinator.data.vars.get(self._rgb_sat_out, None)
         if sat is None or sat.value == "?" or hue is None or hue.value == "?":
             return None
-        return [int(int(hue.value) * 2.55), int(int(sat.value) * 2.55)]
+        return [int(int(hue.value) * 3.6), int(sat.value)]
 
     @property
     def brightness(self) -> int | None:
@@ -281,7 +281,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
-        LOGGER.debug("kwargs %s", kwargs)
+        LOGGER.debug("Light '%s' -> %s", self._attr_unique_id, kwargs)
         if ATTR_BRIGHTNESS in kwargs:
             await self.coordinator.cybro.write_var(
                 self._dimming_out, str(int(kwargs[ATTR_BRIGHTNESS]) / 2.55)
@@ -289,13 +289,14 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         if ATTR_HS_COLOR in kwargs:
             hue, sat = kwargs[ATTR_HS_COLOR]
             await self.coordinator.cybro.write_var(
-                self._rgb_hue_out, str(int(int(hue) / 2.55))
+                self._rgb_hue_out, str(int(int(hue) / 3.6))
             )
-            await self.coordinator.cybro.write_var(
-                self._rgb_sat_out, str(int(int(sat) / 2.55))
-            )
-        if self._dimming_out is None:
-            await self.coordinator.cybro.write_var(self.unique_id, "1")
+            await self.coordinator.cybro.write_var(self._rgb_sat_out, str(int(sat)))
+        if not kwargs:
+            if self._dimming_out is None:
+                await self.coordinator.cybro.write_var(self.unique_id, "1")
+            else:
+                await self.coordinator.cybro.write_var(self._dimming_out, "100")
         await self.coordinator.async_refresh()
 
     @property
