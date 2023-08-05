@@ -6,14 +6,27 @@ from typing import cast
 from cybro import VarType
 from homeassistant.components.weather import WeatherEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfPressure, UnitOfSpeed, UnitOfTemperature
+from homeassistant.const import (
+    UnitOfPressure,
+    UnitOfSpeed,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (AREA_WEATHER, ATTRIBUTION_PLC, DEVICE_DESCRIPTION, DOMAIN,
-                    LOGGER, MANUFACTURER, MANUFACTURER_URL)
+from .const import (
+    AREA_WEATHER,
+    ATTRIBUTION_PLC,
+    DEVICE_DESCRIPTION,
+    DEVICE_HW_VERSION,
+    DEVICE_SW_VERSION,
+    DOMAIN,
+    LOGGER,
+    MANUFACTURER,
+    MANUFACTURER_URL,
+)
 from .coordinator import HiqDataUpdateCoordinator
 
 PARALLEL_UPDATES = 1
@@ -46,7 +59,19 @@ async def async_setup_entry(
         has_weather = True
 
     if has_weather is True:
-        async_add_entities([HiqWeatherEntity(var_prefix, coordinator)])
+        dev_info = DeviceInfo(
+            identifiers={(DOMAIN, coordinator.cybro.nad, "weather")},
+            manufacturer=MANUFACTURER,
+            name=f"c{coordinator.cybro.nad} weather",
+            suggested_area=AREA_WEATHER,
+            model=DEVICE_DESCRIPTION,
+            configuration_url=MANUFACTURER_URL,
+            entry_type=None,
+            sw_version=DEVICE_SW_VERSION,
+            hw_version=DEVICE_HW_VERSION,
+        )
+
+        async_add_entities([HiqWeatherEntity(var_prefix, coordinator, dev_info)])
 
 
 class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
@@ -54,7 +79,9 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
 
     coordinator: HiqDataUpdateCoordinator
 
-    def __init__(self, var_prefix: str, coordinator: HiqDataUpdateCoordinator) -> None:
+    def __init__(
+        self, var_prefix: str, coordinator: HiqDataUpdateCoordinator, device: DeviceInfo
+    ) -> None:
         """Initialize."""
         super().__init__(coordinator)
         self._attr_name = f"c{coordinator.data.plc_info.nad} weather"
@@ -64,13 +91,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
         self._attr_native_wind_speed_unit = UnitOfSpeed.KILOMETERS_PER_HOUR
         self._attr_native_pressure_unit = UnitOfPressure.HPA
         self._attr_attribution = ATTRIBUTION_PLC
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, var_prefix)},
-            manufacturer=MANUFACTURER,
-            default_name=f"c{coordinator.data.plc_info.nad} weather",
-            suggested_area=AREA_WEATHER,
-            model=DEVICE_DESCRIPTION,
-        )
+        self._attr_device_info = device
 
     @property
     def device_info(self):
@@ -102,7 +123,9 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
                 * 0.1,
             )
         except (KeyError, ValueError):
-            LOGGER.debug("got unknown value for %stemperature", str(self._attr_unique_id))
+            LOGGER.debug(
+                "got unknown value for %stemperature", str(self._attr_unique_id)
+            )
             return None
 
     @property
@@ -145,7 +168,9 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
                 * 0.1,
             )
         except (KeyError, ValueError):
-            LOGGER.debug("got unknown value for %swind_speed", str(self._attr_unique_id))
+            LOGGER.debug(
+                "got unknown value for %swind_speed", str(self._attr_unique_id)
+            )
             return None
 
     @property
@@ -156,5 +181,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
                 f"{self._attr_unique_id}wind_direction"
             ].value_int()
         except (KeyError, ValueError):
-            LOGGER.debug("got unknown value for %swind_direction", str(self._attr_unique_id))
+            LOGGER.debug(
+                "got unknown value for %swind_direction", str(self._attr_unique_id)
+            )
             return None

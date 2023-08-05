@@ -13,6 +13,8 @@ from .const import AREA_SYSTEM
 from .const import ATTR_DESCRIPTION
 from .const import CONF_IGNORE_GENERAL_ERROR
 from .const import DEVICE_DESCRIPTION
+from .const import DEVICE_HW_VERSION
+from .const import DEVICE_SW_VERSION
 from .const import DOMAIN
 from .const import LOGGER
 from .const import MANUFACTURER
@@ -30,8 +32,11 @@ async def async_setup_entry(
     """Set up a HIQ binary sensor based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
+    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+
     sys_tags = add_system_tags(
-        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR)
+        coordinator,
+        ignore_general_error,
     )
     if sys_tags is not None:
         async_add_entities(sys_tags)
@@ -39,21 +44,23 @@ async def async_setup_entry(
 
 def add_system_tags(
     coordinator: HiqDataUpdateCoordinator,
-    add_all: bool,
+    add_all: bool = False,
 ) -> list[HiqBinarySensor] | None:
     """Find system tags in the plc vars.
     eg: c1000.scan_time and so on.
     """
     res: list[HiqBinarySensor] = []
     var_prefix = f"c{coordinator.cybro.nad}."
-
     dev_info = DeviceInfo(
-        identifiers={(DOMAIN, var_prefix)},
+        identifiers={(DOMAIN, coordinator.cybro.nad)},
         manufacturer=MANUFACTURER,
-        default_name=f"c{coordinator.cybro.nad} diagnostics",
+        name=f"c{coordinator.cybro.nad} diagnostic",
         suggested_area=AREA_SYSTEM,
         model=DEVICE_DESCRIPTION,
         configuration_url=MANUFACTURER_URL,
+        entry_type=None,
+        sw_version=DEVICE_SW_VERSION,
+        hw_version=DEVICE_HW_VERSION,
     )
 
     # find different plc diagnostic vars

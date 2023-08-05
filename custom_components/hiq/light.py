@@ -13,7 +13,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
 from .const import (
     AREA_LIGHTS,
     ATTR_DESCRIPTION,
@@ -23,6 +22,8 @@ from .const import (
     LOGGER,
     MANUFACTURER,
     MANUFACTURER_URL,
+    DEVICE_HW_VERSION,
+    DEVICE_SW_VERSION,
 )
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
@@ -36,13 +37,16 @@ async def async_setup_entry(
     """Set up HIQ-Home light based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
+    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+
     lights = find_on_off_lights(
-        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+        coordinator,
+        ignore_general_error,
     )
     if lights is not None:
         async_add_entities(lights)
 
-    lights = find_dimm_lights(coordinator, entry.data[CONF_IGNORE_GENERAL_ERROR])
+    lights = find_dimm_lights(coordinator, ignore_general_error)
     if lights is not None:
         async_add_entities(lights)
 
@@ -79,12 +83,15 @@ def find_on_off_lights(
                 dev_info = DeviceInfo(
                     identifiers={(DOMAIN, key)},
                     manufacturer=MANUFACTURER,
-                    default_name=f"Light {key}",
+                    name=f"Light {key}",
                     suggested_area=AREA_LIGHTS,
-                    enabled=ge_ok,
                     model=DEVICE_DESCRIPTION,
                     configuration_url=MANUFACTURER_URL,
+                    entry_type=None,
+                    sw_version=DEVICE_SW_VERSION,
+                    hw_version=DEVICE_HW_VERSION,
                 )
+
                 res.append(HiqUpdateLight(coordinator, key, dev_info=dev_info))
 
     if len(res) > 0:
@@ -134,11 +141,13 @@ def find_dimm_lights(
                 dev_info = DeviceInfo(
                     identifiers={(DOMAIN, key)},
                     manufacturer=MANUFACTURER,
-                    default_name=f"Light {key}",
+                    name=f"Light {key}",
                     suggested_area=AREA_LIGHTS,
-                    enabled=ge_ok,
                     model=DEVICE_DESCRIPTION,
                     configuration_url=MANUFACTURER_URL,
+                    entry_type=None,
+                    sw_version=DEVICE_SW_VERSION,
+                    hw_version=DEVICE_HW_VERSION,
                 )
                 res.append(
                     HiqUpdateLight(

@@ -16,6 +16,8 @@ from .const import AREA_BLINDS
 from .const import ATTR_DESCRIPTION
 from .const import CONF_IGNORE_GENERAL_ERROR
 from .const import DEVICE_DESCRIPTION
+from .const import DEVICE_HW_VERSION
+from .const import DEVICE_SW_VERSION
 from .const import DOMAIN
 from .const import LOGGER
 from .const import MANUFACTURER
@@ -32,8 +34,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up HIQ-Home blind based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+
+    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+
     blinds = find_blinds(
-        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+        coordinator,
+        ignore_general_error,
     )
     if blinds is not None:
         async_add_entities(blinds)
@@ -54,10 +60,13 @@ def find_blinds(
                 dev_info = DeviceInfo(
                     identifiers={(DOMAIN, key)},
                     manufacturer=MANUFACTURER,
-                    default_name=f"Blind {key}",
+                    name=f"Blind {key}",
                     suggested_area=AREA_BLINDS,
                     model=DEVICE_DESCRIPTION,
                     configuration_url=MANUFACTURER_URL,
+                    entry_type=None,
+                    sw_version=DEVICE_SW_VERSION,
+                    hw_version=DEVICE_HW_VERSION,
                 )
                 var_sp = _get_blind_var(coordinator, key, 0)
                 var_up = _get_blind_var(coordinator, key, 1)

@@ -10,6 +10,8 @@ MANUFACTURER = "Robotina D.o.o."
 MANUFACTURER_URL = "http://hiq-home.com/"
 ATTRIBUTION_PLC = "Data read from HIQ controller"
 DEVICE_DESCRIPTION = "HIQ controller"
+DEVICE_HW_VERSION = "2/3"
+DEVICE_SW_VERSION = "0.0.11"
 
 LOGGER = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=10)
