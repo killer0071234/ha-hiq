@@ -33,6 +33,8 @@ from .const import (
     ATTR_DESCRIPTION,
     CONF_IGNORE_GENERAL_ERROR,
     DEVICE_DESCRIPTION,
+    DEVICE_HW_VERSION,
+    DEVICE_SW_VERSION,
     DOMAIN,
     LOGGER,
     MANUFACTURER,
@@ -51,14 +53,18 @@ async def async_setup_entry(
     """Set up HIQ-Home sensor based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
+    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+
     sys_tags = add_system_tags(
-        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+        coordinator,
+        ignore_general_error,
     )
     if sys_tags is not None:
         async_add_entities(sys_tags)
 
     temps = find_temperatures(
-        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+        coordinator,
+        ignore_general_error,
     )
     if temps is not None:
         async_add_entities(temps)
@@ -68,7 +74,8 @@ async def async_setup_entry(
     #    async_add_entities(weather)
 
     power_meter = find_power_meter(
-        coordinator, entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
+        coordinator,
+        ignore_general_error,
     )
     if power_meter is not None:
         async_add_entities(power_meter)
@@ -83,14 +90,16 @@ def add_system_tags(
     """
     res: list[HiqSensorEntity] = []
     var_prefix = f"c{coordinator.cybro.nad}."
-
     dev_info = DeviceInfo(
-        identifiers={(DOMAIN, var_prefix)},
+        identifiers={(DOMAIN, coordinator.cybro.nad)},
         manufacturer=MANUFACTURER,
-        default_name=f"c{coordinator.cybro.nad} diagnostics",
+        name=f"c{coordinator.cybro.nad} diagnostic",
         suggested_area=AREA_SYSTEM,
         model=DEVICE_DESCRIPTION,
         configuration_url=MANUFACTURER_URL,
+        entry_type=None,
+        sw_version=DEVICE_SW_VERSION,
+        hw_version=DEVICE_HW_VERSION,
     )
     # add system vars
     res.append(
@@ -188,14 +197,17 @@ def find_temperatures(
     """
     res: list[HiqSensorEntity] = []
     dev_info = DeviceInfo(
-        # entry_type=DeviceEntryType.SERVICE,
         identifiers={(DOMAIN, f"{coordinator.data.plc_info.nad}.temperatures")},
         manufacturer=MANUFACTURER,
-        default_name=f"c{coordinator.data.plc_info.nad} temperatures",
+        name=f"c{coordinator.cybro.nad} temperatures",
         suggested_area=AREA_WEATHER,
         model=DEVICE_DESCRIPTION,
         configuration_url=MANUFACTURER_URL,
+        entry_type=None,
+        sw_version=DEVICE_SW_VERSION,
+        hw_version=DEVICE_HW_VERSION,
     )
+
     for key in coordinator.data.plc_info.plc_vars:
         if (
             key.find(".th") != -1
@@ -250,14 +262,16 @@ def find_weather(
     """
     res: list[HiqSensorEntity] = []
     var_prefix = f"c{coordinator.data.plc_info.nad}.weather_"
-
     dev_info = DeviceInfo(
         identifiers={(DOMAIN, var_prefix)},
         manufacturer=MANUFACTURER,
-        default_name=f"c{coordinator.data.plc_info.nad} weather",
-        suggested_area=AREA_ENERGY,
-        model=f"{DEVICE_DESCRIPTION} controller",
+        name=f"c{coordinator.cybro.nad} weather",
+        suggested_area=AREA_WEATHER,
+        model=DEVICE_DESCRIPTION,
         configuration_url=MANUFACTURER_URL,
+        entry_type=None,
+        sw_version=DEVICE_SW_VERSION,
+        hw_version=DEVICE_HW_VERSION,
     )
 
     for key in coordinator.data.plc_info.plc_vars:
@@ -324,14 +338,16 @@ def find_power_meter(
     """
     res: list[HiqSensorEntity] = []
     var_prefix = f"c{coordinator.data.plc_info.nad}.power_meter"
-
     dev_info = DeviceInfo(
         identifiers={(DOMAIN, var_prefix)},
         manufacturer=MANUFACTURER,
-        default_name=f"c{coordinator.data.plc_info.nad} power meter",
+        name=f"c{coordinator.cybro.nad} power meter",
         suggested_area=AREA_ENERGY,
         model=DEVICE_DESCRIPTION,
         configuration_url=MANUFACTURER_URL,
+        entry_type=None,
+        sw_version=DEVICE_SW_VERSION,
+        hw_version=DEVICE_HW_VERSION,
     )
     for key in coordinator.data.plc_info.plc_vars:
         if key.find(var_prefix) != -1:
