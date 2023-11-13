@@ -17,7 +17,6 @@ from .const import DEVICE_DESCRIPTION
 from .const import DEVICE_HW_VERSION
 from .const import DEVICE_SW_VERSION
 from .const import DOMAIN
-from .const import LOGGER
 from .const import MANUFACTURER
 from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
