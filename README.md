@@ -12,6 +12,10 @@
 
 [![Community Forum][forum-shield]][forum]
 
+## Supported devices
+
+This integration enables basic support for HIQ-Controllers (Cybro 2/3 PLC with HIQ software running on it from Robotina D.o.o or Cybrotech).
+
 ## Functionality
 
 This integration is a local polling integration that connects to a running CybroScgiServer from Cybrotech.
