@@ -206,6 +206,7 @@ def find_temperatures(
         entry_type=None,
         sw_version=DEVICE_SW_VERSION,
         hw_version=DEVICE_HW_VERSION,
+        via_device=(DOMAIN, coordinator.cybro.nad),
     )
 
     for key in coordinator.data.plc_info.plc_vars:
@@ -272,6 +273,7 @@ def find_weather(
         entry_type=None,
         sw_version=DEVICE_SW_VERSION,
         hw_version=DEVICE_HW_VERSION,
+        via_device=(DOMAIN, coordinator.cybro.nad),
     )
 
     for key in coordinator.data.plc_info.plc_vars:
@@ -348,6 +350,7 @@ def find_power_meter(
         entry_type=None,
         sw_version=DEVICE_SW_VERSION,
         hw_version=DEVICE_HW_VERSION,
+        via_device=(DOMAIN, coordinator.cybro.nad),
     )
     for key in coordinator.data.plc_info.plc_vars:
         if key.find(var_prefix) != -1:
