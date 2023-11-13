@@ -14,12 +14,20 @@ from homeassistant.components.climate import (
     HVACAction,
     HVACMode,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_TEMPERATURE,
     PRECISION_TENTHS,
     UnitOfTemperature,
 )
+
+from .const import AREA_CLIMATE
+from .const import CONF_IGNORE_GENERAL_ERROR
+from .const import DOMAIN
+from .const import LOGGER
+from .const import MANUFACTURER
+from .coordinator import HiqDataUpdateCoordinator
+from .models import HiqEntity
+from .light import is_general_error_ok
 
 SUPPORT_FLAGS = ClimateEntityFeature.TARGET_TEMPERATURE
 
@@ -67,22 +75,6 @@ CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP = {
 CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP = {
     value: key for key, value in CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP.items()
 }
-
-
-from .const import AREA_CLIMATE
-from .const import ATTR_DESCRIPTION
-from .const import CONF_IGNORE_GENERAL_ERROR
-from .const import DEVICE_DESCRIPTION
-from .const import DEVICE_HW_VERSION
-from .const import DEVICE_SW_VERSION
-from .const import DOMAIN
-from .const import LOGGER
-from .const import MANUFACTURER
-from .const import MANUFACTURER_URL
-from .coordinator import HiqDataUpdateCoordinator
-from .models import HiqEntity
-from .light import is_general_error_ok
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -149,6 +141,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         coordinator: HiqDataUpdateCoordinator,
         context: Any = None,
     ) -> None:
+        """Init of hiq thermostat."""
         super().__init__(coordinator, context)
 
         # remember the variable prefix eg: c10000.th00
