@@ -69,6 +69,7 @@ async def async_setup_entry(
             entry_type=None,
             sw_version=DEVICE_SW_VERSION,
             hw_version=DEVICE_HW_VERSION,
+            via_device=(DOMAIN, coordinator.cybro.nad),
         )
 
         async_add_entities([HiqWeatherEntity(var_prefix, coordinator, dev_info)])

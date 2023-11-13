@@ -90,6 +90,7 @@ def find_on_off_lights(
                     entry_type=None,
                     sw_version=DEVICE_SW_VERSION,
                     hw_version=DEVICE_HW_VERSION,
+                    via_device=(DOMAIN, coordinator.cybro.nad),
                 )
 
                 res.append(HiqUpdateLight(coordinator, key, dev_info=dev_info))
@@ -148,6 +149,7 @@ def find_dimm_lights(
                     entry_type=None,
                     sw_version=DEVICE_SW_VERSION,
                     hw_version=DEVICE_HW_VERSION,
+                    via_device=(DOMAIN, coordinator.cybro.nad),
                 )
                 res.append(
                     HiqUpdateLight(
