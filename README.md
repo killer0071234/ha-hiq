@@ -16,9 +16,17 @@
 
 This integration is a local polling integration that connects to a running CybroScgiServer from Cybrotech.
 To use this integration you need to have a running scgi server.
+Please use one of the 3 methods to run the scgi server.
+Without a running scgi server it is not possible to use this integration!
 
-- Homeassistant Addon CybroScgiServer (Recommended) [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fkiller0071234%2Fha-addon-repository)
-- Own Docker container on own Docker host. [![dockerhub][scgi-docker-shield]][scgi-docker]
+- Homeassistant Addon CybroScgiServer (Recommended)
+
+  [![Open this add-on in your Home Assistant instance.][addon-badge]][addon]
+
+- Own Docker container on own Docker host.
+
+  [![dockerhub][scgi-docker-shield]][scgi-docker]
+
 - Native manual install from source.
 
 ## Supported entities
@@ -46,14 +54,18 @@ Supported HIQ expansion units:
 - LD-D8-IQ (light on / off and brightness supported)
 - LD-P4-IQ (light on / off, brightness and RGB supported)
 - LD-V4-IQ (light on / off, brightness and RGB supported)
+- Virtual LC (light on / off supported)
 
 ---
 
 ### cover<a name="cover"></a>
 
+Blinds in the HIQ controller are called [cover](#cover) devices in HA.
+
 Supported HIQ expansion units:
 
 - BC-5-IQ
+- Virtual BC
 
 Possible commands for the blinds are:
 
@@ -166,11 +178,11 @@ To forward some smartphone events directly to the HIQ-controller some services a
 2. Go to HACS "Integrations >" section
 3. In the lower right click "+ Explore & Download repositories"
 4. Search for "HIQ" and add it
-   - HA Restart is not needed since it is configured in UI config flow
-5. In the Home Assistant (HA) UI go to "Configuration"
-6. Click "Integrations"
-7. Click "+ Add Integration"
-8. Search for "HIQ"
+5. Restart Home Assistant
+6. In the Home Assistant (HA) UI go to "Configuration"
+7. Click "Integrations"
+8. Click "+ Add Integration"
+9. Search for "HIQ"
 
 ### Manual
 
@@ -203,7 +215,7 @@ If you prefer new entities to be disabled by default:
 
 ## Tested Devices
 
-- HC-HIQ v3.0.3 Software running on a Cybro-3 controller with FW: 3.2.0, cybroscgiserver v3.1.3 running in a docker container
+- HC-HIQ v3.0.3 Software running on a Cybro-3 controller with FW: 3.2.3, cybroscgiserver v3.1.3 running in a docker container
 
 ## Contributions are welcome!
 
@@ -215,6 +227,8 @@ Code template was mainly taken from [@amosyuen](https://github.com/amosyuen)'s [
 
 ---
 
+[addon-badge]: https://my.home-assistant.io/badges/supervisor_addon.svg
+[addon]: https://my.home-assistant.io/redirect/supervisor_addon/?addon=85493909_cybroscgiserver&repository_url=https%3A%2F%2Fgithub.com%2Fkiller0071234%2Fha-addon-repository
 [ha_tplink_deco]: https://github.com/amosyuen/ha-tplink-deco
 [black]: https://github.com/psf/black
 [black-shield]: https://img.shields.io/badge/code%20style-black-000000.svg?style=for-the-badge
