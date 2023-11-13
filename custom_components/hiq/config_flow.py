@@ -84,7 +84,7 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_HOST, default="localhost"): str,
+                    vol.Required(CONF_HOST, default="85493909-cybroscgiserver"): str,
                     vol.Required(CONF_PORT, default=4000): int,
                     vol.Required(CONF_ADDRESS, default=1000): int,
                     vol.Required(CONF_IGNORE_GENERAL_ERROR, default=False): bool,

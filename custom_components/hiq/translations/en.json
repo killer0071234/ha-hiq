@@ -3,7 +3,7 @@
     "abort": {
       "already_configured": "Device is already configured",
       "cannot_connect": "Failed to connect",
-      "plc_not_existing": "PLC with address `{address}` does not exist",
+      "plc_not_existing": "PLC with address `{address}` does not exist in scgi server",
       "scgi_server_not_running": "scgi server is not running"
     },
     "error": {
@@ -13,12 +13,12 @@
     "step": {
       "user": {
         "data": {
-          "host": "scgi server host (for cybroscgiserver addon use 'localhost')",
+          "host": "scgi server host (for cybroscgiserver addon use '85493909-cybroscgiserver')",
           "port": "scgi server port (for cybroscgiserver addon use '4000')",
           "address": "HIQ controller address",
-          "ignore_general_error": "Ignore general_error from expansion unit (if checked, all found devices will be add to home assistant, use at your own risk)"
+          "ignore_general_error": "Ignore 'general_error' from expansion unit.\nif checked, all found devices will be add to home assistant, use at your own risk!"
         },
-        "description": "Set up your HIQ-Home control to integrate with Home Assistant."
+        "description": "Set up your HIQ-Home control to integrate with Home Assistant.\nBefore you continue make sure you had a running cybro scgi server!\nSee integration documentation for details."
       }
     }
   },
@@ -26,7 +26,7 @@
     "step": {
       "init": {
         "data": {
-          "ignore_general_error": "Ignore general_error from expansion unit (if checked, all found devices will be add to home assistant, use at your own risk)"
+          "ignore_general_error": "Ignore 'general_error' from expansion unit.\nif checked, all found devices will be add to home assistant, use at your own risk!"
         }
       }
     }
