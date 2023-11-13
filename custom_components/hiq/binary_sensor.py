@@ -1,6 +1,6 @@
 """Support for HIQ-Home binary sensor."""
 from __future__ import annotations
-
+from re import search
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -9,6 +9,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .const import AREA_CLIMATE
 from .const import AREA_SYSTEM
 from .const import ATTR_DESCRIPTION
 from .const import CONF_IGNORE_GENERAL_ERROR
@@ -21,6 +22,7 @@ from .const import MANUFACTURER
 from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
+from .light import is_general_error_ok
 
 
 async def async_setup_entry(
@@ -40,6 +42,13 @@ async def async_setup_entry(
     )
     if sys_tags is not None:
         async_add_entities(sys_tags)
+
+    th_tags = add_th_tags(
+        coordinator,
+        ignore_general_error,
+    )
+    if th_tags is not None:
+        async_add_entities(th_tags)
 
 
 def add_system_tags(
@@ -92,6 +101,77 @@ def add_system_tags(
     return None
 
 
+def add_th_tags(
+    coordinator: HiqDataUpdateCoordinator,
+    add_all: bool = False,
+) -> list[HiqBinarySensor] | None:
+    """Find binary sensors for thermostat tags in the plc vars.
+    eg: c1000.th00_ix00 and so on.
+    """
+    res: list[HiqBinarySensor] = []
+
+    # find different plc diagnostic vars
+    for key in coordinator.data.plc_info.plc_vars:
+        # get window contact input
+        if search(r"c\d+\.th\d+_ix00", key):
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                unique_id = key
+                # identifier is cNAD.thNR
+                grp = search(r"c\d+\.th\d+", key)
+                if grp:
+                    unique_id = grp.group()
+                res.append(
+                    HiqBinarySensor(
+                        coordinator,
+                        var_name=f"thermostat {unique_id} window",
+                        unique_id=key,
+                        value_on="0",
+                        attr_device_class=BinarySensorDeviceClass.WINDOW,
+                        dev_info=DeviceInfo(
+                            identifiers={
+                                (coordinator.cybro.nad, f"thermostat {unique_id}")
+                            },
+                            manufacturer=MANUFACTURER,
+                            name=f"thermostat {unique_id}",
+                            suggested_area=AREA_CLIMATE,
+                            via_device=(DOMAIN, coordinator.cybro.nad),
+                        ),
+                    )
+                )
+        # get heating output
+        if search(r"c\d+\.th\d+_output", key):
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                unique_id = key
+                # identifier is cNAD.thNR
+                grp = search(r"c\d+\.th\d+", key)
+                if grp:
+                    unique_id = grp.group()
+                res.append(
+                    HiqBinarySensor(
+                        coordinator,
+                        var_name=f"thermostat {unique_id} output",
+                        unique_id=key,
+                        # DeviceClass.HEAT as default, could also be cool but most of the devices are used for heating
+                        # attr_device_class=BinarySensorDeviceClass.HEAT,
+                        dev_info=DeviceInfo(
+                            identifiers={
+                                (coordinator.cybro.nad, f"thermostat {unique_id}")
+                            },
+                            manufacturer=MANUFACTURER,
+                            name=f"thermostat {unique_id}",
+                            suggested_area=AREA_CLIMATE,
+                            via_device=(DOMAIN, coordinator.cybro.nad),
+                        ),
+                    )
+                )
+
+    if len(res) > 0:
+        return res
+    return None
+
+
 class HiqBinarySensor(HiqEntity, BinarySensorEntity):
     """An entity using CoordinatorEntity.
 
@@ -107,6 +187,8 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
         self,
         coordinator: HiqDataUpdateCoordinator,
         var_name: str = "",
+        unique_id: str | None = None,
+        value_on: str = "1",
         attr_entity_category: EntityCategory = None,
         attr_device_class: BinarySensorDeviceClass = None,
         enabled: bool = True,
@@ -117,13 +199,13 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
         if var_name == "":
             return
         self._attr_name = var_name
-        self._attr_unique_id = var_name
+        self._attr_unique_id = unique_id or var_name
         self._attr_entity_category = attr_entity_category
         self._attr_device_class = attr_device_class
         self._attr_device_info = dev_info
         if enabled is False:
             self._attr_entity_registry_enabled_default = False
-        LOGGER.debug(self._attr_unique_id)
+        self._value_on = value_on
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
 
     @property
@@ -144,7 +226,9 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
         """Return entity state."""
         if self._attr_unique_id in self.coordinator.data.vars:
             self._attr_available = True
-            return self.coordinator.data.vars[self._attr_unique_id].value == "1"
+            return (
+                self.coordinator.data.vars[self._attr_unique_id].value == self._value_on
+            )
         self._attr_available = False
         return None
 
