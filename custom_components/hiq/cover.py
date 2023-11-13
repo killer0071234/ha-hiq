@@ -67,6 +67,7 @@ def find_blinds(
                     entry_type=None,
                     sw_version=DEVICE_SW_VERSION,
                     hw_version=DEVICE_HW_VERSION,
+                    via_device=(DOMAIN, coordinator.cybro.nad),
                 )
                 var_sp = _get_blind_var(coordinator, key, 0)
                 var_up = _get_blind_var(coordinator, key, 1)
