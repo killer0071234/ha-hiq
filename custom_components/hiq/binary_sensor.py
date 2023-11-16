@@ -123,16 +123,16 @@ def add_th_tags(
                 res.append(
                     HiqBinarySensor(
                         coordinator,
-                        var_name=f"thermostat {unique_id} window",
+                        var_name=f"{unique_id} thermostat window",
                         unique_id=key,
                         value_on="0",
                         attr_device_class=BinarySensorDeviceClass.WINDOW,
                         dev_info=DeviceInfo(
                             identifiers={
-                                (coordinator.cybro.nad, f"thermostat {unique_id}")
+                                (coordinator.cybro.nad, f"{unique_id} thermostat")
                             },
                             manufacturer=MANUFACTURER,
-                            name=f"thermostat {unique_id}",
+                            name=f"{unique_id} thermostat",
                             suggested_area=AREA_CLIMATE,
                             via_device=(DOMAIN, coordinator.cybro.nad),
                         ),
@@ -150,16 +150,16 @@ def add_th_tags(
                 res.append(
                     HiqBinarySensor(
                         coordinator,
-                        var_name=f"thermostat {unique_id} output",
+                        var_name=f"{unique_id} thermostat output",
                         unique_id=key,
                         # DeviceClass.HEAT as default, could also be cool but most of the devices are used for heating
                         # attr_device_class=BinarySensorDeviceClass.HEAT,
                         dev_info=DeviceInfo(
                             identifiers={
-                                (coordinator.cybro.nad, f"thermostat {unique_id}")
+                                (coordinator.cybro.nad, f"{unique_id} thermostat")
                             },
                             manufacturer=MANUFACTURER,
-                            name=f"thermostat {unique_id}",
+                            name=f"{unique_id} thermostat",
                             suggested_area=AREA_CLIMATE,
                             via_device=(DOMAIN, coordinator.cybro.nad),
                         ),

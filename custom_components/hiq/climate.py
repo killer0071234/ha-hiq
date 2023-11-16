@@ -20,11 +20,17 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 
-from .const import AREA_CLIMATE
-from .const import CONF_IGNORE_GENERAL_ERROR
-from .const import DOMAIN
-from .const import LOGGER
-from .const import MANUFACTURER
+from .const import (
+    AREA_CLIMATE,
+    CONF_IGNORE_GENERAL_ERROR,
+    DOMAIN,
+    LOGGER,
+    ATTR_FLOOR_TEMP,
+    ATTR_SETPOINT_IDLE,
+    ATTR_SETPOINT_ACTIVE,
+    ATTR_SETPOINT_OFFSET,
+    MANUFACTURER,
+)
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
 from .light import is_general_error_ok
@@ -75,6 +81,7 @@ CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP = {
 CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP = {
     value: key for key, value in CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP.items()
 }
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -151,13 +158,13 @@ class HiqThermostat(HiqEntity, ClimateEntity):
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._prefix)},
-            name=cast(str | None, f"thermostat {self._prefix}"),
+            name=cast(str | None, f"{self._prefix} thermostat"),
             manufacturer=MANUFACTURER,
             suggested_area=AREA_CLIMATE,
             via_device=(DOMAIN, coordinator.cybro.nad),
         )
-        self._attr_name = f"thermostat {self._prefix}"
-        self._attr_unique_id = f"thermostat_{self._prefix}"
+        self._attr_name = f"{self._prefix} thermostat"
+        self._attr_unique_id = f"{self._prefix}_thermostat"
 
         # add tags for thermostat to coordinator
         coordinator.data.add_var(f"{self._prefix}_active")
@@ -165,6 +172,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         coordinator.data.add_var(f"{self._prefix}_setpoint_lo")
         coordinator.data.add_var(f"{self._prefix}_setpoint_hi")
         coordinator.data.add_var(f"{self._prefix}_temperature")
+        coordinator.data.add_var(f"{self._prefix}_floor_tmp")
         coordinator.data.add_var(f"{self._prefix}_humidity")
         coordinator.data.add_var(f"{self._prefix}_setpoint")
         coordinator.data.add_var(f"{self._prefix}_setpoint_idle")
@@ -173,7 +181,11 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         coordinator.data.add_var(f"{self._nad}.hvac_mode")
 
     def _get_value(
-        self, tag: str, factor: float = 1.0, def_val: int | float | None = None
+        self,
+        tag: str,
+        factor: float = 1.0,
+        precision: int = 0,
+        def_val: int | float | None = None,
     ) -> int | float | None:
         """Return a single Tag Value."""
         res = self.coordinator.data.vars.get(tag, None)
@@ -186,12 +198,14 @@ class HiqThermostat(HiqEntity, ClimateEntity):
             LOGGER.debug("value for %s -> %s", str(tag), str(res.value))
             return int(res.value)
         if factor != 1.0:
+            converted_numerical_value = float(res.value.replace(",", "")) * factor
+            value = f"{converted_numerical_value:z.{precision}f}"
             LOGGER.debug(
                 "value for %s -> %s",
                 str(tag),
-                str(float(res.value.replace(",", "")) * factor),
+                str(value),
             )
-            return float(res.value.replace(",", "")) * factor
+            return float(value)
 
         return res.value
 
@@ -228,17 +242,17 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     @property
     def target_temperature(self) -> float | None:
         """Return the target temperature for the device."""
-        return self._get_value(f"{self._prefix}_setpoint", 0.1)
+        return self._get_value(f"{self._prefix}_setpoint", 0.1, 1)
 
     @property
     def target_temperature_low(self):
         """Return the lower bound temperature we try to reach."""
-        return self._get_value(f"{self._prefix}_setpoint_lo", 0.1, 5.0)
+        return self._get_value(f"{self._prefix}_setpoint_lo", 0.1, 1, 5.0)
 
     @property
     def target_temperature_high(self):
         """Return the higher bound temperature we try to reach."""
-        return self._get_value(f"{self._prefix}_setpoint_hi", 0.1, 5.0)
+        return self._get_value(f"{self._prefix}_setpoint_hi", 0.1, 1, 5.0)
 
     @property
     def hvac_mode(self) -> HVACMode | None:
@@ -255,6 +269,29 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         return CYBRO_TO_HA_HVAC_COOL_MAP[
             self._get_value(f"{self._prefix}_active", def_val=0)
         ]
+
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes."""
+        data = {}
+        if floor_tmp := self._get_value(f"{self._prefix}_floor_tmp", 0.1, 1) or None:
+            data[ATTR_FLOOR_TEMP] = floor_tmp
+        if (
+            setp_idle := self._get_value(f"{self._prefix}_setpoint_idle", 0.1, 1)
+            or None
+        ):
+            data[ATTR_SETPOINT_IDLE] = setp_idle
+        if (
+            setp_act := self._get_value(f"{self._prefix}_setpoint_active", 0.1, 1)
+            or None
+        ):
+            data[ATTR_SETPOINT_ACTIVE] = setp_act
+        if (
+            setp_off := self._get_value(f"{self._prefix}_setpoint_offset", 0.1, 1)
+            or None
+        ):
+            data[ATTR_SETPOINT_OFFSET] = setp_off
+        return data
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set HVAC mode to device."""
