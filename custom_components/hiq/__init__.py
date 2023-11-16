@@ -25,6 +25,7 @@ PLATFORMS = [
     Platform.LIGHT,
     Platform.SENSOR,
     Platform.WEATHER,
+    Platform.CLIMATE,
 ]
 
 

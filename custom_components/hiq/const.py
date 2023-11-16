@@ -11,7 +11,7 @@ MANUFACTURER_URL = "http://hiq-home.com/"
 ATTRIBUTION_PLC = "Data read from HIQ controller"
 DEVICE_DESCRIPTION = "HIQ controller"
 DEVICE_HW_VERSION = "2/3"
-DEVICE_SW_VERSION = "0.0.11"
+DEVICE_SW_VERSION = "0.1.0"
 
 LOGGER = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=10)
@@ -25,7 +25,12 @@ AREA_ENERGY = "Energy"
 AREA_WEATHER = "Weather"
 AREA_LIGHTS = "Lights"
 AREA_BLINDS = "Blinds"
+AREA_CLIMATE = "Climate"
 ATTR_DESCRIPTION = "description"
+ATTR_FLOOR_TEMP = "Floor temperature"
+ATTR_SETPOINT_IDLE = "Setpoint idle"
+ATTR_SETPOINT_ACTIVE = "Setpoint active"
+ATTR_SETPOINT_OFFSET = "Setpoint offset"
 
 # Device classes
 DEVICE_CLASS_HIQ_LIVE_OVERRIDE: Final = "hiq__live_override"

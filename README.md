@@ -43,6 +43,7 @@ Currently supported are:
 
 - [light](#light)
 - [cover](#cover)
+- [climate](#climate)
 - [binary_sensor](#binary_sensor)
 - [sensor](#sensor)
 
@@ -80,6 +81,21 @@ Possible commands for the blinds are:
 
 ---
 
+### climate<a name="climate"></a>
+
+TH (thermostat) devices in the HIQ controller are called [climate](#climate) devices in HA.
+
+Supported HIQ expansion units:
+
+- TH-X-IQ
+
+Possible commands for the thermostats are:
+
+- Turn heating / cooling on / off
+- Set setpoint temperature
+
+---
+
 ### binary_sensor<a name="binary_sensor"></a>
 
 To have a basic diagnostic, there are some `binary_sensor` Entities exposed.
@@ -97,6 +113,13 @@ To have a basic diagnostic, there are some `binary_sensor` Entities exposed.
 | Entity name                | Description                                                                  | Enabled |
 | -------------------------- | ---------------------------------------------------------------------------- | ------- |
 | `cXXXX.YYYY_general_error` | Combined system error (timeout or program error), module is not operational. | yes     |
+
+#### For TH (thermostat) expansion unit:
+
+| Entity name                    | Description                            | Controller var     | Enabled       |
+| ------------------------------ | -------------------------------------- | -------------------| ------------- |
+| `cXXXX.thYY thermostat window` | Indicate state of window switch input. | `cXXXX.thYY_ix00`  | if configured |
+| `cXXXX.thYY thermostat output` | Radiator output.                       | `cXXXX.thYY_output`| yes           |
 
 XXXX is the NAD of the controller, and YYYY is the IEX module prefix
 
@@ -142,6 +165,23 @@ In presence of expansion units with temperature / humidity sensors, it will add 
 | ------------------------ | --------------------------------------- | -------------------------------- |
 | `cXXXX.YYYY_temperature` | Measured temperature [°C].              | if module has no `general_error` |
 | `cXXXX.YYYY_humidity`    | Measured relative humidity (0..100%rh). | if module has no `general_error` |
+
+#### For TH (thermostat) expansion unit:
+
+| Entity name                           | Description                                          | Controller var            | Enabled |
+| ------------------------------------- | ---------------------------------------------------- | --------------------------| ------- |
+| `cXXXX.thYY thermostat temperature`   | Measured temperature (internal, external or remote). | `cXXXX.thYY_temperature`  | yes     |
+| `cXXXX.thYY thermostat temperature 1` | Measured external temperature.                       | `cXXXX.thYY_temperature_1`| yes     |
+| `cXXXX.thYY thermostat humidity`      | Measured relative humidity.                          | `cXXXX.thYY_humidity`     | yes     |
+
+#### For hvac (internal):
+
+| Entity name                            | Description                                        | Controller var               | Enabled               |
+| -------------------------------------- | -------------------------------------------------- | -----------------------------| --------------------- |
+| `cXXXX.thYY HVAC outdoor temperature`  | Measured outdoor temperature.                      | `cXXXX.outdoor_temperature`  | if `zz_enable` is set |
+| `cXXXX.thYY HVAC wall temperature`     | Measured temperature within building construction. | `cXXXX.wall_temperature`     | if `zz_enable` is set |
+| `cXXXX.thYY HVAC water temperature`    | Measured temperature of heating/cooling medium.    | `cXXXX.water_temperature`    | if `zz_enable` is set |
+| `cXXXX.thYY HVAC auxilary temperature` | Measured temperature of auxilary sensor.           | `cXXXX.auxilary_temperature` | if `zz_enable` is set |
 
 XXXX is the NAD of the controller, and YYYY is the IEX module prefix (eg: lc00, bc02..)
 
