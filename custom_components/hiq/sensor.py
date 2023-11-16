@@ -422,7 +422,7 @@ def find_power_meter(
                             var_type=VarType.FLOAT,
                             attr_entity_category=None,
                             attr_device_class=SensorDeviceClass.VOLTAGE,
-                            val_fact=1.0,
+                            val_fact=fact,
                             display_precision=0,
                             enabled=False,
                             dev_info=dev_info,
@@ -604,7 +604,7 @@ def add_hvac_tags(
     res: list[HiqSensorEntity] = []
 
     def _is_enabled(tag: str) -> bool:
-        """Helper to get enable state."""
+        """Get enable state of variable."""
         value = coordinator.data.vars.get(tag, None)
         if value is None:
             return False
