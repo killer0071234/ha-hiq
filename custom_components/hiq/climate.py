@@ -212,12 +212,12 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     @property
     def current_temperature(self) -> float | None:
         """Return the reported current temperature for the device."""
-        return self._get_value(f"{self._prefix}_temperature", 0.1)
+        return self._get_value(f"{self._prefix}_temperature", 0.1, 1)
 
     @property
     def current_humidity(self) -> float | None:
         """Return the current humidity."""
-        if (humidity := self._get_value(f"{self._prefix}_humidity")) is None:
+        if (humidity := self._get_value(f"{self._prefix}_humidity", 1.0, 0)) is None:
             return None
         if humidity > 0:
             return humidity
