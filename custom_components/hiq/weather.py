@@ -1,8 +1,6 @@
 """Support for the Cybro weather."""
 from __future__ import annotations
 
-from typing import cast
-
 from cybro import VarType
 from homeassistant.components.weather import WeatherEntity
 from homeassistant.config_entries import ConfigEntry
@@ -23,7 +21,6 @@ from .const import (
     DEVICE_HW_VERSION,
     DEVICE_SW_VERSION,
     DOMAIN,
-    LOGGER,
     MANUFACTURER,
     MANUFACTURER_URL,
 )
@@ -115,74 +112,24 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
     @property
     def native_temperature(self) -> float | None:
         """Return the temperature."""
-        try:
-            return cast(
-                float,
-                self.coordinator.data.vars[
-                    f"{self._attr_unique_id}temperature"
-                ].value_float()
-                * 0.1,
-            )
-        except (KeyError, ValueError):
-            LOGGER.debug(
-                "got unknown value for %stemperature", str(self._attr_unique_id)
-            )
-            return None
+        return self.coordinator.get_value(f"{self._attr_unique_id}temperature", 0.1, 1)
 
     @property
     def native_pressure(self) -> float | None:
         """Return the pressure."""
-        try:
-            return cast(
-                float,
-                self.coordinator.data.vars[
-                    f"{self._attr_unique_id}pressure"
-                ].value_float(),
-            )
-        except (KeyError, ValueError):
-            LOGGER.debug("got unknown value for %spressure", str(self._attr_unique_id))
-            return None
+        return self.coordinator.get_value(f"{self._attr_unique_id}pressure")
 
     @property
     def humidity(self) -> float | None:
         """Return the humidity."""
-        try:
-            return cast(
-                float,
-                self.coordinator.data.vars[
-                    f"{self._attr_unique_id}humidity"
-                ].value_float(),
-            )
-        except (KeyError, ValueError):
-            LOGGER.debug("got unknown value for %shumidity", str(self._attr_unique_id))
-            return None
+        return self.coordinator.get_value(f"{self._attr_unique_id}humidity")
 
     @property
     def native_wind_speed(self) -> float | None:
         """Return the wind speed."""
-        try:
-            return cast(
-                float,
-                self.coordinator.data.vars[
-                    f"{self._attr_unique_id}wind_speed"
-                ].value_float()
-                * 0.1,
-            )
-        except (KeyError, ValueError):
-            LOGGER.debug(
-                "got unknown value for %swind_speed", str(self._attr_unique_id)
-            )
-            return None
+        return self.coordinator.get_value(f"{self._attr_unique_id}wind_speed", 0.1, 1)
 
     @property
     def wind_bearing(self) -> int | None:
         """Return the wind bearing."""
-        try:
-            return self.coordinator.data.vars[
-                f"{self._attr_unique_id}wind_direction"
-            ].value_int()
-        except (KeyError, ValueError):
-            LOGGER.debug(
-                "got unknown value for %swind_direction", str(self._attr_unique_id)
-            )
-            return None
+        return self.coordinator.get_value(f"{self._attr_unique_id}wind_direction")
