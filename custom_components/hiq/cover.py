@@ -194,10 +194,10 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
 
         None is unknown, 0 is closed, 100 is fully open.
         """
-        res = self.coordinator.data.vars.get(self._attr_unique_id, None)
-        if res is None or res == "?":
+        res = self.coordinator.get_value(self._attr_unique_id)
+        if res is None:
             return None
-        return int(100 - int(res.value))
+        return int(100 - int(res))
 
     @property
     def current_cover_tilt_position(self) -> int | None:
@@ -240,14 +240,6 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
         if self._setpoint_var != "":
             pos = 100 - int(position)
             await self.coordinator.cybro.write_var(self._setpoint_var, str(pos))
-
-    @property
-    def available(self) -> bool:
-        """Return if this light is available or not."""
-        res = self.coordinator.data.vars.get(self._attr_unique_id, None)
-        if res is None:
-            return False
-        return res.value != "?"
 
     @property
     def extra_state_attributes(self):

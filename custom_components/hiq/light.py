@@ -272,19 +272,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
     @property
     def is_on(self) -> bool:
         """Return the state of the light."""
-        res = self.coordinator.data.vars.get(self._attr_unique_id, None)
-        if res is None or res.value == "0" or res.value == "?":
-            return False
-        return True
-
-    @property
-    def available(self) -> bool:
-        """Return if this light is available or not."""
-        res = self.coordinator.data.vars.get(self._attr_unique_id, None)
-        if res is None or res.value == "?":
-            LOGGER.debug("%s -> not available", self._attr_unique_id)
-            return False
-        return True
+        return self.coordinator.get_value(self._attr_unique_id, 1.0, 0, None)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""

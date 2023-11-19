@@ -180,44 +180,15 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         coordinator.data.add_var(f"{self._prefix}_setpoint_active")
         coordinator.data.add_var(f"{self._nad}.hvac_mode")
 
-    def _get_value(
-        self,
-        tag: str,
-        factor: float = 1.0,
-        precision: int = 0,
-        def_val: int | float | None = None,
-    ) -> int | float | None:
-        """Return a single Tag Value."""
-        res = self.coordinator.data.vars.get(tag, None)
-        if res is None:
-            return def_val
-        if res.value == "?" or res.value is None:
-            LOGGER.debug("got unknown value for %s", str(tag))
-            return def_val
-        if factor == 1.0:
-            LOGGER.debug("value for %s -> %s", str(tag), str(res.value))
-            return int(res.value)
-        if factor != 1.0:
-            converted_numerical_value = float(res.value.replace(",", "")) * factor
-            value = f"{converted_numerical_value:z.{precision}f}"
-            LOGGER.debug(
-                "value for %s -> %s",
-                str(tag),
-                str(value),
-            )
-            return float(value)
-
-        return res.value
-
     @property
     def current_temperature(self) -> float | None:
         """Return the reported current temperature for the device."""
-        return self._get_value(f"{self._prefix}_temperature", 0.1, 1)
+        return self.coordinator.get_value(f"{self._prefix}_temperature", 0.1, 1)
 
     @property
     def current_humidity(self) -> float | None:
         """Return the current humidity."""
-        if (humidity := self._get_value(f"{self._prefix}_humidity", 1.0, 0)) is None:
+        if (humidity := self.coordinator.get_value(f"{self._prefix}_humidity", 1.0, 0)) is None:
             return None
         if humidity > 0:
             return humidity
@@ -227,67 +198,67 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     def hvac_action(self) -> HVACAction | None:
         """Return the hvac action."""
         mode = CYBRO_TO_HA_HVAC_MODE_MAP[
-            self._get_value(f"{self._nad}.hvac_mode", def_val=0)
+            self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=0)
         ]
         if mode == HVACMode.HEAT:
             return CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP[
-                self._get_value(f"{self._prefix}_output", def_val=0)
+                self.coordinator.get_value(f"{self._prefix}_output", def_val=0)
             ]
         if mode == HVACMode.COOL:
             return CYBRO_TO_HA_HVAC_ACTION_COOL_MAP[
-                self._get_value(f"{self._prefix}_output", def_val=0)
+                self.coordinator.get_value(f"{self._prefix}_output", def_val=0)
             ]
         return HVACAction.OFF
 
     @property
     def target_temperature(self) -> float | None:
         """Return the target temperature for the device."""
-        return self._get_value(f"{self._prefix}_setpoint", 0.1, 1)
+        return self.coordinator.get_value(f"{self._prefix}_setpoint", 0.1, 1)
 
     @property
     def target_temperature_low(self):
         """Return the lower bound temperature we try to reach."""
-        return self._get_value(f"{self._prefix}_setpoint_lo", 0.1, 1, 5.0)
+        return self.coordinator.get_value(f"{self._prefix}_setpoint_lo", 0.1, 1, 5.0)
 
     @property
     def target_temperature_high(self):
         """Return the higher bound temperature we try to reach."""
-        return self._get_value(f"{self._prefix}_setpoint_hi", 0.1, 1, 5.0)
+        return self.coordinator.get_value(f"{self._prefix}_setpoint_hi", 0.1, 1, 30.0)
 
     @property
     def hvac_mode(self) -> HVACMode | None:
         """Return the current HVAC mode for the device."""
         mode = CYBRO_TO_HA_HVAC_MODE_MAP[
-            self._get_value(f"{self._nad}.hvac_mode", def_val=0)
+            self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=0)
         ]
         if mode == HVACMode.HEAT:
             self._attr_hvac_modes = SUPPORT_MODES_HEAT
             return CYBRO_TO_HA_HVAC_HEAT_MAP[
-                self._get_value(f"{self._prefix}_active", def_val=0)
+                self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
             ]
         self._attr_hvac_modes = SUPPORT_MODES_COOL
         return CYBRO_TO_HA_HVAC_COOL_MAP[
-            self._get_value(f"{self._prefix}_active", def_val=0)
+            self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
         ]
 
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
         data = {}
-        if floor_tmp := self._get_value(f"{self._prefix}_floor_tmp", 0.1, 1) or None:
+        if floor_tmp := self.coordinator.get_value(f"{self._prefix}_floor_tmp", 0.1, 1) or None:
             data[ATTR_FLOOR_TEMP] = floor_tmp
         if (
-            setp_idle := self._get_value(f"{self._prefix}_setpoint_idle", 0.1, 1)
+            setp_idle := self.coordinator.get_value(f"{self._prefix}_setpoint_idle", 0.1, 1)
             or None
         ):
             data[ATTR_SETPOINT_IDLE] = setp_idle
         if (
-            setp_act := self._get_value(f"{self._prefix}_setpoint_active", 0.1, 1)
+            setp_act := self.coordinator.get_value(f"{self._prefix}_setpoint_active", 0.1, 1)
             or None
         ):
             data[ATTR_SETPOINT_ACTIVE] = setp_act
         if (
-            setp_off := self._get_value(f"{self._prefix}_setpoint_offset", 0.1, 1)
+            setp_off := self.coordinator.get_value(f"{self._prefix}_setpoint_offset", 0.1, 1)
             or None
         ):
             data[ATTR_SETPOINT_OFFSET] = setp_off

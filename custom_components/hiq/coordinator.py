@@ -68,3 +68,31 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         self.async_update_listeners()
 
         return device
+
+    def get_value(
+        self,
+        tag: str,
+        factor: float = 1.0,
+        precision: int = 0,
+        def_val: str | int | float | None = None,
+    ) -> str | int | float | None:
+        """Return a single Tag Value and format it with a specific factor."""
+        res = self.data.vars.get(tag, None)
+        if res is None:
+            return def_val
+        if res.value == "?" or res.value is None:
+            LOGGER.debug("get_value: %s -> ? (%s)", str(tag), str(def_val))
+            return def_val
+        if factor == 1.0:
+            LOGGER.debug("get_value: %s -> %s", str(tag), str(res.value))
+            return int(res.value)
+        if factor != 1.0:
+            converted_numerical_value = float(res.value.replace(",", "")) * factor
+            value = f"{converted_numerical_value:z.{precision}f}"
+            LOGGER.debug(
+                "get_value: %s -> %s",
+                str(tag),
+                str(value),
+            )
+            return float(value)
+        return res.value

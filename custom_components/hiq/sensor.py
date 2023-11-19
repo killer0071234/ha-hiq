@@ -769,18 +769,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
     @property
     def native_value(self) -> datetime | StateType | None:
         """Return the state of the sensor."""
-        res = self.coordinator.data.vars.get(self._attr_unique_id, None)
-        if res is None:
-            return None
-        if res.value == "?":
-            LOGGER.debug("got unknown value for %s", str(self._attr_unique_id))
-            return None
-        if self._var_type == VarType.INT:
-            return int(int(res.value) * self._val_fact)
-        if self._var_type == VarType.FLOAT:
-            return float(res.value.replace(",", "")) * self._val_fact
-
-        return res.value
+        return self.coordinator.get_value(self._attr_unique_id, self._val_fact, self._attr_suggested_display_precision)
 
     @property
     def extra_state_attributes(self):

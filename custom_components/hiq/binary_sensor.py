@@ -223,13 +223,7 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return entity state."""
-        if self._attr_unique_id in self.coordinator.data.vars:
-            self._attr_available = True
-            return (
-                self.coordinator.data.vars[self._attr_unique_id].value == self._value_on
-            )
-        self._attr_available = False
-        return None
+        return self.coordinator.get_value(self._attr_unique_id)
 
     @property
     def extra_state_attributes(self):
