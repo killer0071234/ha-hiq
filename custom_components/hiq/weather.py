@@ -1,8 +1,6 @@
 """Support for the Cybro weather."""
 from __future__ import annotations
 
-from typing import cast
-
 from cybro import VarType
 from homeassistant.components.weather import WeatherEntity
 from homeassistant.config_entries import ConfigEntry
@@ -23,7 +21,6 @@ from .const import (
     DEVICE_HW_VERSION,
     DEVICE_SW_VERSION,
     DOMAIN,
-    LOGGER,
     MANUFACTURER,
     MANUFACTURER_URL,
 )
