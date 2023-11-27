@@ -83,16 +83,19 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         if res.value == "?" or res.value is None:
             LOGGER.debug("get_value: %s -> ? (%s)", str(tag), str(def_val))
             return def_val
-        if factor == 1.0:
+        try:
+            # try to parse float value, if fails, try to return int, else return as string
+            if factor != 1.0 or precision != 0 or res.value in (",", "."):
+                converted_numerical_value = float(res.value.replace(",", "")) * factor
+                value = f"{converted_numerical_value:z.{precision}f}"
+                LOGGER.debug(
+                    "get_value: %s -> %s",
+                    str(tag),
+                    str(value),
+                )
+                return float(value)
             LOGGER.debug("get_value: %s -> %s", str(tag), str(res.value))
             return int(res.value)
-        if factor != 1.0:
-            converted_numerical_value = float(res.value.replace(",", "")) * factor
-            value = f"{converted_numerical_value:z.{precision}f}"
-            LOGGER.debug(
-                "get_value: %s -> %s",
-                str(tag),
-                str(value),
-            )
-            return float(value)
-        return res.value
+        except ValueError:
+            LOGGER.debug("get_value: %s -> %s", str(tag), str(res.value))
+            return res.value
