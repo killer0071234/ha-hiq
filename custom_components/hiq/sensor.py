@@ -130,7 +130,7 @@ def add_system_tags(
             attr_entity_category=EntityCategory.DIAGNOSTIC,
             attr_device_class=None,
             val_fact=1.0,
-            display_precision=0,
+            display_precision=None,
             enabled=False,
             dev_info=dev_info,
         )
@@ -726,7 +726,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         attr_entity_category: EntityCategory = None,
         attr_device_class: SensorDeviceClass = None,
         val_fact: float = 1.0,
-        display_precision: int = 1,
+        display_precision: int | None = 1,
         enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
@@ -769,7 +769,9 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
     @property
     def native_value(self) -> datetime | StateType | None:
         """Return the state of the sensor."""
-        return self.coordinator.get_value(self._attr_unique_id, self._val_fact, self._attr_suggested_display_precision)
+        return self.coordinator.get_value(
+            self._attr_unique_id, self._val_fact, self._attr_suggested_display_precision
+        )
 
     @property
     def extra_state_attributes(self):
