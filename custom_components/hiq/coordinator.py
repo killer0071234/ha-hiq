@@ -73,7 +73,7 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         self,
         tag: str,
         factor: float = 1.0,
-        precision: int = 0,
+        precision: int | None = 0,
         def_val: str | int | float | None = None,
     ) -> str | int | float | None:
         """Return a single Tag Value and format it with a specific factor."""
@@ -84,6 +84,9 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
             LOGGER.debug("get_value: %s -> ? (%s)", str(tag), str(def_val))
             return def_val
         try:
+            if precision is None:
+                LOGGER.debug("get_value: %s -> %s", str(tag), str(res.value))
+                return res.value
             # try to parse float value, if fails, try to return int, else return as string
             if factor != 1.0 or precision != 0 or res.value in (",", "."):
                 converted_numerical_value = float(res.value.replace(",", "")) * factor
