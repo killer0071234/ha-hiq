@@ -4,7 +4,10 @@ from __future__ import annotations
 import homeassistant.helpers.device_registry as dr
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_DEVICE_ID, ATTR_ENTITY_ID, CONF_ADDRESS, Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+)
 
 from .const import (
     DOMAIN,
@@ -26,6 +29,7 @@ PLATFORMS = [
     Platform.SENSOR,
     Platform.WEATHER,
     Platform.CLIMATE,
+    Platform.NUMBER,
 ]
 
 
