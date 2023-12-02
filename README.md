@@ -46,6 +46,7 @@ Currently supported are:
 - [climate](#climate)
 - [binary_sensor](#binary_sensor)
 - [sensor](#sensor)
+- [number](#number)
 
 ---
 
@@ -184,6 +185,38 @@ In presence of expansion units with temperature / humidity sensors, it will add 
 | `cXXXX.thYY HVAC auxilary temperature` | Measured temperature of auxilary sensor.           | `cXXXX.auxilary_temperature` | if `zz_enable` is set |
 
 XXXX is the NAD of the controller, and YYYY is the IEX module prefix (eg: lc00, bc02..)
+
+---
+
+### number<a name="number"></a>
+
+To set some parameters in the controller, there are some `number` Entities exposed.
+
+#### For TH (thermostat) expansion unit:
+
+| Entity name                                                  | Description                                                  | Controller var                      | Enabled |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ----------------------------------- | ------- |
+| `cXXXX.thYY thermostat setpoint idle`                        | Secondary setpoint, used when thermostat is off.             | `cXXXX.thYY_setpoint_idle`          | no      |
+|                                                              | Zero means output is off.                                    |                                     |         |
+| `cXXXX.thYY thermostat setpoint idle cooling`                | Secondary setpoint for cooling, used when thermostat is off. | `cXXXX.thYY_setpoint_idle_c`        | no      |
+|                                                              | Zero means output is off.                                    |                                     |         |
+| `cXXXX.thYY thermostat setpoint idle heating`                | Secondary heating setpoint, used when thermostat is off.     | `cXXXX.thYY_setpoint_idle_h`        | no      |
+|                                                              | Zero means output is off.                                    |                                     |         |
+| `cXXXX.thYY thermostat setpoint offset`                      | Setpoint correction, used to affect regulated temperature    | `cXXXX.thYY_setpoint_offset`        | no      |
+|                                                              | without changing setpoint.                                   |                                     |         |
+| `cXXXX.thYY thermostat setpoint offset cooling`              | Setpoint correction for cooling, used to affect              | `cXXXX.thYY_setpoint_offset_c`      | no      |
+|                                                              | regulated temperature without changing setpoint.             |                                     |         |
+| `cXXXX.thYY thermostat setpoint offset heating`              | Setpoint correction for heating, used to affect              | `cXXXX.thYY_setpoint_offset_h`      | no      |
+|                                                              | regulated temperature without changing setpoint.             |                                     |         |
+| `cXXXX.thYY thermostat hystheresis`                          | Hysteresis for on/off regulation.                            | `cXXXX.thYY_setpoint_hystheresis`   | no      |
+|                                                              | Defined as distance between on and off points.               |                                     |         |
+| `cXXXX.thYY thermostat hystheresis cooling`                  | Hysteresis for on/off regulation in cooling mode.            | `cXXXX.thYY_setpoint_hystheresis_c` | no      |
+|                                                              | Defined as distance between on and off points.               |                                     |         |
+| `cXXXX.thYY thermostat hystheresis heating`                  | Hysteresis for on/off regulation in heating mode.            | `cXXXX.thYY_setpoint_hystheresis_h` | no      |
+|                                                              | Defined as distance between on and off points.               |                                     |         |
+| `cXXXX.thYY thermostat activation time max function`         | Activation period for max function [s].                      | `cXXXX.thYY_max_time`               | no      |
+| `cXXXX.thYY thermostat activation time max function cooling` | Activation period for max function in cooling [s].           | `cXXXX.thYY_max_time_c`             | no      |
+| `cXXXX.thYY thermostat activation time max function heating` | Activation period for max function in heating [s].           | `cXXXX.thYY_max_time_h`             | no      |
 
 ---
 
