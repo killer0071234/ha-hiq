@@ -30,6 +30,8 @@ PLATFORMS = [
     Platform.WEATHER,
     Platform.CLIMATE,
     Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SWITCH,
 ]
 
 
@@ -178,3 +180,30 @@ def _get_tag_list(hass: HomeAssistant, data: dict, tag_name: str) -> list:
     if target_entities:
         return list(dict.fromkeys(target_entities))
     return []
+
+def get_write_req_th(key: str, unique_id: str) -> str | None:
+    """Return write req tag for THs or None."""
+    if key in (
+        f"{unique_id}_temperature_source",
+        f"{unique_id}_temperature_offset",
+        f"{unique_id}_fan_options",
+        f"{unique_id}_display_mode",
+    ):
+        return f"{unique_id}_config1_req"
+    if key in (
+        f"{unique_id}_setpoint_idle",
+        f"{unique_id}_setpoint_lo",
+        f"{unique_id}_setpoint_hi",
+        f"{unique_id}_max_time",
+    ):
+        return f"{unique_id}_config2_req"
+    if key in (
+        f"{unique_id}_lightness_day",
+        f"{unique_id}_lightness_night",
+        f"{unique_id}_window_enable",
+        f"{unique_id}_beep_enable",
+    ):
+        return f"{unique_id}_config3_req"
+    if key in (f"{unique_id}_dndmmr_enable",):
+        return f"{unique_id}_config4_req"
+    return None

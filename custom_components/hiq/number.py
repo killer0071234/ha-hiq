@@ -1,4 +1,4 @@
-"""Support for HIQ-Home sensors."""
+"""Support for HIQ-Home number."""
 from __future__ import annotations
 
 from re import search
@@ -17,7 +17,7 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
@@ -34,6 +34,7 @@ from .const import (
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
+from . import get_write_req_th
 
 
 async def async_setup_entry(
@@ -41,7 +42,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up HIQ-Home sensor based on a config entry."""
+    """Set up HIQ-Home numbers based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
@@ -58,8 +59,8 @@ def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
     add_all: bool = False,
 ) -> list[HiqNumberEntity] | None:
-    """Find temperature sensors for thermostat tags in the plc vars.
-    eg: c1000.th00_floor_tmp and so on.
+    """Find numbers for thermostat tags in the plc vars.
+    eg: c1000.th00_setpoint_idle and so on.
     """
     res: list[HiqNumberEntity] = []
 
@@ -70,12 +71,6 @@ def add_th_tags(
         if key.endswith("_c"):
             return f"{name} cooling"
         return name
-
-    def _write_req(key: str, unique_id: str) -> str | None:
-        """Return write req tag or None."""
-        if key.endswith("_c") or key.endswith("_h"):
-            return None
-        return f"{unique_id}_config2_req"
 
     # find different thermostat vars
     for key in coordinator.data.plc_info.plc_vars:
@@ -114,13 +109,13 @@ def add_th_tags(
                         val_fact=0.1,
                         attr_min_value=0.0,
                         attr_max_value=40.0,
-                        var_write_req=_write_req(key, unique_id),
+                        var_write_req=get_write_req_th(key, unique_id),
                         enabled=False,
                         dev_info=dev_info,
                     )
                 )
         # setpoint offset
-        if key in (
+        elif key in (
             f"{unique_id}_setpoint_offset",
             f"{unique_id}_setpoint_offset_c",
             f"{unique_id}_setpoint_offset_h",
@@ -138,10 +133,11 @@ def add_th_tags(
                         var_unit=UnitOfTemperature.CELSIUS,
                         var_type=VarType.FLOAT,
                         attr_device_class=NumberDeviceClass.TEMPERATURE,
+                        attr_entity_category=EntityCategory.CONFIG,
                         val_fact=0.1,
                         attr_min_value=-5.0,
                         attr_max_value=5.0,
-                        var_write_req=_write_req(key, unique_id),
+                        var_write_req=get_write_req_th(key, unique_id),
                         enabled=False,
                         dev_info=dev_info,
                     )
@@ -165,10 +161,35 @@ def add_th_tags(
                         var_unit=UnitOfTemperature.CELSIUS,
                         var_type=VarType.FLOAT,
                         attr_device_class=NumberDeviceClass.TEMPERATURE,
+                        attr_entity_category=EntityCategory.CONFIG,
                         val_fact=0.1,
                         attr_min_value=0.1,
                         attr_max_value=10.0,
-                        var_write_req=_write_req(key, unique_id),
+                        var_write_req=get_write_req_th(key, unique_id),
+                        enabled=False,
+                        dev_info=dev_info,
+                    )
+                )
+        # max temp
+        elif key == f"{unique_id}_max_temp":
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                res.append(
+                    HiqNumberEntity(
+                        coordinator=coordinator,
+                        var_name=_format_name(
+                            key, f"{unique_id} thermostat max temp external"
+                        ),
+                        unique_id=key,
+                        var_description="",
+                        var_unit=UnitOfTemperature.CELSIUS,
+                        var_type=VarType.FLOAT,
+                        attr_device_class=NumberDeviceClass.TEMPERATURE,
+                        attr_entity_category=EntityCategory.CONFIG,
+                        val_fact=0.1,
+                        attr_min_value=0.0,
+                        attr_max_value=40.0,
+                        var_write_req=get_write_req_th(key, unique_id),
                         enabled=False,
                         dev_info=dev_info,
                     )
@@ -192,11 +213,12 @@ def add_th_tags(
                         var_unit=UnitOfTime.SECONDS,
                         var_type=VarType.INT,
                         attr_device_class=NumberDeviceClass.DURATION,
+                        attr_entity_category=EntityCategory.CONFIG,
                         val_fact=1.0,
                         display_precision=0,
                         attr_min_value=0,
                         attr_max_value=3600,
-                        var_write_req=_write_req(key, unique_id),
+                        var_write_req=get_write_req_th(key, unique_id),
                         enabled=False,
                         dev_info=dev_info,
                     )
@@ -228,10 +250,11 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         attr_min_value: float = 0.0,
         attr_max_value: float = 100.0,
         var_write_req: str | None = None,
+        attr_entity_category: EntityCategory | None = None,
         enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
-        """Initialize a HIQ-Home sensor entity."""
+        """Initialize a HIQ-Home number entity."""
         super().__init__(coordinator=coordinator)
         if var_name == "":
             return
@@ -242,6 +265,7 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         self._var_write_req = var_write_req
         self._state = None
         self._attr_device_info = dev_info
+        self._attr_entity_category = attr_entity_category
         self._attr_device_class = attr_device_class
         self._attr_mode = mode
 
@@ -271,7 +295,7 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
 
     @property
     def native_value(self) -> datetime | StateType | None:
-        """Return the state of the sensor."""
+        """Return the state of the number."""
         return self.coordinator.get_value(
             self._attr_unique_id,
             self._val_fact,
@@ -290,7 +314,7 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         }
 
     async def async_set_native_value(self, value: float) -> None:
-        """Set new value."""
+        """Set new number value."""
         new_val = value * (1.0 / self._val_fact)
         if self._var_type == VarType.INT:
             new_val = int(new_val)

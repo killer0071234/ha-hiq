@@ -47,6 +47,8 @@ Currently supported are:
 - [binary_sensor](#binary_sensor)
 - [sensor](#sensor)
 - [number](#number)
+- [select](#select)
+- [switch](#switch)
 
 ---
 
@@ -194,29 +196,72 @@ To set some parameters in the controller, there are some `number` Entities expos
 
 #### For TH (thermostat) expansion unit:
 
-| Entity name                                                  | Description                                                  | Controller var                      | Enabled |
-| ------------------------------------------------------------ | ------------------------------------------------------------ | ----------------------------------- | ------- |
-| `cXXXX.thYY thermostat setpoint idle`                        | Secondary setpoint, used when thermostat is off.             | `cXXXX.thYY_setpoint_idle`          | no      |
-|                                                              | Zero means output is off.                                    |                                     |         |
-| `cXXXX.thYY thermostat setpoint idle cooling`                | Secondary setpoint for cooling, used when thermostat is off. | `cXXXX.thYY_setpoint_idle_c`        | no      |
-|                                                              | Zero means output is off.                                    |                                     |         |
-| `cXXXX.thYY thermostat setpoint idle heating`                | Secondary heating setpoint, used when thermostat is off.     | `cXXXX.thYY_setpoint_idle_h`        | no      |
-|                                                              | Zero means output is off.                                    |                                     |         |
-| `cXXXX.thYY thermostat setpoint offset`                      | Setpoint correction, used to affect regulated temperature    | `cXXXX.thYY_setpoint_offset`        | no      |
-|                                                              | without changing setpoint.                                   |                                     |         |
-| `cXXXX.thYY thermostat setpoint offset cooling`              | Setpoint correction for cooling, used to affect              | `cXXXX.thYY_setpoint_offset_c`      | no      |
-|                                                              | regulated temperature without changing setpoint.             |                                     |         |
-| `cXXXX.thYY thermostat setpoint offset heating`              | Setpoint correction for heating, used to affect              | `cXXXX.thYY_setpoint_offset_h`      | no      |
-|                                                              | regulated temperature without changing setpoint.             |                                     |         |
-| `cXXXX.thYY thermostat hystheresis`                          | Hysteresis for on/off regulation.                            | `cXXXX.thYY_setpoint_hystheresis`   | no      |
-|                                                              | Defined as distance between on and off points.               |                                     |         |
-| `cXXXX.thYY thermostat hystheresis cooling`                  | Hysteresis for on/off regulation in cooling mode.            | `cXXXX.thYY_setpoint_hystheresis_c` | no      |
-|                                                              | Defined as distance between on and off points.               |                                     |         |
-| `cXXXX.thYY thermostat hystheresis heating`                  | Hysteresis for on/off regulation in heating mode.            | `cXXXX.thYY_setpoint_hystheresis_h` | no      |
-|                                                              | Defined as distance between on and off points.               |                                     |         |
-| `cXXXX.thYY thermostat activation time max function`         | Activation period for max function [s].                      | `cXXXX.thYY_max_time`               | no      |
-| `cXXXX.thYY thermostat activation time max function cooling` | Activation period for max function in cooling [s].           | `cXXXX.thYY_max_time_c`             | no      |
-| `cXXXX.thYY thermostat activation time max function heating` | Activation period for max function in heating [s].           | `cXXXX.thYY_max_time_h`             | no      |
+| Entity name                                                  | Description                                                                                      | Controller var                      |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------- |
+| `cXXXX.thYY thermostat setpoint idle`                        | Secondary setpoint, used when thermostat is off. Zero means output is off.                       | `cXXXX.thYY_setpoint_idle`          |
+| `cXXXX.thYY thermostat setpoint idle cooling`                | Secondary setpoint for cooling, used when thermostat is off. Zero means output is off.           | `cXXXX.thYY_setpoint_idle_c`        |
+| `cXXXX.thYY thermostat setpoint idle heating`                | Secondary heating setpoint, used when thermostat is off. Zero means output is off.               | `cXXXX.thYY_setpoint_idle_h`        |
+| `cXXXX.thYY thermostat setpoint offset`                      | Setpoint correction, used to affect regulated temperature without changing setpoint.             | `cXXXX.thYY_setpoint_offset`        |
+| `cXXXX.thYY thermostat setpoint offset cooling`              | Setpoint correction for cooling, used to affect regulated temperature without changing setpoint. | `cXXXX.thYY_setpoint_offset_c`      |
+| `cXXXX.thYY thermostat setpoint offset heating`              | Setpoint correction for heating, used to affect regulated temperature without changing setpoint. | `cXXXX.thYY_setpoint_offset_h`      |
+| `cXXXX.thYY thermostat hystheresis`                          | Hysteresis for on/off regulation. Defined as distance between on and off points.                 | `cXXXX.thYY_setpoint_hystheresis`   |
+| `cXXXX.thYY thermostat hystheresis cooling`                  | Hysteresis for on/off regulation in cooling mode. Defined as distance between on and off points. | `cXXXX.thYY_setpoint_hystheresis_c` |
+| `cXXXX.thYY thermostat hystheresis heating`                  | Hysteresis for on/off regulation in heating mode. Defined as distance between on and off points. | `cXXXX.thYY_setpoint_hystheresis_h` |
+| `cXXXX.thYY thermostat activation time max function`         | Activation period for max function [s].                                                          | `cXXXX.thYY_max_time`               |
+| `cXXXX.thYY thermostat activation time max function cooling` | Activation period for max function in cooling [s].                                               | `cXXXX.thYY_max_time_c`             |
+| `cXXXX.thYY thermostat activation time max function heating` | Activation period for max function in heating [s].                                               | `cXXXX.thYY_max_time_h`             |
+| `cXXXX.thYY thermostat max temp external`                    | External sensor max temperature setpoint.                                                        | `cXXXX.thYY_max_temp`               |
+
+By default all of the `number` entities are disabled.
+
+Note: Not all entities are supported by stock HIQ firmware!
+Some of them are additions to HIQ functionality.
+
+---
+
+### select<a name="select"></a>
+
+To set some parameters in the controller, there are some `select` Entities exposed.
+
+#### For TH (thermostat) expansion unit:
+
+| Entity name                                | Description                                                                                         | Controller var                  |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `cXXXX.thYY thermostat temperature source` | Source of measured temperature: 0-internal sensor, 1-external sensor, 2-remote from another device. | `cXXXX.thYY_temperature_source` |
+| `cXXXX.thYY thermostat display mode`       | Select what to display when thermostat is off: 0-nothing, 1- ---, 2-temperature.                    | `cXXXX.thYY_display_mode`       |
+
+#### For hvac (internal):
+
+| Entity name            | Description                             | Controller var    |
+| ---------------------- | --------------------------------------- | ----------------- |
+| `cXXXX.thYY HVAC mode` | Hvac mode: 0-off, 1-heating, 2-cooling. | `cXXXX.hvac_mode` |
+
+By default all of the `select` entities are disabled.
+
+---
+
+### switch<a name="switch"></a>
+
+To set some parameters in the controller, there are some `switch` Entities exposed.
+
+#### For TH (thermostat) expansion unit:
+
+| Entity name                                  | Description                                                                                   | Controller var             |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------- |
+| `cXXXX.thYY thermostat window switch enable` | Select how window switch input is handled: 0-ignore input, 1-use input to disable thermostat. | `cXXXX.thYY_window_enable` |
+| `cXXXX.thYY thermostat demand enable`        | Enable thermostat to control energy source: 0-off, 1-on.                                      | `cXXXX.thYY_demand_enable` |
+
+#### For hvac (internal):
+
+| Entity name                                        | Description                                                                   | Controller var                      |
+| -------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
+| `cXXXX.thYY HVAC outdoor temperature enable`       | Enable outdoor temperature measurement: 0-off, 1-on.                          | `cXXXX.outdoor_temperature_enable`  |
+| `cXXXX.thYY HVAC wall temperature enable`          | Enable wall temperature measurement: 0-off, 1-on.                             | `cXXXX.wall_temperature_enable`     |
+| `cXXXX.thYY HVAC water temperature enable`         | Enable water temperature measurement: 0-off, 1-on.                            | `cXXXX.water_temperature_enable`    |
+| `cXXXX.thYY HVAC auxilary temperature enable`      | Enable auxilary temperature measurement: 0-off, 1-on.                         | `cXXXX.auxilary_temperature_enable` |
+| `cXXXX.thYY HVAC automatic setpoint limits enable` | Automatically set when operation mode is changed between heating and cooling. | `cXXXX.auto_limits_enable`          |
+
+By default all of the `switch` entities are disabled.
 
 ---
 
