@@ -44,6 +44,14 @@ HA_TO_CYBRO_HVAC_MODE_MAP = {
     "cooling": 2,
 }
 
+HA_TO_CYBRO_FAN_LIMIT_MAP = {
+    "off": 0,
+    "F 1": 1,
+    "F 2": 2,
+    "F 3": 3,
+    "max": 4,
+}
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -133,6 +141,23 @@ def add_th_tags(
                         unique_id=key,
                         var_description="",
                         attr_options=HA_TO_CYBRO_DISPLAY_MODE_MAP,
+                        attr_entity_category=EntityCategory.CONFIG,
+                        var_write_req=get_write_req_th(key, unique_id),
+                        enabled=False,
+                        dev_info=dev_info,
+                    )
+                )
+        # fan limit
+        elif key in (f"{unique_id}_fan_limit",):
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                res.append(
+                    HiqSelectEntity(
+                        coordinator=coordinator,
+                        var_name=_format_name(key, f"{unique_id} thermostat fan limit"),
+                        unique_id=key,
+                        var_description="",
+                        attr_options=HA_TO_CYBRO_FAN_LIMIT_MAP,
                         attr_entity_category=EntityCategory.CONFIG,
                         var_write_req=get_write_req_th(key, unique_id),
                         enabled=False,

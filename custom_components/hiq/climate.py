@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from re import search
-from typing import Any, cast
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -156,9 +156,9 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         self._nad = var_names[0]
 
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self._prefix)},
-            name=cast(str | None, f"{self._prefix} thermostat"),
+            identifiers={(coordinator.cybro.nad, f"{self._prefix} thermostat")},
             manufacturer=MANUFACTURER,
+            name=f"{self._prefix} thermostat",
             suggested_area=AREA_CLIMATE,
             via_device=(DOMAIN, coordinator.cybro.nad),
         )
@@ -187,7 +187,9 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     @property
     def current_humidity(self) -> float | None:
         """Return the current humidity."""
-        if (humidity := self.coordinator.get_value(f"{self._prefix}_humidity", 1.0, 0)) is None:
+        if (
+            humidity := self.coordinator.get_value(f"{self._prefix}_humidity", 1.0, 0)
+        ) is None:
             return None
         if humidity > 0:
             return humidity
