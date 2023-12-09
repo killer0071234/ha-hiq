@@ -52,6 +52,12 @@ async def async_setup_entry(
     if th_tags is not None:
         async_add_entities(th_tags)
 
+    hvac_tags = add_hvac_tags(
+        coordinator,
+    )
+    if hvac_tags is not None:
+        async_add_entities(hvac_tags)
+
 
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
@@ -140,6 +146,62 @@ def add_th_tags(
                         dev_info=dev_info,
                     )
                 )
+        # setpoint low
+        elif key in (
+            f"{unique_id}_setpoint_lo",
+            f"{unique_id}_setpoint_lo_c",
+            f"{unique_id}_setpoint_lo_h",
+        ):
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                res.append(
+                    HiqNumberEntity(
+                        coordinator=coordinator,
+                        var_name=_format_name(
+                            key, f"{unique_id} thermostat setpoint low"
+                        ),
+                        unique_id=key,
+                        var_description="",
+                        var_unit=UnitOfTemperature.CELSIUS,
+                        var_type=VarType.FLOAT,
+                        attr_device_class=NumberDeviceClass.TEMPERATURE,
+                        attr_entity_category=EntityCategory.CONFIG,
+                        val_fact=0.1,
+                        attr_min_value=0.0,
+                        attr_max_value=40.0,
+                        var_write_req=get_write_req_th(key, unique_id),
+                        enabled=False,
+                        dev_info=dev_info,
+                    )
+                )
+        # setpoint high
+        elif key in (
+            f"{unique_id}_setpoint_hi",
+            f"{unique_id}_setpoint_hi_c",
+            f"{unique_id}_setpoint_hi_h",
+        ):
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                res.append(
+                    HiqNumberEntity(
+                        coordinator=coordinator,
+                        var_name=_format_name(
+                            key, f"{unique_id} thermostat setpoint high"
+                        ),
+                        unique_id=key,
+                        var_description="",
+                        var_unit=UnitOfTemperature.CELSIUS,
+                        var_type=VarType.FLOAT,
+                        attr_device_class=NumberDeviceClass.TEMPERATURE,
+                        attr_entity_category=EntityCategory.CONFIG,
+                        val_fact=0.1,
+                        attr_min_value=0.0,
+                        attr_max_value=40.0,
+                        var_write_req=get_write_req_th(key, unique_id),
+                        enabled=False,
+                        dev_info=dev_info,
+                    )
+                )
         # hysteresis
         elif key in (
             f"{unique_id}_hysteresis",
@@ -221,6 +283,65 @@ def add_th_tags(
                         dev_info=dev_info,
                     )
                 )
+
+    if len(res) > 0:
+        return res
+    return None
+
+
+def add_hvac_tags(
+    coordinator: HiqDataUpdateCoordinator,
+) -> list[HiqNumberEntity] | None:
+    """Find and add HVAC tags in the plc vars.
+    eg: c1000.outdoor_temperature and so on.
+    """
+    res: list[HiqNumberEntity] = []
+
+    def _format_name(key: str, name: str, unique_id: str) -> str:
+        """Format key to name."""
+        subpart = key.replace(unique_id, "")
+        return name + subpart.replace("_", " ").replace(".", " ")
+
+    # find different hvac related vars
+    for key in coordinator.data.plc_info.plc_vars:
+        unique_id = key
+        # identifier is cNAD
+        grp = search(r"c\d+", key)
+        if grp:
+            unique_id = grp.group()
+        dev_info = DeviceInfo(
+            identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
+            manufacturer=MANUFACTURER,
+            name=f"{unique_id} HVAC",
+            suggested_area=AREA_CLIMATE,
+            via_device=(DOMAIN, coordinator.cybro.nad),
+        )
+
+        # get hvac settings
+        if key in (
+            f"{unique_id}.setpoint_idle_heating",
+            f"{unique_id}.setpoint_lo_heating",
+            f"{unique_id}.setpoint_hi_heating",
+            f"{unique_id}.setpoint_idle_cooling",
+            f"{unique_id}.setpoint_lo_cooling",
+            f"{unique_id}.setpoint_hi_cooling",
+        ):
+            res.append(
+                HiqNumberEntity(
+                    coordinator=coordinator,
+                    var_name=_format_name(key, f"{unique_id} HVAC", unique_id),
+                    unique_id=key,
+                    var_description="",
+                    var_unit=UnitOfTemperature.CELSIUS,
+                    var_type=VarType.FLOAT,
+                    attr_device_class=NumberDeviceClass.TEMPERATURE,
+                    val_fact=0.1,
+                    attr_min_value=0.0,
+                    attr_max_value=40.0,
+                    enabled=False,
+                    dev_info=dev_info,
+                )
+            )
 
     if len(res) > 0:
         return res

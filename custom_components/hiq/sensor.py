@@ -548,7 +548,7 @@ def add_th_tags(
                         dev_info=dev_info,
                     )
                 )
-        if key == f"{unique_id}_temperature_1":
+        elif key == f"{unique_id}_temperature_1":
             ge_ok = is_general_error_ok(coordinator, key)
             if add_all or ge_ok:
                 res.append(
@@ -567,9 +567,8 @@ def add_th_tags(
                         dev_info=dev_info,
                     )
                 )
-
         # get humidity of thermostat
-        if key == f"{unique_id}_humidity":
+        elif key == f"{unique_id}_humidity":
             ge_ok = is_general_error_ok(coordinator, key)
             if add_all or ge_ok:
                 res.append(
@@ -585,6 +584,46 @@ def add_th_tags(
                         val_fact=1.0,
                         display_precision=0,
                         enabled=ge_ok,
+                        dev_info=dev_info,
+                    )
+                )
+        # get light sensor of thermostat
+        elif key == f"{unique_id}_light_sensor":
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                res.append(
+                    HiqSensorEntity(
+                        coordinator=coordinator,
+                        var_name=f"{unique_id} thermostat light sensor",
+                        unique_id=key,
+                        var_description="",
+                        var_unit=PERCENTAGE,
+                        var_type=VarType.FLOAT,
+                        attr_entity_category=None,
+                        attr_device_class=None,
+                        val_fact=0.097751711,  # sensor is returning 0..1023 = 0..100%
+                        display_precision=1,
+                        enabled=False,
+                        dev_info=dev_info,
+                    )
+                )
+        # get remaining max time
+        elif key == f"{unique_id}_max_timer":
+            ge_ok = is_general_error_ok(coordinator, key)
+            if add_all or ge_ok:
+                res.append(
+                    HiqSensorEntity(
+                        coordinator=coordinator,
+                        var_name=f"{unique_id} thermostat max timer remain",
+                        unique_id=key,
+                        var_description="",
+                        var_unit=UnitOfTime.SECONDS,
+                        var_type=VarType.INT,
+                        attr_entity_category=None,
+                        attr_device_class=SensorDeviceClass.DURATION,
+                        val_fact=1.0,
+                        display_precision=0,
+                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
