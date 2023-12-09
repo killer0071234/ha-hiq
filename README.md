@@ -96,6 +96,7 @@ Possible commands for the thermostats are:
 
 - Turn heating / cooling on / off
 - Set setpoint temperature
+- Set presets eco (idle) / comfort (on) / boost (fan max)
 
 ---
 

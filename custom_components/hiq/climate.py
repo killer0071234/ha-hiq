@@ -14,6 +14,12 @@ from homeassistant.components.climate import (
     HVACAction,
     HVACMode,
 )
+from homeassistant.components.climate.const import (
+    PRESET_COMFORT,
+    PRESET_BOOST,
+    PRESET_ECO,
+    PRESET_NONE,
+)
 from homeassistant.const import (
     ATTR_TEMPERATURE,
     PRECISION_TENTHS,
@@ -33,11 +39,16 @@ from .const import (
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
 from .light import is_general_error_ok
+from . import get_write_req_th
 
-SUPPORT_FLAGS = ClimateEntityFeature.TARGET_TEMPERATURE
+SUPPORT_FLAGS = (
+    ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
+)
 
 SUPPORT_MODES_HEAT = [HVACMode.OFF, HVACMode.HEAT]
 SUPPORT_MODES_COOL = [HVACMode.OFF, HVACMode.COOL]
+
+SUPPORT_PRESET_MODES = [PRESET_COMFORT, PRESET_BOOST, PRESET_ECO]
 
 HA_TO_CYBRO_HVAC_HEAT_MAP = {
     HVACMode.OFF: 0,
@@ -138,6 +149,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
 
     _attr_hvac_modes = SUPPORT_MODES_HEAT
     _attr_hvac_mode = HVACMode.AUTO
+    _attr_preset_modes = SUPPORT_PRESET_MODES
     _attr_supported_features = SUPPORT_FLAGS
     _attr_target_temperature_step = PRECISION_TENTHS
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
@@ -177,6 +189,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         coordinator.data.add_var(f"{self._prefix}_setpoint_idle")
         coordinator.data.add_var(f"{self._prefix}_setpoint_offset")
         coordinator.data.add_var(f"{self._prefix}_setpoint_active")
+        coordinator.data.add_var(f"{self._prefix}_fan_limit")
         coordinator.data.add_var(f"{self._nad}.hvac_mode")
 
     @property
@@ -199,7 +212,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     def hvac_action(self) -> HVACAction | None:
         """Return the hvac action."""
         mode = CYBRO_TO_HA_HVAC_MODE_MAP[
-            self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=0)
+            self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=1)
         ]
         if mode == HVACMode.HEAT:
             return CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP[
@@ -214,52 +227,92 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     @property
     def target_temperature(self) -> float | None:
         """Return the target temperature for the device."""
-        return self.coordinator.get_value(f"{self._prefix}_setpoint", 0.1, 1)
-
-    @property
-    def target_temperature_low(self):
-        """Return the lower bound temperature we try to reach."""
-        return self.coordinator.get_value(f"{self._prefix}_setpoint_lo", 0.1, 1, 5.0)
-
-    @property
-    def target_temperature_high(self):
-        """Return the higher bound temperature we try to reach."""
-        return self.coordinator.get_value(f"{self._prefix}_setpoint_hi", 0.1, 1, 30.0)
+        # update min / max to actual values from thermostat
+        self._attr_min_temp = self.coordinator.get_value(
+            f"{self._prefix}_setpoint_lo", 0.1, 1, 0.0
+        )
+        self._attr_max_temp = self.coordinator.get_value(
+            f"{self._prefix}_setpoint_hi", 0.1, 1, 40.0
+        )
+        if sp := self.coordinator.get_value(
+            f"{self._prefix}_setpoint_active", 0.1, 1, None
+        ):
+            return sp
+        if self.preset_mode in (PRESET_BOOST, PRESET_COMFORT):
+            return self.coordinator.get_value(f"{self._prefix}_setpoint", 0.1, 1)
+        return self.coordinator.get_value(f"{self._prefix}_setpoint_idle", 0.1, 1)
 
     @property
     def hvac_mode(self) -> HVACMode | None:
         """Return the current HVAC mode for the device."""
         mode = CYBRO_TO_HA_HVAC_MODE_MAP[
-            self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=0)
+            self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=1)
         ]
         if mode == HVACMode.HEAT:
             self._attr_hvac_modes = SUPPORT_MODES_HEAT
             return CYBRO_TO_HA_HVAC_HEAT_MAP[
                 self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
             ]
-        self._attr_hvac_modes = SUPPORT_MODES_COOL
-        return CYBRO_TO_HA_HVAC_COOL_MAP[
-            self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
-        ]
+        if mode == HVACMode.COOL:
+            self._attr_hvac_modes = SUPPORT_MODES_COOL
+            return CYBRO_TO_HA_HVAC_COOL_MAP[
+                self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
+            ]
+        self._attr_hvac_modes = list(HVACMode.OFF)
+        HVACMode.OFF
+
+    @property
+    def preset_mode(self) -> str | None:
+        """Return the current preset mode, e.g., home, away, temp.
+
+        Requires ClimateEntityFeature.PRESET_MODE.
+        """
+        # set supported presets
+        if (
+            CYBRO_TO_HA_HVAC_MODE_MAP[
+                self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=1)
+            ]
+            == HVACMode.OFF
+        ):
+            self._attr_preset_modes = None
+        else:
+            self._attr_preset_modes = SUPPORT_PRESET_MODES
+
+        if self.coordinator.get_value(f"{self._prefix}_fan_limit", 1.0, 0, 0) == 4:
+            return PRESET_BOOST
+        if self.coordinator.get_value(f"{self._prefix}_active", 1.0, 0, 0) == 1:
+            return PRESET_COMFORT
+        if self.coordinator.get_value(f"{self._prefix}_setpoint_idle", 0.1, 0, 0) > 0:
+            return PRESET_ECO
+        return PRESET_NONE
 
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
         data = {}
-        if floor_tmp := self.coordinator.get_value(f"{self._prefix}_floor_tmp", 0.1, 1) or None:
+        if (
+            floor_tmp := self.coordinator.get_value(f"{self._prefix}_floor_tmp", 0.1, 1)
+            or None
+        ):
             data[ATTR_FLOOR_TEMP] = floor_tmp
         if (
-            setp_idle := self.coordinator.get_value(f"{self._prefix}_setpoint_idle", 0.1, 1)
+            setp_idle := self.coordinator.get_value(
+                f"{self._prefix}_setpoint_idle", 0.1, 1
+            )
             or None
         ):
             data[ATTR_SETPOINT_IDLE] = setp_idle
         if (
-            setp_act := self.coordinator.get_value(f"{self._prefix}_setpoint_active", 0.1, 1)
+            setp_act := self.coordinator.get_value(
+                f"{self._prefix}_setpoint_active", 0.1, 1
+            )
             or None
         ):
             data[ATTR_SETPOINT_ACTIVE] = setp_act
         if (
-            setp_off := self.coordinator.get_value(f"{self._prefix}_setpoint_offset", 0.1, 1)
+            setp_off := self.coordinator.get_value(
+                f"{self._prefix}_setpoint_offset", 0.1, 1
+            )
             or None
         ):
             data[ATTR_SETPOINT_OFFSET] = setp_off
@@ -273,12 +326,36 @@ class HiqThermostat(HiqEntity, ClimateEntity):
             await self.coordinator.cybro.write_var(f"{self._prefix}_active", "1")
         await self.coordinator.async_refresh()
 
+    async def async_set_preset_mode(self, preset_mode: str) -> None:
+        """Set new preset mode."""
+        if preset_mode == PRESET_BOOST:
+            await self.coordinator.cybro.write_var(f"{self._prefix}_fan_limit", "4")
+        elif preset_mode == PRESET_COMFORT:
+            await self.coordinator.cybro.write_var(f"{self._prefix}_active", "1")
+        elif preset_mode == PRESET_ECO:
+            await self.coordinator.cybro.write_var(f"{self._prefix}_active", "0")
+        await self.coordinator.async_refresh()
+
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
         if (temperature := kwargs.get(ATTR_TEMPERATURE)) is None:
             return
 
-        await self.coordinator.cybro.write_var(
-            f"{self._prefix}_setpoint", int(temperature * 10.0)
-        )
+        tags = {}
+        if self.preset_mode == PRESET_BOOST and self.hvac_mode == HVACMode.HEAT:
+            tags[f"{self._prefix}_setpoint_hi"] = int(temperature * 10.0)
+            if req := get_write_req_th(f"{self._prefix}_setpoint_hi", self._prefix):
+                tags[req] = "1"
+        elif self.preset_mode == PRESET_BOOST and self.hvac_mode == HVACMode.COOL:
+            tags[f"{self._prefix}_setpoint_lo"] = int(temperature * 10.0)
+            if req := get_write_req_th(f"{self._prefix}_setpoint_lo", self._prefix):
+                tags[req] = "1"
+        elif self.preset_mode == PRESET_ECO:
+            tags[f"{self._prefix}_setpoint_idle"] = int(temperature * 10.0)
+            if req := get_write_req_th(f"{self._prefix}_setpoint_idle", self._prefix):
+                tags[req] = "1"
+        else:
+            tags[f"{self._prefix}_setpoint"] = int(temperature * 10.0)
+
+        await self.coordinator.cybro.request(tags)
         await self.coordinator.async_refresh()
