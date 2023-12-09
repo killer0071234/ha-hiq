@@ -754,19 +754,6 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         self._val_fact = val_fact
 
     @property
-    def device_info(self):
-        """Return the device info."""
-        if self._attr_device_info is not None:
-            return self._attr_device_info
-        return DeviceInfo(
-            identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
-            manufacturer=MANUFACTURER,
-            configuration_url=MANUFACTURER_URL,
-            name=f"PLC {self.coordinator.cybro.nad}",
-            model=DEVICE_DESCRIPTION,
-        )
-
-    @property
     def native_value(self) -> datetime | StateType | None:
         """Return the state of the sensor."""
         return self.coordinator.get_value(

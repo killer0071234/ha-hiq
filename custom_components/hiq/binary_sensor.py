@@ -5,8 +5,7 @@ from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import AREA_CLIMATE
@@ -191,7 +190,7 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
         attr_entity_category: EntityCategory = None,
         attr_device_class: BinarySensorDeviceClass = None,
         enabled: bool = True,
-        dev_info: DeviceInfo = None,
+        dev_info: DeviceInfo | None = None,
     ) -> None:
         """Pass coordinator to CoordinatorEntity."""
         super().__init__(coordinator=coordinator)
@@ -206,19 +205,6 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
             self._attr_entity_registry_enabled_default = False
         self._value_on = value_on
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        if self._attr_device_info is not None:
-            return self._attr_device_info
-        return DeviceInfo(
-            identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
-            manufacturer=MANUFACTURER,
-            configuration_url=MANUFACTURER_URL,
-            name=f"PLC {self.coordinator.cybro.nad}",
-            model=DEVICE_DESCRIPTION,
-        )
 
     @property
     def is_on(self) -> bool | None:

@@ -3,10 +3,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.cover import ATTR_POSITION
-from homeassistant.components.cover import CoverDeviceClass
-from homeassistant.components.cover import CoverEntity
-from homeassistant.components.cover import CoverEntityFeature
+from homeassistant.components.cover import (
+    ATTR_POSITION,
+    CoverDeviceClass,
+    CoverEntity,
+    CoverEntityFeature,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -146,19 +148,6 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
             coordinator.data.add_var(self._moving_dn_var, var_type=0)
         if self._moving_up_var != "":
             coordinator.data.add_var(self._moving_up_var, var_type=0)
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        if self._attr_device_info is not None:
-            return self._attr_device_info
-        return DeviceInfo(
-            identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
-            manufacturer=MANUFACTURER,
-            configuration_url=MANUFACTURER_URL,
-            name=f"c{self.coordinator.cybro.nad} blind channel",
-            model=DEVICE_DESCRIPTION,
-        )
 
     @property
     def is_closed(self) -> bool | None:
