@@ -20,8 +20,6 @@ from .const import (
     DOMAIN,
     LOGGER,
     MANUFACTURER,
-    MANUFACTURER_URL,
-    DEVICE_DESCRIPTION,
 )
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
@@ -220,19 +218,6 @@ class HiqSwitchEntity(HiqEntity, SwitchEntity):
         coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
         self._var_type = VarType.INT
         self._var_invert = var_invert
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        if self._attr_device_info is not None:
-            return self._attr_device_info
-        return DeviceInfo(
-            identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
-            manufacturer=MANUFACTURER,
-            configuration_url=MANUFACTURER_URL,
-            name=f"PLC {self.coordinator.cybro.nad}",
-            model=DEVICE_DESCRIPTION,
-        )
 
     @property
     def is_on(self) -> bool | None:

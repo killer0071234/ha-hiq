@@ -20,8 +20,6 @@ from .const import (
     DOMAIN,
     LOGGER,
     MANUFACTURER,
-    MANUFACTURER_URL,
-    DEVICE_DESCRIPTION,
 )
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
@@ -234,19 +232,6 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
         self._var_type = VarType.INT
         self._attr_options = list(attr_options)
         self._var_map = attr_options
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        if self._attr_device_info is not None:
-            return self._attr_device_info
-        return DeviceInfo(
-            identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
-            manufacturer=MANUFACTURER,
-            configuration_url=MANUFACTURER_URL,
-            name=f"PLC {self.coordinator.cybro.nad}",
-            model=DEVICE_DESCRIPTION,
-        )
 
     @property
     def current_option(self) -> str | None:

@@ -92,19 +92,6 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
         self._attr_device_info = device
 
     @property
-    def device_info(self):
-        """Return the device info."""
-        if self._attr_device_info is not None:
-            return self._attr_device_info
-        return DeviceInfo(
-            identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
-            manufacturer=MANUFACTURER,
-            configuration_url=MANUFACTURER_URL,
-            name=f"c{self.coordinator.cybro.nad} weather",
-            model=DEVICE_DESCRIPTION,
-        )
-
-    @property
     def condition(self) -> str | None:
         """Return the current condition."""
         return ""

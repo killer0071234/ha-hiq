@@ -25,11 +25,9 @@ from .const import (
     AREA_CLIMATE,
     ATTR_DESCRIPTION,
     CONF_IGNORE_GENERAL_ERROR,
-    DEVICE_DESCRIPTION,
     DOMAIN,
     LOGGER,
     MANUFACTURER,
-    MANUFACTURER_URL,
 )
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
@@ -279,19 +277,6 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         self._attr_native_step = self._val_fact
         self._attr_native_min_value = attr_min_value
         self._attr_native_max_value = attr_max_value
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        if self._attr_device_info is not None:
-            return self._attr_device_info
-        return DeviceInfo(
-            identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
-            manufacturer=MANUFACTURER,
-            configuration_url=MANUFACTURER_URL,
-            name=f"PLC {self.coordinator.cybro.nad}",
-            model=DEVICE_DESCRIPTION,
-        )
 
     @property
     def native_value(self) -> datetime | StateType | None:

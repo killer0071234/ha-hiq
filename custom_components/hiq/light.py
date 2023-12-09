@@ -235,19 +235,6 @@ class HiqUpdateLight(HiqEntity, LightEntity):
             LOGGER.debug("rgb light: %s", var_name)
 
     @property
-    def device_info(self):
-        """Return the device info."""
-        if self._attr_device_info is not None:
-            return self._attr_device_info
-        return DeviceInfo(
-            identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
-            manufacturer=MANUFACTURER,
-            configuration_url=MANUFACTURER_URL,
-            name=f"c{self.coordinator.cybro.nad} light output",
-            model=DEVICE_DESCRIPTION,
-        )
-
-    @property
     def hs_color(self) -> tuple[float, float] | None:
         """Return the hue and saturation color value [float, float]."""
         if self._rgb_hue_out is None or self._rgb_sat_out is None:
