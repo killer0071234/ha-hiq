@@ -31,6 +31,7 @@ ATTR_FLOOR_TEMP = "Floor temperature"
 ATTR_SETPOINT_IDLE = "Setpoint idle"
 ATTR_SETPOINT_ACTIVE = "Setpoint active"
 ATTR_SETPOINT_OFFSET = "Setpoint offset"
+ATTR_FAN_OPTIONS = "fan_options"
 
 # Device classes
 DEVICE_CLASS_HIQ_LIVE_OVERRIDE: Final = "hiq__live_override"
