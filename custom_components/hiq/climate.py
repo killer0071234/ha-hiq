@@ -33,6 +33,7 @@ from .const import (
     ATTR_FLOOR_TEMP,
     ATTR_SETPOINT_IDLE,
     ATTR_SETPOINT_ACTIVE,
+    ATTR_FAN_OPTIONS,
     ATTR_SETPOINT_OFFSET,
     MANUFACTURER,
 )
@@ -48,7 +49,8 @@ SUPPORT_FLAGS = (
 SUPPORT_MODES_HEAT = [HVACMode.OFF, HVACMode.HEAT]
 SUPPORT_MODES_COOL = [HVACMode.OFF, HVACMode.COOL]
 
-SUPPORT_PRESET_MODES = [PRESET_COMFORT, PRESET_BOOST, PRESET_ECO]
+SUPPORT_PRESET_MODES_ALL = [PRESET_COMFORT, PRESET_BOOST, PRESET_ECO]
+SUPPORT_PRESET_MODES = [PRESET_COMFORT, PRESET_ECO]
 
 HA_TO_CYBRO_HVAC_HEAT_MAP = {
     HVACMode.OFF: 0,
@@ -190,6 +192,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         coordinator.data.add_var(f"{self._prefix}_setpoint_offset")
         coordinator.data.add_var(f"{self._prefix}_setpoint_active")
         coordinator.data.add_var(f"{self._prefix}_fan_limit")
+        coordinator.data.add_var(f"{self._prefix}_fan_options")
         coordinator.data.add_var(f"{self._nad}.hvac_mode")
 
     @property
@@ -277,6 +280,13 @@ class HiqThermostat(HiqEntity, ClimateEntity):
             self._attr_preset_modes = None
         else:
             self._attr_preset_modes = SUPPORT_PRESET_MODES
+            # allow boost only if fan max is enabled on thermostat
+            if (
+                self.coordinator.get_value(f"{self._prefix}_fan_options", 1.0, 0, 0)
+                >> 4
+                & 1
+            ) != 0:
+                self._attr_preset_modes = SUPPORT_PRESET_MODES_ALL
 
         if self.coordinator.get_value(f"{self._prefix}_fan_limit", 1.0, 0, 0) == 4:
             return PRESET_BOOST
@@ -316,6 +326,13 @@ class HiqThermostat(HiqEntity, ClimateEntity):
             or None
         ):
             data[ATTR_SETPOINT_OFFSET] = setp_off
+        if (
+            fan_opts := self.coordinator.get_value(
+                f"{self._prefix}_fan_options", 1.0, 0, 0
+            )
+            or None
+        ):
+            data[ATTR_FAN_OPTIONS] = fan_opts
         return data
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
