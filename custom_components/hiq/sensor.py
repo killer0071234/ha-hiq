@@ -460,6 +460,7 @@ def find_power_meter(
                             var_type=VarType.FLOAT,
                             attr_entity_category=None,
                             attr_device_class=SensorDeviceClass.ENERGY,
+                            attr_state_class=SensorStateClass.TOTAL_INCREASING,
                             val_fact=1.0,
                             display_precision=0,
                             enabled=is_ok,
@@ -479,6 +480,7 @@ def find_power_meter(
                             var_type=VarType.FLOAT,
                             attr_entity_category=None,
                             attr_device_class=SensorDeviceClass.ENERGY,
+                            attr_state_class=SensorStateClass.TOTAL_INCREASING,
                             val_fact=1.0,
                             display_precision=0,
                             enabled=False,
@@ -762,8 +764,9 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         var_description: str = "",
         var_unit: str | None = None,
         var_type: VarType = VarType.INT,
-        attr_entity_category: EntityCategory = None,
-        attr_device_class: SensorDeviceClass = None,
+        attr_entity_category: EntityCategory | None = None,
+        attr_device_class: SensorDeviceClass | None = None,
+        attr_state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT,
         val_fact: float = 1.0,
         display_precision: int | None = 1,
         enabled: bool = True,
@@ -783,8 +786,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         self._attr_suggested_display_precision = display_precision
 
         self._attr_device_class = attr_device_class
-        if attr_device_class == SensorDeviceClass.ENERGY:
-            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+        self._attr_state_class = attr_state_class
         if enabled is False:
             self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
