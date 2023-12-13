@@ -1,0 +1,1 @@
+pytest --cov=custom_components.hiq --cov-config=.coveragerc --cov-report term-missing -vv ./tests/

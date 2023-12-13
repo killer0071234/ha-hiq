@@ -4,4 +4,9 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+echo "Installing environment..."
 python3 -m pip install --requirement requirements.txt
+
+echo "Installing test environment..."
+python3 -m pip install colorlog pre-commit
+python3 -m pip install --requirement requirements_test.txt
