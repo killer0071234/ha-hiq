@@ -162,7 +162,7 @@ def add_system_tags(
                         var_name=key,
                         unique_id=None,
                         var_description="",
-                        var_unit=UnitOfTime.MINUTES,
+                        var_unit=UnitOfTime.HOURS,
                         var_type=VarType.INT,
                         attr_entity_category=EntityCategory.DIAGNOSTIC,
                         attr_device_class=SensorDeviceClass.DURATION,
