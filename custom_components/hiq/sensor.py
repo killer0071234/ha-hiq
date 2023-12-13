@@ -129,6 +129,7 @@ def add_system_tags(
             var_type=VarType.STR,
             attr_entity_category=EntityCategory.DIAGNOSTIC,
             attr_device_class=None,
+            attr_state_class=None,  # set to None for string sensors (currently the only one)
             val_fact=1.0,
             display_precision=None,
             enabled=False,
