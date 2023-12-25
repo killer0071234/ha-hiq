@@ -15,6 +15,10 @@ DEVICE_SW_VERSION = "0.2.0"
 
 LOGGER = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=10)
+SCAN_INTERVAL_ADDON = timedelta(seconds=5)
+
+DEFAULT_HOST = "85493909-cybroscgiserver"
+DEFAULT_PORT = 4000
 
 # Options
 CONF_IGNORE_GENERAL_ERROR = "ignore_general_error"
