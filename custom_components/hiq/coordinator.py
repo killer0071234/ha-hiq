@@ -16,9 +16,11 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
+from .const import DEFAULT_HOST
 from .const import DOMAIN
 from .const import LOGGER
 from .const import SCAN_INTERVAL
+from .const import SCAN_INTERVAL_ADDON
 
 
 class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
@@ -47,7 +49,7 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
             hass,
             LOGGER,
             name=DOMAIN,
-            update_interval=SCAN_INTERVAL,
+            update_interval=SCAN_INTERVAL_ADDON if entry.data[CONF_HOST] == DEFAULT_HOST else SCAN_INTERVAL,
         )
 
     async def _async_update_data(self) -> HiqDevice:

@@ -18,6 +18,8 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CONF_IGNORE_GENERAL_ERROR
+from .const import DEFAULT_HOST
+from .const import DEFAULT_PORT
 from .const import DOMAIN
 from .const import LOGGER
 
@@ -84,8 +86,8 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_HOST, default="85493909-cybroscgiserver"): str,
-                    vol.Required(CONF_PORT, default=4000): int,
+                    vol.Required(CONF_HOST, default=DEFAULT_HOST): str,
+                    vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
                     vol.Required(CONF_ADDRESS, default=1000): int,
                     vol.Required(CONF_IGNORE_GENERAL_ERROR, default=False): bool,
                 }
