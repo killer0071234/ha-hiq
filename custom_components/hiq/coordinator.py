@@ -45,11 +45,20 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         self.unique_id = "c" + str(entry.data[CONF_ADDRESS])
         self.unsub: Callable | None = None
 
+        update_interval = SCAN_INTERVAL
+        if entry.data[CONF_HOST] in (
+            DEFAULT_HOST,
+            "localhost",
+            "127.0.0.1",
+            "::1",
+        ):
+            update_interval = SCAN_INTERVAL_ADDON
+
         super().__init__(
             hass,
             LOGGER,
             name=DOMAIN,
-            update_interval=SCAN_INTERVAL_ADDON if entry.data[CONF_HOST] == DEFAULT_HOST else SCAN_INTERVAL,
+            update_interval=update_interval,
         )
 
     async def _async_update_data(self) -> HiqDevice:
