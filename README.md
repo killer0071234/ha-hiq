@@ -49,6 +49,7 @@ Currently supported are:
 - [number](#number)
 - [select](#select)
 - [switch](#switch)
+- [button](#button)
 
 ---
 
@@ -170,7 +171,7 @@ In presence of expansion units with temperature / humidity sensors, it will add 
 | `cXXXX.YYYY_temperature` | Measured temperature [°C].              | if module has no `general_error` |
 | `cXXXX.YYYY_humidity`    | Measured relative humidity (0..100%rh). | if module has no `general_error` |
 
-#### For TH (thermostat) expansion unit:
+#### For every TH (thermostat) expansion unit:
 
 | Entity name                           | Description                                          | Controller var            | Enabled |
 | ------------------------------------- | ---------------------------------------------------- | --------------------------| ------- |
@@ -195,7 +196,7 @@ XXXX is the NAD of the controller, and YYYY is the IEX module prefix (eg: lc00, 
 
 To set some parameters in the controller, there are some `number` Entities exposed.
 
-#### For TH (thermostat) expansion unit:
+#### For every TH (thermostat) expansion unit:
 
 | Entity name                                                  | Description                                                                                      | Controller var                      |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------- |
@@ -224,7 +225,7 @@ Some of them are additions to HIQ functionality.
 
 To set some parameters in the controller, there are some `select` Entities exposed.
 
-#### For TH (thermostat) expansion unit:
+#### For every TH (thermostat) expansion unit:
 
 | Entity name                                | Description                                                                                         | Controller var                  |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------- |
@@ -233,11 +234,16 @@ To set some parameters in the controller, there are some `select` Entities expos
 
 #### For hvac (internal):
 
-| Entity name            | Description                             | Controller var    |
-| ---------------------- | --------------------------------------- | ----------------- |
-| `cXXXX.thYY HVAC mode` | Hvac mode: 0-off, 1-heating, 2-cooling. | `cXXXX.hvac_mode` |
+| Entity name                                       | Description                                                                  | Controller var                  |
+| ------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------- |
+| `cXXXX HVAC mode`                                 | Hvac mode: 0-off, 1-heating, 2-cooling.                                      | `cXXXX.hvac_mode`               |
+| `cXXXX HVAC thermostat config display mode`       | What to display when thermostat is off: 0-nothing, 1-dashes, 2-temperature.  | `cXXXX.hvac_display_mode`       |
+| `cXXXX HVAC thermostat config temperature source` | Select temperature source: 0-internal, 1-external, 2-remote from controller. | `cXXXX.hvac_temperature_source` |
 
 By default all of the `select` entities are disabled.
+
+Note: Not all entities are supported by stock HIQ firmware!
+Some of them are additions to HIQ functionality.
 
 ---
 
@@ -245,7 +251,7 @@ By default all of the `select` entities are disabled.
 
 To set some parameters in the controller, there are some `switch` Entities exposed.
 
-#### For TH (thermostat) expansion unit:
+#### For every TH (thermostat) expansion unit:
 
 | Entity name                                  | Description                                                                                   | Controller var             |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------- |
@@ -254,15 +260,40 @@ To set some parameters in the controller, there are some `switch` Entities expos
 
 #### For hvac (internal):
 
-| Entity name                                        | Description                                                                   | Controller var                      |
-| -------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
-| `cXXXX.thYY HVAC outdoor temperature enable`       | Enable outdoor temperature measurement: 0-off, 1-on.                          | `cXXXX.outdoor_temperature_enable`  |
-| `cXXXX.thYY HVAC wall temperature enable`          | Enable wall temperature measurement: 0-off, 1-on.                             | `cXXXX.wall_temperature_enable`     |
-| `cXXXX.thYY HVAC water temperature enable`         | Enable water temperature measurement: 0-off, 1-on.                            | `cXXXX.water_temperature_enable`    |
-| `cXXXX.thYY HVAC auxilary temperature enable`      | Enable auxilary temperature measurement: 0-off, 1-on.                         | `cXXXX.auxilary_temperature_enable` |
-| `cXXXX.thYY HVAC automatic setpoint limits enable` | Automatically set when operation mode is changed between heating and cooling. | `cXXXX.auto_limits_enable`          |
+| Entity name                                     | Description                                                                   | Controller var                      |
+| ----------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
+| `cXXXX HVAC outdoor temperature enable`         | Enable outdoor temperature measurement: 0-off, 1-on.                          | `cXXXX.outdoor_temperature_enable`  |
+| `cXXXX HVAC wall temperature enable`            | Enable wall temperature measurement: 0-off, 1-on.                             | `cXXXX.wall_temperature_enable`     |
+| `cXXXX HVAC water temperature enable`           | Enable water temperature measurement: 0-off, 1-on.                            | `cXXXX.water_temperature_enable`    |
+| `cXXXX HVAC auxilary temperature enable`        | Enable auxilary temperature measurement: 0-off, 1-on.                         | `cXXXX.auxilary_temperature_enable` |
+| `cXXXX HVAC automatic setpoint limits enable`   | Automatically set when operation mode is changed between heating and cooling. | `cXXXX.auto_limits_enable`          |
+| `cXXXX HVAC thermostat fan option speed auto 1` | Enable fan speed auto 1.                                                      | `cXXXX.hvac_fan_option_b01`         |
+| `cXXXX HVAC thermostat fan option speed auto 2` | Enable fan speed auto 2.                                                      | `cXXXX.hvac_fan_option_b02`         |
+| `cXXXX HVAC thermostat fan option speed auto 3` | Enable fan speed auto 3.                                                      | `cXXXX.hvac_fan_option_b03`         |
+| `cXXXX HVAC thermostat fan option speed max`    | Enable fan speed max.                                                         | `cXXXX.hvac_fan_option_b04`         |
 
 By default all of the `switch` entities are disabled.
+
+Note: Not all entities are supported by stock HIQ firmware!
+Some of them are additions to HIQ functionality.
+
+---
+
+### button<a name="button"></a>
+
+To save / read parameters in the expansion units, there are some `button` Entities exposed.
+
+#### For every TH (thermostat) expansion unit:
+
+| Entity name                                | Description                                                                        | Controller var                |
+| ------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------- |
+| `cXXXX HVAC thYY config request`           | Set to update configuration parameters. It will reset automatically after sending. | `cXXXX.thYY_config1_req`      |
+| `cXXXX HVAC thYY config read back request` | Request to read options back from thermostat.                                      | `cXXXX.thYY_options_back_req` |
+
+By default all of the `button` entities are disabled.
+
+Note: Not all entities are supported by stock HIQ firmware!
+Some of them are additions to HIQ functionality.
 
 ---
 
@@ -274,7 +305,7 @@ By default all of the `switch` entities are disabled.
 
 ### Devices
 
-A device is created for each HIQ-controller (diagnostics) and for every light, blind.
+A device is created for each HIQ-controller (diagnostics) and for every light, blind, thermostat and HVAC.
 
 ---
 
