@@ -217,6 +217,44 @@ def add_hvac_tags(
                     dev_info=dev_info,
                 )
             )
+        # temperature source
+        if key in (f"{unique_id}_temperature_source",):
+            res.append(
+                HiqSelectEntity(
+                    coordinator=coordinator,
+                    var_name=_format_name(
+                        key,
+                        f"{unique_id} HVAC thermostat config temperature source",
+                        unique_id,
+                    ),
+                    unique_id=key,
+                    var_description="",
+                    attr_options=HA_TO_CYBRO_TEMP_SOURCE_MAP,
+                    attr_entity_category=EntityCategory.CONFIG,
+                    var_write_req=None,
+                    enabled=False,
+                    dev_info=dev_info,
+                )
+            )
+        # display mode
+        elif key in (f"{unique_id}.hvac_display_mode",):
+            res.append(
+                HiqSelectEntity(
+                    coordinator=coordinator,
+                    var_name=_format_name(
+                        key,
+                        f"{unique_id} HVAC thermostat config display mode",
+                        unique_id,
+                    ),
+                    unique_id=key,
+                    var_description="",
+                    attr_options=HA_TO_CYBRO_DISPLAY_MODE_MAP,
+                    attr_entity_category=EntityCategory.CONFIG,
+                    var_write_req=None,
+                    enabled=True,
+                    dev_info=dev_info,
+                )
+            )
 
     if len(res) > 0:
         return res

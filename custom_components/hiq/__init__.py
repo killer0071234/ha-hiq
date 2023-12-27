@@ -24,6 +24,7 @@ from .coordinator import HiqDataUpdateCoordinator
 
 PLATFORMS = [
     Platform.BINARY_SENSOR,
+    Platform.BUTTON,
     Platform.COVER,
     Platform.LIGHT,
     Platform.SENSOR,
@@ -180,6 +181,7 @@ def _get_tag_list(hass: HomeAssistant, data: dict, tag_name: str) -> list:
     if target_entities:
         return list(dict.fromkeys(target_entities))
     return []
+
 
 def get_write_req_th(key: str, unique_id: str) -> str | None:
     """Return write req tag for THs or None."""

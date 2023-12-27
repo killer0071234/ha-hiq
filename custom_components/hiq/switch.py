@@ -138,6 +138,9 @@ def add_hvac_tags(
         subpart = key.replace(unique_id, "")
         if subpart.startswith("auto_limits"):
             subpart.replace("automatic setpoint limits")
+        elif subpart.endswith("_b04"):
+            subpart = subpart.replace("_b04", " speed max")
+        subpart = subpart.replace("_b0", " speed auto ")
         return name + subpart.replace("_", " ").replace(".", " ")
 
     # find different hvac related vars
@@ -174,6 +177,29 @@ def add_hvac_tags(
                     unique_id=key,
                     var_description="",
                     var_write_req=None,
+                    attr_entity_category=EntityCategory.CONFIG,
+                    enabled=False,
+                    dev_info=dev_info,
+                )
+            )
+        # fan option
+        elif key in (
+            f"{unique_id}.hvac_fan_option_b01",
+            f"{unique_id}.hvac_fan_option_b02",
+            f"{unique_id}.hvac_fan_option_b03",
+            f"{unique_id}.hvac_fan_option_b04",
+        ):
+            res.append(
+                HiqSwitchEntity(
+                    coordinator=coordinator,
+                    var_name=_format_name(
+                        key,
+                        f"{unique_id} HVAC thermostat fan option",
+                        unique_id,
+                    ),
+                    unique_id=key,
+                    var_description="",
+                    var_write_req=get_write_req_th(key, unique_id),
                     attr_entity_category=EntityCategory.CONFIG,
                     enabled=False,
                     dev_info=dev_info,
