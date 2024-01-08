@@ -20,361 +20,361 @@
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "scgi_server_not_running": "scgi server is not running",
       "plc_not_existing": "PLC with address `{address}` does not exist"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "scan_overrun": {
+        "name": "Controller program cycle overrun"
+      },
+      "retentive_fail": {
+        "name": "Controller retentive memory failure"
+      },
+      "general_error": {
+        "name": "General error"
+      },
+      "output": {
+        "name": "Output"
+      }
     },
-    "entity": {
-      "binary_sensor": {
-        "scan_overrun": {
-          "name": "Controller program cycle overrun"
-        },
-        "retentive_fail": {
-          "name": "Controller retentive memory failure"
-        },
-        "general_error": {
-          "name": "General error"
-        },
-        "output": {
-          "name": "Output"
-        }
-      },
-      "cover": {
-        "blind": {
-          "name": "Blind"
-        }
-      },
+    "cover": {
+      "blind": {
+        "name": "Blind"
+      }
+    },
+    "light": {
       "light": {
-        "light": {
-          "name": "Light"
+        "name": "Light"
+      }
+    },
+    "sensor": {
+      "sys_ip_port": {
+        "name": "Controller address"
+      },
+      "scan_time": {
+        "name": "Scan time"
+      },
+      "scan_time_max": {
+        "name": "Scan time maximum"
+      },
+      "cybro_uptime": {
+        "name": "Controller uptime"
+      },
+      "operating_hours": {
+        "name": "Controller operation hours"
+      },
+      "scan_frequency": {
+        "name": "Controller program cycles"
+      },
+      "iex_power_supply": {
+        "name": "Iex voltage"
+      },
+      "lc00_iex_power_supply": {
+        "name": "lc00 iex voltage"
+      },
+      "lc01_iex_power_supply": {
+        "name": "lc01 iex voltage"
+      },
+      "lc02_iex_power_supply": {
+        "name": "lc02 iex voltage"
+      },
+      "lc03_iex_power_supply": {
+        "name": "lc03 iex voltage"
+      },
+      "lc04_iex_power_supply": {
+        "name": "lc04 iex voltage"
+      },
+      "lc05_iex_power_supply": {
+        "name": "lc05 iex voltage"
+      },
+      "lc06_iex_power_supply": {
+        "name": "lc06 iex voltage"
+      },
+      "lc07_iex_power_supply": {
+        "name": "lc07 iex voltage"
+      },
+      "ld00_iex_power_supply": {
+        "name": "ld00 iex voltage"
+      },
+      "ld01_iex_power_supply": {
+        "name": "ld01 iex voltage"
+      },
+      "ld02_iex_power_supply": {
+        "name": "ld02 iex voltage"
+      },
+      "ld03_iex_power_supply": {
+        "name": "ld03 iex voltage"
+      },
+      "ld04_iex_power_supply": {
+        "name": "ld04 iex voltage"
+      },
+      "ld05_iex_power_supply": {
+        "name": "ld05 iex voltage"
+      },
+      "ld06_iex_power_supply": {
+        "name": "ld06 iex voltage"
+      },
+      "ld07_iex_power_supply": {
+        "name": "ld07 iex voltage"
+      },
+      "ld08_iex_power_supply": {
+        "name": "ld08 iex voltage"
+      },
+      "ld09_iex_power_supply": {
+        "name": "ld09 iex voltage"
+      },
+      "bc00_iex_power_supply": {
+        "name": "bc00 iex voltage"
+      },
+      "bc01_iex_power_supply": {
+        "name": "bc01 iex voltage"
+      },
+      "bc02_iex_power_supply": {
+        "name": "bc02 iex voltage"
+      },
+      "bc03_iex_power_supply": {
+        "name": "bc03 iex voltage"
+      },
+      "bc04_iex_power_supply": {
+        "name": "bc04 iex voltage"
+      },
+      "bc05_iex_power_supply": {
+        "name": "bc05 iex voltage"
+      },
+      "th00_iex_power_supply": {
+        "name": "th00 iex voltage"
+      },
+      "th01_iex_power_supply": {
+        "name": "th01 iex voltage"
+      },
+      "th02_iex_power_supply": {
+        "name": "th02 iex voltage"
+      },
+      "th03_iex_power_supply": {
+        "name": "th03 iex voltage"
+      },
+      "th04_iex_power_supply": {
+        "name": "th04 iex voltage"
+      },
+      "th05_iex_power_supply": {
+        "name": "th05 iex voltage"
+      },
+      "th06_iex_power_supply": {
+        "name": "th06 iex voltage"
+      },
+      "th07_iex_power_supply": {
+        "name": "th07 iex voltage"
+      },
+      "th08_iex_power_supply": {
+        "name": "th08 iex voltage"
+      },
+      "th09_iex_power_supply": {
+        "name": "th09 iex voltage"
+      },
+      "fc00_iex_power_supply": {
+        "name": "fc00 iex voltage"
+      },
+      "fc01_iex_power_supply": {
+        "name": "fc01 iex voltage"
+      },
+      "fc02_iex_power_supply": {
+        "name": "fc02 iex voltage"
+      },
+      "fc03_iex_power_supply": {
+        "name": "fc03 iex voltage"
+      },
+      "fc04_iex_power_supply": {
+        "name": "fc04 iex voltage"
+      },
+      "fc05_iex_power_supply": {
+        "name": "fc05 iex voltage"
+      },
+      "sc00_iex_power_supply": {
+        "name": "sc00 iex voltage"
+      },
+      "sc01_iex_power_supply": {
+        "name": "sc01 iex voltage"
+      },
+      "sc02_iex_power_supply": {
+        "name": "sc02 iex voltage"
+      },
+      "sc03_iex_power_supply": {
+        "name": "sc03 iex voltage"
+      },
+      "eno_general_error": {
+        "name": "EnOcean general error"
+      },
+      "cybro_power_supply": {
+        "name": "Controller supply voltage"
+      },
+      "temperature_1": {
+        "name": "External temperature"
+      },
+      "light_sensor": {
+        "name": "Light sensor"
+      },
+      "max_timer_remain": {
+        "name": "Max function remain timer"
+      },
+      "outdoor_temperature": {
+        "name": "Outdoor temperature"
+      },
+      "wall_temperature": {
+        "name": "Wall temperature"
+      },
+      "water_temperature": {
+        "name": "Water temperature"
+      },
+      "auxilary_temperature": {
+        "name": "Auxilary temperature"
+      }
+    },
+    "select": {
+      "temperature_source": {
+        "name": "Temperature source sensor",
+        "state": {
+          "internal_sensor": "Internal sensor",
+          "external_sensor": "External sensor",
+          "remote_sensor": "Remote sensor"
         }
       },
-      "sensor": {
-        "sys_ip_port": {
-          "name": "Controller address"
-        },
-        "scan_time": {
-          "name": "Scan time"
-        },
-        "scan_time_max": {
-          "name": "Scan time maximum"
-        },
-        "cybro_uptime": {
-          "name": "Controller uptime"
-        },
-        "operating_hours": {
-          "name": "Controller operation hours"
-        },
-        "scan_frequency": {
-          "name": "Controller program cycles"
-        },
-        "iex_power_supply": {
-          "name": "Iex voltage"
-        },
-        "lc00_iex_power_supply": {
-          "name": "lc00 iex voltage"
-        },
-        "lc01_iex_power_supply": {
-          "name": "lc01 iex voltage"
-        },
-        "lc02_iex_power_supply": {
-          "name": "lc02 iex voltage"
-        },
-        "lc03_iex_power_supply": {
-          "name": "lc03 iex voltage"
-        },
-        "lc04_iex_power_supply": {
-          "name": "lc04 iex voltage"
-        },
-        "lc05_iex_power_supply": {
-          "name": "lc05 iex voltage"
-        },
-        "lc06_iex_power_supply": {
-          "name": "lc06 iex voltage"
-        },
-        "lc07_iex_power_supply": {
-          "name": "lc07 iex voltage"
-        },
-        "ld00_iex_power_supply": {
-          "name": "ld00 iex voltage"
-        },
-        "ld01_iex_power_supply": {
-          "name": "ld01 iex voltage"
-        },
-        "ld02_iex_power_supply": {
-          "name": "ld02 iex voltage"
-        },
-        "ld03_iex_power_supply": {
-          "name": "ld03 iex voltage"
-        },
-        "ld04_iex_power_supply": {
-          "name": "ld04 iex voltage"
-        },
-        "ld05_iex_power_supply": {
-          "name": "ld05 iex voltage"
-        },
-        "ld06_iex_power_supply": {
-          "name": "ld06 iex voltage"
-        },
-        "ld07_iex_power_supply": {
-          "name": "ld07 iex voltage"
-        },
-        "ld08_iex_power_supply": {
-          "name": "ld08 iex voltage"
-        },
-        "ld09_iex_power_supply": {
-          "name": "ld09 iex voltage"
-        },
-        "bc00_iex_power_supply": {
-          "name": "bc00 iex voltage"
-        },
-        "bc01_iex_power_supply": {
-          "name": "bc01 iex voltage"
-        },
-        "bc02_iex_power_supply": {
-          "name": "bc02 iex voltage"
-        },
-        "bc03_iex_power_supply": {
-          "name": "bc03 iex voltage"
-        },
-        "bc04_iex_power_supply": {
-          "name": "bc04 iex voltage"
-        },
-        "bc05_iex_power_supply": {
-          "name": "bc05 iex voltage"
-        },
-        "th00_iex_power_supply": {
-          "name": "th00 iex voltage"
-        },
-        "th01_iex_power_supply": {
-          "name": "th01 iex voltage"
-        },
-        "th02_iex_power_supply": {
-          "name": "th02 iex voltage"
-        },
-        "th03_iex_power_supply": {
-          "name": "th03 iex voltage"
-        },
-        "th04_iex_power_supply": {
-          "name": "th04 iex voltage"
-        },
-        "th05_iex_power_supply": {
-          "name": "th05 iex voltage"
-        },
-        "th06_iex_power_supply": {
-          "name": "th06 iex voltage"
-        },
-        "th07_iex_power_supply": {
-          "name": "th07 iex voltage"
-        },
-        "th08_iex_power_supply": {
-          "name": "th08 iex voltage"
-        },
-        "th09_iex_power_supply": {
-          "name": "th09 iex voltage"
-        },
-        "fc00_iex_power_supply": {
-          "name": "fc00 iex voltage"
-        },
-        "fc01_iex_power_supply": {
-          "name": "fc01 iex voltage"
-        },
-        "fc02_iex_power_supply": {
-          "name": "fc02 iex voltage"
-        },
-        "fc03_iex_power_supply": {
-          "name": "fc03 iex voltage"
-        },
-        "fc04_iex_power_supply": {
-          "name": "fc04 iex voltage"
-        },
-        "fc05_iex_power_supply": {
-          "name": "fc05 iex voltage"
-        },
-        "sc00_iex_power_supply": {
-          "name": "sc00 iex voltage"
-        },
-        "sc01_iex_power_supply": {
-          "name": "sc01 iex voltage"
-        },
-        "sc02_iex_power_supply": {
-          "name": "sc02 iex voltage"
-        },
-        "sc03_iex_power_supply": {
-          "name": "sc03 iex voltage"
-        },
-        "eno_general_error": {
-          "name": "EnOcean general error"
-        },
-        "cybro_power_supply": {
-          "name": "Controller supply voltage"
-        },
-        "temperature_1": {
-          "name": "External temperature"
-        },
-        "light_sensor": {
-          "name": "Light sensor"
-        },
-        "max_timer_remain": {
-          "name": "Max function remain timer"
-        },
-        "outdoor_temperature": {
-          "name": "Outdoor temperature"
-        },
-        "wall_temperature": {
-          "name": "Wall temperature"
-        },
-        "water_temperature": {
-          "name": "Water temperature"
-        },
-        "auxilary_temperature": {
-          "name": "Auxilary temperature"
+      "display_mode": {
+        "name": "Display mode",
+        "state": {
+          "nothing": "Empty display",
+          "minus": "---",
+          "temperature": "Current temperature"
         }
       },
-      "select": {
-        "temperature_source": {
-          "name": "Temperature source sensor",
-          "state": {
-            "internal_sensor": "Internal sensor",
-            "external_sensor": "External sensor",
-            "remote_sensor": "Remote sensor"
-          }
-        },
-        "display_mode": {
-          "name": "Display mode",
-          "state": {
-            "nothing": "Empty display",
-            "minus": "---",
-            "temperature": "Current temperature"
-          }
-        },
-        "fan_limit": {
-          "name": "Fan mode limit",
-          "state": {
-            "off": "[%key:state::default::off%]",
-            "fan1": "Fan speed 1",
-            "fan2": "Fan speed 2",
-            "fan3": "Fan speed 3",
-            "max": "Fan speed max"
-          }
-        },
-        "hvac_mode": {
-          "name": "Operation mode hvac",
-          "state": {
-            "off": "[%key:state::default::off%]",
-            "heating": "Heating",
-            "cooling": "Cooling"
-          }
+      "fan_limit": {
+        "name": "Fan mode limit",
+        "state": {
+          "off": "[%key:state::default::off%]",
+          "fan1": "Fan speed 1",
+          "fan2": "Fan speed 2",
+          "fan3": "Fan speed 3",
+          "max": "Fan speed max"
         }
       },
-      "number": {
-        "setpoint_idle": {
-          "name": "Setpoint idle"
-        },
-        "setpoint_idle_c": {
-          "name": "Setpoint idle cooling"
-        },
-        "setpoint_idle_h": {
-          "name": "Setpoint idle heating"
-        },
-        "setpoint_offset": {
-          "name": "Setpoint offset"
-        },
-        "setpoint_offset_c": {
-          "name": "Setpoint offset cooling"
-        },
-        "setpoint_offset_h": {
-          "name": "Setpoint offset heating"
-        },
-        "setpoint_lo": {
-          "name": "Setpoint min"
-        },
-        "setpoint_lo_c": {
-          "name": "Setpoint min cooling"
-        },
-        "setpoint_lo_h": {
-          "name": "Setpoint min heating"
-        },
-        "setpoint_hi": {
-          "name": "Setpoint max"
-        },
-        "setpoint_hi_c": {
-          "name": "Setpoint max cooling"
-        },
-        "setpoint_hi_h": {
-          "name": "Setpoint max heating"
-        },
-        "hysteresis": {
-          "name": "Hysteresis"
-        },
-        "hysteresis_c": {
-          "name": "Hysteresis cooling"
-        },
-        "hysteresis_h": {
-          "name": "Hysteresis heating"
-        },
-        "max_temp": {
-          "name": "Max temperatur external"
-        },
-        "max_time": {
-          "name": "Activation time max function"
-        },
-        "max_time_c": {
-          "name": "Activation time max function cooling"
-        },
-        "max_time_h": {
-          "name": "Activation time max function heating"
-        },
-        "setpoint_idle_heating": {
-          "name": "Setpoint idle heating"
-        },
-        "setpoint_lo_heating": {
-          "name": "Setpoint min heating"
-        },
-        "setpoint_hi_heating": {
-          "name": "Setpoint max heating"
-        },
-        "setpoint_idle_cooling": {
-          "name": "Setpoint idle cooling"
-        },
-        "setpoint_lo_cooling": {
-          "name": "Setpoint min cooling"
-        },
-        "setpoint_hi_cooling": {
-          "name": "Setpoint max cooling"
+      "hvac_mode": {
+        "name": "Operation mode hvac",
+        "state": {
+          "off": "[%key:state::default::off%]",
+          "heating": "Heating",
+          "cooling": "Cooling"
         }
+      }
+    },
+    "number": {
+      "setpoint_idle": {
+        "name": "Setpoint idle"
       },
-      "switch": {
-        "window_enable": {
-          "name": "Window switch enable"
-        },
-        "demand_enable": {
-          "name": "Demand enable"
-        },
-        "outdoor_temperature_enable": {
-          "name": "Enable outdoor temperature"
-        },
-        "wall_temperature_enable": {
-          "name": "Enable wall temperature"
-        },
-        "water_temperature_enable": {
-          "name": "Enable water temperature"
-        },
-        "auxilary_temperature_enable": {
-          "name": "Enable auxilary temperature"
-        },
-        "auto_limits_enable": {
-          "name": "Enable automatic setpoint limits"
-        },
-        "hvac_fan_option_b01": {
-          "name": "Fan auto speed limit 1"
-        },
-        "hvac_fan_option_b02": {
-          "name": "Fan auto speed limit 2"
-        },
-        "hvac_fan_option_b03": {
-          "name": "Fan auto speed limit 3"
-        },
-        "hvac_fan_option_b04": {
-          "name": "Fan speed limit max"
-        }
+      "setpoint_idle_c": {
+        "name": "Setpoint idle cooling"
+      },
+      "setpoint_idle_h": {
+        "name": "Setpoint idle heating"
+      },
+      "setpoint_offset": {
+        "name": "Setpoint offset"
+      },
+      "setpoint_offset_c": {
+        "name": "Setpoint offset cooling"
+      },
+      "setpoint_offset_h": {
+        "name": "Setpoint offset heating"
+      },
+      "setpoint_lo": {
+        "name": "Setpoint min"
+      },
+      "setpoint_lo_c": {
+        "name": "Setpoint min cooling"
+      },
+      "setpoint_lo_h": {
+        "name": "Setpoint min heating"
+      },
+      "setpoint_hi": {
+        "name": "Setpoint max"
+      },
+      "setpoint_hi_c": {
+        "name": "Setpoint max cooling"
+      },
+      "setpoint_hi_h": {
+        "name": "Setpoint max heating"
+      },
+      "hysteresis": {
+        "name": "Hysteresis"
+      },
+      "hysteresis_c": {
+        "name": "Hysteresis cooling"
+      },
+      "hysteresis_h": {
+        "name": "Hysteresis heating"
+      },
+      "max_temp": {
+        "name": "Max temperatur external"
+      },
+      "max_time": {
+        "name": "Activation time max function"
+      },
+      "max_time_c": {
+        "name": "Activation time max function cooling"
+      },
+      "max_time_h": {
+        "name": "Activation time max function heating"
+      },
+      "setpoint_idle_heating": {
+        "name": "Setpoint idle heating"
+      },
+      "setpoint_lo_heating": {
+        "name": "Setpoint min heating"
+      },
+      "setpoint_hi_heating": {
+        "name": "Setpoint max heating"
+      },
+      "setpoint_idle_cooling": {
+        "name": "Setpoint idle cooling"
+      },
+      "setpoint_lo_cooling": {
+        "name": "Setpoint min cooling"
+      },
+      "setpoint_hi_cooling": {
+        "name": "Setpoint max cooling"
+      }
+    },
+    "switch": {
+      "window_enable": {
+        "name": "Window switch enable"
+      },
+      "demand_enable": {
+        "name": "Demand enable"
+      },
+      "outdoor_temperature_enable": {
+        "name": "Enable outdoor temperature"
+      },
+      "wall_temperature_enable": {
+        "name": "Enable wall temperature"
+      },
+      "water_temperature_enable": {
+        "name": "Enable water temperature"
+      },
+      "auxilary_temperature_enable": {
+        "name": "Enable auxilary temperature"
+      },
+      "auto_limits_enable": {
+        "name": "Enable automatic setpoint limits"
+      },
+      "hvac_fan_option_b01": {
+        "name": "Fan auto speed limit 1"
+      },
+      "hvac_fan_option_b02": {
+        "name": "Fan auto speed limit 2"
+      },
+      "hvac_fan_option_b03": {
+        "name": "Fan auto speed limit 3"
+      },
+      "hvac_fan_option_b04": {
+        "name": "Fan speed limit max"
       }
     }
   }
