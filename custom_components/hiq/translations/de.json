@@ -416,13 +416,13 @@
     },
     "number": {
       "setpoint_idle": {
-        "name": "Sollwert idle"
+        "name": "Sollwert Eco"
       },
       "setpoint_idle_c": {
-        "name": "Sollwert idle kühlen"
+        "name": "Sollwert Eco kühlen"
       },
       "setpoint_idle_h": {
-        "name": "Sollwert idle heizen"
+        "name": "Sollwert Eco heizen"
       },
       "setpoint_offset": {
         "name": "Sollwert Offset"
@@ -473,7 +473,7 @@
         "name": "Max Freigabezeit Max Funktion heizen"
       },
       "setpoint_idle_heating": {
-        "name": "Sollwert idle heizen"
+        "name": "Sollwert Eco heizen"
       },
       "setpoint_lo_heating": {
         "name": "Sollwert min heizen"
@@ -482,7 +482,7 @@
         "name": "Sollwert max heizen"
       },
       "setpoint_idle_cooling": {
-        "name": "Sollwert idle kühlen"
+        "name": "Sollwert Eco kühlen"
       },
       "setpoint_lo_cooling": {
         "name": "Sollwert min kühlen"
