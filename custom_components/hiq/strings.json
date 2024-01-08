@@ -37,6 +37,14 @@
         "name": "Output"
       }
     },
+    "button": {
+      "config1_write_req": {
+        "name": "Config write request"
+      },
+      "config1_read_req": {
+        "name": "Config read request"
+      }
+    },
     "cover": {
       "blind": {
         "name": "Blind"

@@ -181,6 +181,14 @@
         "name": "Ausgang"
       }
     },
+    "button": {
+      "config1_write_req": {
+        "name": "Konfiguration schreiben"
+      },
+      "config1_read_req": {
+        "name": "Konfiguration lesen"
+      }
+    },
     "cover": {
       "blind": {
         "name": "Jalousie"
