@@ -383,7 +383,7 @@
         "name": "Anzeigemodus",
         "state": {
           "nothing": "Leeres Display",
-          "---": "---",
+          "minus": "---",
           "temperature": "Aktuelle Temperatur"
         }
       },

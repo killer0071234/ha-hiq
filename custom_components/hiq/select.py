@@ -36,7 +36,7 @@ HA_TO_CYBRO_TEMP_SOURCE_MAP = {
 
 HA_TO_CYBRO_DISPLAY_MODE_MAP = {
     "nothing": 0,
-    "---": 1,
+    "minus": 1,
     "temperature": 2,
 }
 
