@@ -1,12 +1,14 @@
 """Support for HIQ-Home select."""
 from __future__ import annotations
 
-from re import search
-
+from re import search, sub
+from dataclasses import dataclass
+from typing import Generic, TypeVar
 
 from cybro import VarType
 from homeassistant.components.select import (
     SelectEntity,
+    SelectEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -27,9 +29,9 @@ from .models import HiqEntity
 from . import get_write_req_th
 
 HA_TO_CYBRO_TEMP_SOURCE_MAP = {
-    "internal sensor": 0,
-    "external sensor": 1,
-    "remote sensor": 2,
+    "internal_sensor": 0,
+    "external_sensor": 1,
+    "remote_sensor": 2,
 }
 
 HA_TO_CYBRO_DISPLAY_MODE_MAP = {
@@ -46,9 +48,9 @@ HA_TO_CYBRO_HVAC_MODE_MAP = {
 
 HA_TO_CYBRO_FAN_LIMIT_MAP = {
     "off": 0,
-    "F 1": 1,
-    "F 2": 2,
-    "F 3": 3,
+    "fan1": 1,
+    "fan2": 2,
+    "fan3": 3,
     "max": 4,
 }
 
@@ -75,6 +77,22 @@ async def async_setup_entry(
     )
     if hvac_tags is not None:
         async_add_entities(hvac_tags)
+
+
+T = TypeVar("T")
+
+
+@dataclass
+class HiqSelectEntityDescription(Generic[T], SelectEntityDescription):
+    """HIQ Select Entity Description."""
+
+    def __post_init__(self):
+        """Defaults the translation_key to the sensor key."""
+        self.has_entity_name = True
+        self.translation_key = (
+            self.translation_key
+            or sub(r"c\d+\.", "", self.key).replace(".", "_").lower()
+        )
 
 
 def add_th_tags(
@@ -116,15 +134,14 @@ def add_th_tags(
                 res.append(
                     HiqSelectEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat temperature source"
+                        entity_description=HiqSelectEntityDescription(
+                            key=key,
+                            translation_key="temperature_source",
+                            entity_category=EntityCategory.CONFIG,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
                         attr_options=HA_TO_CYBRO_TEMP_SOURCE_MAP,
-                        attr_entity_category=EntityCategory.CONFIG,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -135,15 +152,14 @@ def add_th_tags(
                 res.append(
                     HiqSelectEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat display mode"
+                        entity_description=HiqSelectEntityDescription(
+                            key=key,
+                            translation_key="display_mode",
+                            entity_category=EntityCategory.CONFIG,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
                         attr_options=HA_TO_CYBRO_DISPLAY_MODE_MAP,
-                        attr_entity_category=EntityCategory.CONFIG,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -154,13 +170,14 @@ def add_th_tags(
                 res.append(
                     HiqSelectEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(key, f"{unique_id} thermostat fan limit"),
-                        unique_id=key,
-                        var_description="",
+                        entity_description=HiqSelectEntityDescription(
+                            key=key,
+                            translation_key="fan_limit",
+                            entity_category=EntityCategory.CONFIG,
+                            entity_registry_enabled_default=False,
+                        ),
                         attr_options=HA_TO_CYBRO_FAN_LIMIT_MAP,
-                        attr_entity_category=EntityCategory.CONFIG,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -203,17 +220,14 @@ def add_hvac_tags(
             res.append(
                 HiqSelectEntity(
                     coordinator=coordinator,
-                    var_name=_format_name(
-                        key,
-                        f"{unique_id} HVAC",
-                        unique_id,
+                    entity_description=HiqSelectEntityDescription(
+                        key=key,
+                        translation_key="hvac_mode",
+                        entity_category=EntityCategory.CONFIG,
+                        entity_registry_enabled_default=False,
                     ),
-                    unique_id=key,
-                    var_description="",
                     var_write_req=None,
                     attr_options=HA_TO_CYBRO_HVAC_MODE_MAP,
-                    attr_entity_category=EntityCategory.CONFIG,
-                    enabled=False,
                     dev_info=dev_info,
                 )
             )
@@ -222,17 +236,14 @@ def add_hvac_tags(
             res.append(
                 HiqSelectEntity(
                     coordinator=coordinator,
-                    var_name=_format_name(
-                        key,
-                        f"{unique_id} HVAC thermostat config temperature source",
-                        unique_id,
+                    entity_description=HiqSelectEntityDescription(
+                        key=key,
+                        translation_key="temperature_source",
+                        entity_category=EntityCategory.CONFIG,
+                        entity_registry_enabled_default=False,
                     ),
-                    unique_id=key,
-                    var_description="",
                     attr_options=HA_TO_CYBRO_TEMP_SOURCE_MAP,
-                    attr_entity_category=EntityCategory.CONFIG,
                     var_write_req=None,
-                    enabled=False,
                     dev_info=dev_info,
                 )
             )
@@ -241,17 +252,14 @@ def add_hvac_tags(
             res.append(
                 HiqSelectEntity(
                     coordinator=coordinator,
-                    var_name=_format_name(
-                        key,
-                        f"{unique_id} HVAC thermostat config display mode",
-                        unique_id,
+                    entity_description=HiqSelectEntityDescription(
+                        key=key,
+                        translation_key="display_mode",
+                        entity_category=EntityCategory.CONFIG,
+                        entity_registry_enabled_default=False,
                     ),
-                    unique_id=key,
-                    var_description="",
                     attr_options=HA_TO_CYBRO_DISPLAY_MODE_MAP,
-                    attr_entity_category=EntityCategory.CONFIG,
                     var_write_req=None,
-                    enabled=True,
                     dev_info=dev_info,
                 )
             )
@@ -268,28 +276,18 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
         self,
         coordinator: HiqDataUpdateCoordinator,
         attr_options: dict[str, int],
-        var_name: str = "",
+        entity_description: HiqSelectEntityDescription | None = None,
         unique_id: str | None = None,
-        var_description: str = "",
         var_write_req: str | None = None,
-        attr_entity_category: EntityCategory | None = None,
-        enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Initialize a HIQ-Home select entity."""
         super().__init__(coordinator=coordinator)
-        if var_name == "":
-            return
-        self._unique_id = var_name
-        self._attr_unique_id = unique_id or var_name
-        self._attr_name = var_description if var_description != "" else var_name
+        self.entity_description = entity_description
+        self._attr_unique_id = unique_id or entity_description.key
         self._var_write_req = var_write_req
-        self._state = None
         self._attr_device_info = dev_info
-        self._attr_entity_category = attr_entity_category
 
-        if enabled is False:
-            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
         self._var_type = VarType.INT
@@ -315,7 +313,7 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
         try:
             desc = self.coordinator.data.vars[self._attr_unique_id].description
         except KeyError:
-            desc = self._attr_name
+            desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
         }

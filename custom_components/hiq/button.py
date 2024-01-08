@@ -105,7 +105,7 @@ def add_hvac_tags(
             f"{unique_id}.hvac_fan_option_b04",
         ):
             has_para_for_thermostat = True
-    if not has_para_for_thermostat:
+    if has_para_for_thermostat is None:
         return None
 
     # add config buttons for active thermostats

@@ -1,8 +1,12 @@
 """Support for HIQ-Home binary sensor."""
 from __future__ import annotations
-from re import search
+from re import search, sub
+from dataclasses import dataclass
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    BinarySensorEntity,
+    BinarySensorEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
@@ -49,6 +53,19 @@ async def async_setup_entry(
         async_add_entities(th_tags)
 
 
+@dataclass
+class HiqBinarySensorEntityDescription(BinarySensorEntityDescription):
+    """HIQ BinarySensor Entity Description."""
+
+    def __post_init__(self):
+        """Defaults the translation_key to the sensor key."""
+        self.has_entity_name = True
+        self.translation_key = (
+            self.translation_key
+            or sub(r"c\d+\.", "", self.key).replace(".", "_").lower()
+        )
+
+
 def add_system_tags(
     coordinator: HiqDataUpdateCoordinator,
     add_all: bool = False,
@@ -77,9 +94,12 @@ def add_system_tags(
                 res.append(
                     HiqBinarySensor(
                         coordinator,
-                        key,
-                        attr_entity_category=EntityCategory.DIAGNOSTIC,
-                        attr_device_class=BinarySensorDeviceClass.PROBLEM,
+                        entity_description=HiqBinarySensorEntityDescription(
+                            key=key,
+                            device_class=BinarySensorDeviceClass.PROBLEM,
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                            entity_registry_enabled_default=False,
+                        ),
                         dev_info=dev_info,
                     )
                 )
@@ -87,9 +107,12 @@ def add_system_tags(
                 res.append(
                     HiqBinarySensor(
                         coordinator,
-                        key,
-                        attr_entity_category=EntityCategory.DIAGNOSTIC,
-                        attr_device_class=BinarySensorDeviceClass.PROBLEM,
+                        entity_description=HiqBinarySensorEntityDescription(
+                            key=key,
+                            device_class=BinarySensorDeviceClass.PROBLEM,
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                            entity_registry_enabled_default=False,
+                        ),
                         dev_info=dev_info,
                     )
                 )
@@ -122,10 +145,13 @@ def add_th_tags(
                 res.append(
                     HiqBinarySensor(
                         coordinator,
-                        var_name=f"{unique_id} thermostat window",
-                        unique_id=key,
+                        entity_description=HiqBinarySensorEntityDescription(
+                            key=key,
+                            device_class=BinarySensorDeviceClass.WINDOW,
+                            entity_registry_enabled_default=False,
+                        ),
+                        # var_name=f"{unique_id} thermostat window",
                         value_on="0",
-                        attr_device_class=BinarySensorDeviceClass.WINDOW,
                         dev_info=DeviceInfo(
                             identifiers={
                                 (coordinator.cybro.nad, f"{unique_id} thermostat")
@@ -149,8 +175,12 @@ def add_th_tags(
                 res.append(
                     HiqBinarySensor(
                         coordinator,
-                        var_name=f"{unique_id} thermostat output",
-                        unique_id=key,
+                        entity_description=HiqBinarySensorEntityDescription(
+                            key=key,
+                            translation_key="output",
+                            entity_registry_enabled_default=False,
+                        ),
+                        # var_name=f"{unique_id} thermostat output",
                         # DeviceClass.HEAT as default, could also be cool but most of the devices are used for heating
                         # attr_device_class=BinarySensorDeviceClass.HEAT,
                         dev_info=DeviceInfo(
@@ -184,25 +214,16 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
     def __init__(
         self,
         coordinator: HiqDataUpdateCoordinator,
-        var_name: str = "",
+        entity_description: HiqBinarySensorEntityDescription | None = None,
         unique_id: str | None = None,
         value_on: str = "1",
-        attr_entity_category: EntityCategory = None,
-        attr_device_class: BinarySensorDeviceClass = None,
-        enabled: bool = True,
         dev_info: DeviceInfo | None = None,
     ) -> None:
         """Pass coordinator to CoordinatorEntity."""
         super().__init__(coordinator=coordinator)
-        if var_name == "":
-            return
-        self._attr_name = var_name
-        self._attr_unique_id = unique_id or var_name
-        self._attr_entity_category = attr_entity_category
-        self._attr_device_class = attr_device_class
+        self.entity_description = entity_description
+        self._attr_unique_id = unique_id or entity_description.key
         self._attr_device_info = dev_info
-        if enabled is False:
-            self._attr_entity_registry_enabled_default = False
         self._value_on = value_on
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
 
@@ -217,7 +238,7 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
         try:
             desc = self.coordinator.data.vars[self._attr_unique_id].description
         except KeyError:
-            desc = self._attr_name
+            desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
         }
