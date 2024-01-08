@@ -241,7 +241,7 @@
           "name": "Display mode",
           "state": {
             "nothing": "Empty display",
-            "---": "---",
+            "minus": "---",
             "temperature": "Current temperature"
           }
         },
