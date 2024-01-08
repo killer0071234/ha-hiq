@@ -275,13 +275,13 @@
     },
     "number": {
       "setpoint_idle": {
-        "name": "Setpoint idle"
+        "name": "Setpoint eco"
       },
       "setpoint_idle_c": {
-        "name": "Setpoint idle cooling"
+        "name": "Setpoint eco cooling"
       },
       "setpoint_idle_h": {
-        "name": "Setpoint idle heating"
+        "name": "Setpoint eco heating"
       },
       "setpoint_offset": {
         "name": "Setpoint offset"
@@ -332,7 +332,7 @@
         "name": "Activation time max function heating"
       },
       "setpoint_idle_heating": {
-        "name": "Setpoint idle heating"
+        "name": "Setpoint eco heating"
       },
       "setpoint_lo_heating": {
         "name": "Setpoint min heating"
@@ -341,7 +341,7 @@
         "name": "Setpoint max heating"
       },
       "setpoint_idle_cooling": {
-        "name": "Setpoint idle cooling"
+        "name": "Setpoint eco cooling"
       },
       "setpoint_lo_cooling": {
         "name": "Setpoint min cooling"
