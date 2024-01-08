@@ -52,7 +52,7 @@ async def async_setup_entry(
 
 @dataclass
 class HiqCoverEntityDescription(CoverEntityDescription):
-    """HIQ Cover Entity."""
+    """HIQ Cover Entity Description."""
 
     def __post_init__(self):
         """Defaults the translation_key to the sensor key."""

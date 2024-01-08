@@ -105,7 +105,7 @@ async def async_setup_entry(
 
 @dataclass
 class HiqSensorEntityDescription(SensorEntityDescription):
-    """HIQ Sensor Entity."""
+    """HIQ Sensor Entity Description."""
 
     value_conversion_function: Callable[[Any], str] | None = None
 
@@ -144,8 +144,6 @@ def add_system_tags(
             coordinator=coordinator,
             entity_description=HiqSensorEntityDescription(
                 key=f"{var_prefix}sys.ip_port",
-                # native_unit_of_measurement=UnitOfTime.MILLISECONDS,
-                # device_class=SensorDeviceClass.,
                 # state_class=SensorStateClass.MEASUREMENT, # set to None for string sensors (currently the only one)
                 entity_category=EntityCategory.DIAGNOSTIC,
                 entity_registry_enabled_default=False,
@@ -200,7 +198,6 @@ def add_system_tags(
                         entity_description=HiqSensorEntityDescription(
                             key=key,
                             native_unit_of_measurement=UnitOfFrequency.HERTZ,
-                            # device_class=SensorDeviceClass.DURATION,
                             state_class=SensorStateClass.MEASUREMENT,
                             entity_category=EntityCategory.DIAGNOSTIC,
                             entity_registry_enabled_default=add_all,
@@ -273,7 +270,6 @@ def find_temperatures(
                                 native_unit_of_measurement=UnitOfTemperature.CELSIUS,
                                 device_class=SensorDeviceClass.TEMPERATURE,
                                 state_class=SensorStateClass.MEASUREMENT,
-                                # entity_category=EntityCategory.DIAGNOSTIC,
                                 entity_registry_enabled_default=ge_ok,
                                 suggested_display_precision=1,
                             ),
@@ -291,7 +287,6 @@ def find_temperatures(
                                 native_unit_of_measurement=PERCENTAGE,
                                 device_class=SensorDeviceClass.HUMIDITY,
                                 state_class=SensorStateClass.MEASUREMENT,
-                                # entity_category=EntityCategory.DIAGNOSTIC,
                                 entity_registry_enabled_default=ge_ok,
                                 suggested_display_precision=0,
                             ),
@@ -566,7 +561,6 @@ def add_th_tags(
                         coordinator=coordinator,
                         entity_description=HiqSensorEntityDescription(
                             key=key,
-                            # translation_key="temperature",
                             native_unit_of_measurement=UnitOfTemperature.CELSIUS,
                             device_class=SensorDeviceClass.TEMPERATURE,
                             state_class=SensorStateClass.MEASUREMENT,
@@ -607,7 +601,6 @@ def add_th_tags(
                         coordinator=coordinator,
                         entity_description=HiqSensorEntityDescription(
                             key=key,
-                            # translation_key="humidity",
                             native_unit_of_measurement=PERCENTAGE,
                             device_class=SensorDeviceClass.HUMIDITY,
                             state_class=SensorStateClass.MEASUREMENT,
