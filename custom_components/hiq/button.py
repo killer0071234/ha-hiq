@@ -1,12 +1,14 @@
 """Support for HIQ-Home button."""
 from __future__ import annotations
 
-from re import search
+from re import search, sub
+from dataclasses import dataclass
 
 
 from cybro import VarType
 from homeassistant.components.button import (
     ButtonEntity,
+    ButtonEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -44,6 +46,19 @@ async def async_setup_entry(
         async_add_entities(hvac_tags)
 
 
+@dataclass
+class HiqButtonEntityDescription(ButtonEntityDescription):
+    """HIQ Button Entity Description."""
+
+    def __post_init__(self):
+        """Defaults the translation_key to the sensor key."""
+        self.has_entity_name = True
+        self.translation_key = (
+            self.translation_key
+            or sub(r"c\d+\.", "", self.key).replace(".", "_").lower()
+        )
+
+
 def add_hvac_tags(
     coordinator: HiqDataUpdateCoordinator,
     ignore_general_error: bool,
@@ -53,11 +68,6 @@ def add_hvac_tags(
     """
     res: list[HiqButtonEntity] = []
 
-    def _format_name(key: str, name: str, unique_id: str) -> str:
-        """Format key to name."""
-        subpart = key.replace(unique_id, "")
-        return name + subpart.replace("_", " ").replace(".", " ")
-
     # find all thermostats
     thermostats = []
     for key in coordinator.data.plc_info.plc_vars:
@@ -66,7 +76,7 @@ def add_hvac_tags(
         if grp:
             thermostats.append(grp.group())
     thermostats = list(dict.fromkeys(thermostats))
-    if thermostats == 0:
+    if len(thermostats) == 0:
         return None
 
     # find all hvac tags
@@ -77,7 +87,7 @@ def add_hvac_tags(
         if grp:
             hvacs.append(grp.group())
     hvacs = list(dict.fromkeys(hvacs))
-    if hvacs == 0:
+    if len(hvacs) == 0:
         return None
 
     # generate device info
@@ -110,10 +120,18 @@ def add_hvac_tags(
 
     # add config buttons for active thermostats
     for thermostat in thermostats:
-        # identifier is cNAD
-        grp = search(r"\.", thermostat)
+        unique_id = thermostat
+        # identifier is cNAD.thNR
+        grp = search(r"c\d+\.th\d+", thermostat)
         if grp:
-            thermostat_no = grp.group()
+            unique_id = grp.group()
+        dev_info = DeviceInfo(
+            identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
+            manufacturer=MANUFACTURER,
+            name=f"{unique_id} thermostat",
+            suggested_area=AREA_CLIMATE,
+            via_device=(DOMAIN, coordinator.cybro.nad),
+        )
 
         is_ge_ok = is_general_error_ok(coordinator, f"{thermostat}_general_error")
 
@@ -124,16 +142,13 @@ def add_hvac_tags(
                 res.append(
                     HiqButtonEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key,
-                            f"{unique_id} HVAC {thermostat_no} config request",
-                            unique_id,
+                        entity_description=HiqButtonEntityDescription(
+                            key=key,
+                            translation_key="config1_write_req",
+                            entity_category=EntityCategory.CONFIG,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
-                        attr_entity_category=EntityCategory.CONFIG,
                         var_value=1,
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -143,16 +158,13 @@ def add_hvac_tags(
                 res.append(
                     HiqButtonEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key,
-                            f"{unique_id} HVAC {thermostat_no} config read back request",
-                            unique_id,
+                        entity_description=HiqButtonEntityDescription(
+                            key=key,
+                            translation_key="config1_read_req",
+                            entity_category=EntityCategory.CONFIG,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
-                        attr_entity_category=EntityCategory.CONFIG,
                         var_value=1,
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -168,28 +180,19 @@ class HiqButtonEntity(HiqEntity, ButtonEntity):
     def __init__(
         self,
         coordinator: HiqDataUpdateCoordinator,
-        var_name: str = "",
+        entity_description: HiqButtonEntityDescription | None = None,
         unique_id: str | None = None,
-        var_description: str = "",
         var_value: int = 1,
-        attr_entity_category: EntityCategory | None = None,
-        enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Initialize a HIQ-Home button entity."""
         super().__init__(coordinator=coordinator)
-        if var_name == "":
-            return
-        self._unique_id = var_name
-        self._attr_unique_id = unique_id or var_name
-        self._attr_name = var_description if var_description != "" else var_name
+        self.entity_description = entity_description
+        self._attr_unique_id = unique_id or entity_description.key
         self._state = None
         self._attr_device_info = dev_info
-        self._attr_entity_category = attr_entity_category
         self._var_value = var_value
 
-        if enabled is False:
-            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
         self._var_type = VarType.INT
@@ -200,13 +203,13 @@ class HiqButtonEntity(HiqEntity, ButtonEntity):
         try:
             desc = self.coordinator.data.vars[self._attr_unique_id].description
         except KeyError:
-            desc = self._attr_name
+            desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
         }
 
     async def async_press(self) -> None:
-        """Turn the device on."""
+        """Write Button press to tag."""
         LOGGER.debug(
             "write value: %s -> %s (%s)",
             self._attr_unique_id,
