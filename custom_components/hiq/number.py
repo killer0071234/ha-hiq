@@ -1,7 +1,8 @@
 """Support for HIQ-Home number."""
 from __future__ import annotations
 
-from re import search
+from re import search, sub
+from dataclasses import dataclass
 
 from datetime import datetime
 
@@ -10,6 +11,7 @@ from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
     NumberMode,
+    NumberEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -59,6 +61,19 @@ async def async_setup_entry(
         async_add_entities(hvac_tags)
 
 
+@dataclass
+class HiqNumberEntityDescription(NumberEntityDescription):
+    """HIQ Number Entity Description."""
+
+    def __post_init__(self):
+        """Defaults the translation_key to the number key."""
+        self.has_entity_name = True
+        self.translation_key = (
+            self.translation_key
+            or sub(r"c\d+\.", "", self.key).replace(".", "_").lower()
+        )
+
+
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
     add_all: bool = False,
@@ -102,19 +117,18 @@ def add_th_tags(
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat setpoint idle"
+                        entity_description=HiqNumberEntityDescription(
+                            key=key,
+                            translation_key=key.removeprefix(f"{unique_id}_"),
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=NumberDeviceClass.TEMPERATURE,
+                            min_value=0.0,
+                            max_value=40.0,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
                         var_type=VarType.FLOAT,
-                        attr_device_class=NumberDeviceClass.TEMPERATURE,
                         val_fact=0.1,
-                        attr_min_value=0.0,
-                        attr_max_value=40.0,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -129,20 +143,19 @@ def add_th_tags(
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat setpoint offset"
+                        entity_description=HiqNumberEntityDescription(
+                            key=key,
+                            translation_key=key.removeprefix(f"{unique_id}_"),
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=NumberDeviceClass.TEMPERATURE,
+                            entity_category=EntityCategory.CONFIG,
+                            min_value=-5.0,
+                            max_value=5.0,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
                         var_type=VarType.FLOAT,
-                        attr_device_class=NumberDeviceClass.TEMPERATURE,
-                        attr_entity_category=EntityCategory.CONFIG,
                         val_fact=0.1,
-                        attr_min_value=-5.0,
-                        attr_max_value=5.0,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -157,20 +170,19 @@ def add_th_tags(
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat setpoint low"
+                        entity_description=HiqNumberEntityDescription(
+                            key=key,
+                            translation_key=key.removeprefix(f"{unique_id}_"),
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=NumberDeviceClass.TEMPERATURE,
+                            entity_category=EntityCategory.CONFIG,
+                            min_value=0.0,
+                            max_value=40.0,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
                         var_type=VarType.FLOAT,
-                        attr_device_class=NumberDeviceClass.TEMPERATURE,
-                        attr_entity_category=EntityCategory.CONFIG,
                         val_fact=0.1,
-                        attr_min_value=0.0,
-                        attr_max_value=40.0,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -185,20 +197,19 @@ def add_th_tags(
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat setpoint high"
+                        entity_description=HiqNumberEntityDescription(
+                            key=key,
+                            translation_key=key.removeprefix(f"{unique_id}_"),
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=NumberDeviceClass.TEMPERATURE,
+                            entity_category=EntityCategory.CONFIG,
+                            min_value=0.0,
+                            max_value=40.0,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
                         var_type=VarType.FLOAT,
-                        attr_device_class=NumberDeviceClass.TEMPERATURE,
-                        attr_entity_category=EntityCategory.CONFIG,
                         val_fact=0.1,
-                        attr_min_value=0.0,
-                        attr_max_value=40.0,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -213,20 +224,19 @@ def add_th_tags(
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat hystheresis"
+                        entity_description=HiqNumberEntityDescription(
+                            key=key,
+                            translation_key=key.removeprefix(f"{unique_id}_"),
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=NumberDeviceClass.TEMPERATURE,
+                            entity_category=EntityCategory.CONFIG,
+                            min_value=0.1,
+                            max_value=10.0,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
                         var_type=VarType.FLOAT,
-                        attr_device_class=NumberDeviceClass.TEMPERATURE,
-                        attr_entity_category=EntityCategory.CONFIG,
                         val_fact=0.1,
-                        attr_min_value=0.1,
-                        attr_max_value=10.0,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -237,20 +247,22 @@ def add_th_tags(
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
+                        entity_description=HiqNumberEntityDescription(
+                            key=key,
+                            translation_key="max_temp",
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=NumberDeviceClass.TEMPERATURE,
+                            entity_category=EntityCategory.CONFIG,
+                            min_value=0.0,
+                            max_value=40.0,
+                            entity_registry_enabled_default=False,
+                        ),
                         var_name=_format_name(
                             key, f"{unique_id} thermostat max temp external"
                         ),
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
                         var_type=VarType.FLOAT,
-                        attr_device_class=NumberDeviceClass.TEMPERATURE,
-                        attr_entity_category=EntityCategory.CONFIG,
                         val_fact=0.1,
-                        attr_min_value=0.0,
-                        attr_max_value=40.0,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -265,21 +277,20 @@ def add_th_tags(
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat activation time max function"
+                        entity_description=HiqNumberEntityDescription(
+                            key=key,
+                            translation_key=key.removeprefix(f"{unique_id}_"),
+                            native_unit_of_measurement=UnitOfTime.SECONDS,
+                            device_class=NumberDeviceClass.DURATION,
+                            entity_category=EntityCategory.CONFIG,
+                            min_value=0,
+                            max_value=3600,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTime.SECONDS,
                         var_type=VarType.INT,
-                        attr_device_class=NumberDeviceClass.DURATION,
-                        attr_entity_category=EntityCategory.CONFIG,
                         val_fact=1.0,
                         display_precision=0,
-                        attr_min_value=0,
-                        attr_max_value=3600,
                         var_write_req=get_write_req_th(key, unique_id),
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -329,16 +340,18 @@ def add_hvac_tags(
             res.append(
                 HiqNumberEntity(
                     coordinator=coordinator,
-                    var_name=_format_name(key, f"{unique_id} HVAC", unique_id),
-                    unique_id=key,
-                    var_description="",
-                    var_unit=UnitOfTemperature.CELSIUS,
+                    entity_description=HiqNumberEntityDescription(
+                        key=key,
+                        translation_key=key.removeprefix(f"{unique_id}."),
+                        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                        device_class=NumberDeviceClass.TEMPERATURE,
+                        entity_category=EntityCategory.CONFIG,
+                        min_value=0.0,
+                        max_value=40.0,
+                        entity_registry_enabled_default=False,
+                    ),
                     var_type=VarType.FLOAT,
-                    attr_device_class=NumberDeviceClass.TEMPERATURE,
                     val_fact=0.1,
-                    attr_min_value=0.0,
-                    attr_max_value=40.0,
-                    enabled=False,
                     dev_info=dev_info,
                 )
             )
@@ -357,47 +370,30 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
     def __init__(
         self,
         coordinator: HiqDataUpdateCoordinator,
-        var_name: str = "",
+        entity_description: HiqNumberEntityDescription | None = None,
         unique_id: str | None = None,
-        var_description: str = "",
-        var_unit: str | None = None,
         var_type: VarType = VarType.INT,
-        attr_device_class: NumberDeviceClass = None,
         mode: NumberMode = NumberMode.BOX,
         val_fact: float = 1.0,
         display_precision: int = 1,
-        attr_min_value: float = 0.0,
-        attr_max_value: float = 100.0,
         var_write_req: str | None = None,
-        attr_entity_category: EntityCategory | None = None,
-        enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Initialize a HIQ-Home number entity."""
         super().__init__(coordinator=coordinator)
-        if var_name == "":
-            return
-        self._attr_native_unit_of_measurement = var_unit
-        self._unique_id = var_name
-        self._attr_unique_id = unique_id or var_name
-        self._attr_name = var_description if var_description != "" else var_name
+        self.entity_description = entity_description
+        self._attr_unique_id = unique_id or entity_description.key
         self._var_write_req = var_write_req
         self._state = None
         self._attr_device_info = dev_info
-        self._attr_entity_category = attr_entity_category
-        self._attr_device_class = attr_device_class
         self._attr_mode = mode
 
-        if enabled is False:
-            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=var_type)
         self._var_type = var_type
         self._val_fact = val_fact
         self._attr_suggested_display_precision = display_precision
-        self._attr_native_step = self._val_fact
-        self._attr_native_min_value = attr_min_value
-        self._attr_native_max_value = attr_max_value
+        self.entity_description.native_step = self._val_fact
 
     @property
     def native_value(self) -> datetime | StateType | None:
@@ -414,7 +410,7 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         try:
             desc = self.coordinator.data.vars[self._attr_unique_id].description
         except KeyError:
-            desc = self._attr_name
+            desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
         }

@@ -1,12 +1,15 @@
 """Support for HIQ-Home switch."""
 from __future__ import annotations
 
-from re import search
+from re import search, sub
+from dataclasses import dataclass
+from typing import Generic, TypeVar
 
 
 from cybro import VarType
 from homeassistant.components.switch import (
     SwitchEntity,
+    SwitchEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -51,6 +54,22 @@ async def async_setup_entry(
         async_add_entities(hvac_tags)
 
 
+T = TypeVar("T")
+
+
+@dataclass
+class HiqSwitchEntityDescription(Generic[T], SwitchEntityDescription):
+    """HIQ Switch Entity Description."""
+
+    def __post_init__(self):
+        """Defaults the translation_key to the sensor key."""
+        self.has_entity_name = True
+        self.translation_key = (
+            self.translation_key
+            or sub(r"c\d+\.", "", self.key).replace(".", "_").lower()
+        )
+
+
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
     add_all: bool = False,
@@ -59,14 +78,6 @@ def add_th_tags(
     eg: c1000.th00_window_enable and so on.
     """
     res: list[HiqSwitchEntity] = []
-
-    def _format_name(key: str, name: str) -> str:
-        """Append cool or heat to name."""
-        if key.endswith("_h"):
-            return f"{name} heating"
-        if key.endswith("_c"):
-            return f"{name} cooling"
-        return name
 
     # find different thermostat vars
     for key in coordinator.data.plc_info.plc_vars:
@@ -90,14 +101,13 @@ def add_th_tags(
                 res.append(
                     HiqSwitchEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat window switch enable"
+                        entity_description=HiqSwitchEntityDescription(
+                            key=key,
+                            translation_key=key.removeprefix(f"{unique_id}_"),
+                            entity_category=EntityCategory.CONFIG,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
                         var_write_req=get_write_req_th(key, unique_id),
-                        attr_entity_category=EntityCategory.CONFIG,
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -108,14 +118,13 @@ def add_th_tags(
                 res.append(
                     HiqSwitchEntity(
                         coordinator=coordinator,
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat demand enable"
+                        entity_description=HiqSwitchEntityDescription(
+                            key=key,
+                            translation_key=key.removeprefix(f"{unique_id}_"),
+                            entity_category=EntityCategory.CONFIG,
+                            entity_registry_enabled_default=False,
                         ),
-                        unique_id=key,
-                        var_description="",
                         var_write_req=get_write_req_th(key, unique_id),
-                        attr_entity_category=EntityCategory.CONFIG,
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -132,16 +141,6 @@ def add_hvac_tags(
     eg: c1000.outdoor_temperature and so on.
     """
     res: list[HiqSwitchEntity] = []
-
-    def _format_name(key: str, name: str, unique_id: str) -> str:
-        """Format key to name."""
-        subpart = key.replace(unique_id, "")
-        if subpart.startswith("auto_limits"):
-            subpart.replace("automatic setpoint limits")
-        elif subpart.endswith("_b04"):
-            subpart = subpart.replace("_b04", " speed max")
-        subpart = subpart.replace("_b0", " speed auto ")
-        return name + subpart.replace("_", " ").replace(".", " ")
 
     # find different hvac related vars
     for key in coordinator.data.plc_info.plc_vars:
@@ -169,16 +168,13 @@ def add_hvac_tags(
             res.append(
                 HiqSwitchEntity(
                     coordinator=coordinator,
-                    var_name=_format_name(
-                        key,
-                        f"{unique_id} HVAC",
-                        unique_id,
+                    entity_description=HiqSwitchEntityDescription(
+                        key=key,
+                        translation_key=key.removeprefix(f"{unique_id}."),
+                        entity_category=EntityCategory.CONFIG,
+                        entity_registry_enabled_default=False,
                     ),
-                    unique_id=key,
-                    var_description="",
                     var_write_req=None,
-                    attr_entity_category=EntityCategory.CONFIG,
-                    enabled=False,
                     dev_info=dev_info,
                 )
             )
@@ -192,16 +188,14 @@ def add_hvac_tags(
             res.append(
                 HiqSwitchEntity(
                     coordinator=coordinator,
-                    var_name=_format_name(
-                        key,
-                        f"{unique_id} HVAC thermostat fan option",
-                        unique_id,
+                    entity_description=HiqSwitchEntityDescription(
+                        key=key,
+                        translation_key=key.removeprefix(f"{unique_id}."),
+                        entity_category=EntityCategory.CONFIG,
+                        entity_registry_enabled_default=False,
                     ),
-                    unique_id=key,
-                    var_description="",
                     var_write_req=get_write_req_th(key, unique_id),
                     attr_entity_category=EntityCategory.CONFIG,
-                    enabled=False,
                     dev_info=dev_info,
                 )
             )
@@ -217,7 +211,7 @@ class HiqSwitchEntity(HiqEntity, SwitchEntity):
     def __init__(
         self,
         coordinator: HiqDataUpdateCoordinator,
-        var_name: str = "",
+        entity_description: HiqSwitchEntityDescription | None = None,
         unique_id: str | None = None,
         var_description: str = "",
         var_write_req: str | None = None,
@@ -228,18 +222,12 @@ class HiqSwitchEntity(HiqEntity, SwitchEntity):
     ) -> None:
         """Initialize a HIQ-Home button entity."""
         super().__init__(coordinator=coordinator)
-        if var_name == "":
-            return
-        self._unique_id = var_name
-        self._attr_unique_id = unique_id or var_name
-        self._attr_name = var_description if var_description != "" else var_name
+        self.entity_description = entity_description
+        self._attr_unique_id = unique_id or entity_description.key
         self._var_write_req = var_write_req
         self._state = None
         self._attr_device_info = dev_info
-        self._attr_entity_category = attr_entity_category
 
-        if enabled is False:
-            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
         self._var_type = VarType.INT
@@ -303,7 +291,7 @@ class HiqSwitchEntity(HiqEntity, SwitchEntity):
         try:
             desc = self.coordinator.data.vars[self._attr_unique_id].description
         except KeyError:
-            desc = self._attr_name
+            desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
         }

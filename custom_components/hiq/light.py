@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from typing import Any
+from re import sub
+from dataclasses import dataclass
 
 from homeassistant.components.light import (
     LightEntity,
+    LightEntityDescription,
     ColorMode,
     ATTR_BRIGHTNESS,
     ATTR_HS_COLOR,
@@ -51,6 +54,19 @@ async def async_setup_entry(
         async_add_entities(lights)
 
 
+@dataclass
+class HiqLightEntityDescription(LightEntityDescription):
+    """HIQ Light Entity."""
+
+    def __post_init__(self):
+        """Defaults the translation_key to the sensor key."""
+        self.has_entity_name = True
+        self.translation_key = (
+            self.translation_key
+            or sub(r"c\d+\.", "", self.key).replace(".", "_").lower()
+        )
+
+
 def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
     """Check if general error of own module is ok."""
     ge_names = var.split("_")
@@ -93,7 +109,17 @@ def find_on_off_lights(
                     via_device=(DOMAIN, coordinator.cybro.nad),
                 )
 
-                res.append(HiqUpdateLight(coordinator, key, dev_info=dev_info))
+                res.append(
+                    HiqUpdateLight(
+                        coordinator,
+                        entity_description=HiqLightEntityDescription(
+                            key=key,
+                            translation_key="light",
+                            entity_registry_enabled_default=ge_ok,
+                        ),
+                        dev_info=dev_info,
+                    )
+                )
 
     if len(res) > 0:
         return res
@@ -154,7 +180,11 @@ def find_dimm_lights(
                 res.append(
                     HiqUpdateLight(
                         coordinator,
-                        key,
+                        entity_description=HiqLightEntityDescription(
+                            key=key,
+                            translation_key="light",
+                            entity_registry_enabled_default=ge_ok,
+                        ),
                         dev_info=dev_info,
                         dimming_out=key,
                         rgb_hue_out=rgb_hue_out,
@@ -202,37 +232,34 @@ class HiqUpdateLight(HiqEntity, LightEntity):
     def __init__(
         self,
         coordinator: HiqDataUpdateCoordinator,
-        var_name: str = "",
+        entity_description: HiqLightEntityDescription | None = None,
+        unique_id: str | None = None,
         attr_icon="mdi:lightbulb",
         dev_info: DeviceInfo = None,
-        enabled: bool = True,
         dimming_out: str | None = None,
         rgb_hue_out: str | None = None,
         rgb_sat_out: str | None = None,
     ) -> None:
         """Initialize HIQ-Home light."""
         super().__init__(coordinator=coordinator)
-        if var_name == "":
-            return
-        self._attr_unique_id = var_name
+        self.entity_description = entity_description
+        self._attr_unique_id = unique_id or entity_description.key
         self._dimming_out = dimming_out
         self._rgb_hue_out = rgb_hue_out
         self._rgb_sat_out = rgb_sat_out
-        self._attr_name = f"Light {var_name}"
+        # self._attr_name = f"Light {var_name}"
         self._attr_icon = attr_icon
         self._attr_device_info = dev_info
-        if enabled is False:
-            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
         if dimming_out:
             self._attr_color_mode = ColorMode.BRIGHTNESS
             self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
-            LOGGER.debug("dimming light: %s", var_name)
+            LOGGER.debug("dimming light: %s", self._attr_unique_id)
         if rgb_hue_out and rgb_sat_out:
             self._attr_color_mode = ColorMode.HS
             self._attr_supported_color_modes = {ColorMode.HS}
-            LOGGER.debug("rgb light: %s", var_name)
+            LOGGER.debug("rgb light: %s", self._attr_unique_id)
 
     @property
     def hs_color(self) -> tuple[float, float] | None:
@@ -292,7 +319,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         try:
             desc = self.coordinator.data.vars[self._attr_unique_id].description
         except KeyError:
-            desc = self._attr_name
+            desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
         }

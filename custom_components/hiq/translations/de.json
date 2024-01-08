@@ -1,0 +1,522 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Gerät ist bereits konfiguriert",
+      "cannot_connect": "Fehler beim verbinden",
+      "plc_not_existing": "Steuerung mit der Adresse `{address}` existiert im scgi Server nicht",
+      "scgi_server_not_running": "scgi Server läuft nicht"
+    },
+    "error": {
+      "cannot_connect": "Fehler beim verbinden"
+    },
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "data": {
+          "host": "scgi Server host (für das cybroscgiserver addon '85493909-cybroscgiserver')",
+          "port": "scgi Server port (für das cybroscgiserver addon '4000')",
+          "address": "Adresse der HIQ Steuerung (NAD)",
+          "ignore_general_error": "Ignoriere 'general_error' der Erweiterungsmodule.\nWenn aktiviert, werden alle gefundenen Module zu Home Assistant hinzugefügt, Verwendung auf eingene Gefahr!"
+        },
+        "description": "Richte HIQ-Home mit Home Assistant ein.\nVor der Einrichtung der Integration muss ein cybro scgi Server laufen!\nSiehe Dokumentation der Integration für Details."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "ignore_general_error": "Ignoriere 'general_error' der Erweiterungsmodule.\nWenn aktiviert, werden alle gefundenen Module zu Home Assistant hinzugefügt, Verwendung auf eingene Gefahr!"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "scan_overrun": {
+        "name": "Programmzyklus Überlauf Steuerung"
+      },
+      "retentive_fail": {
+        "name": "Remanentspeicherfehler Steuerung"
+      },
+      "general_error": {
+        "name": "Summenfehler"
+      },
+      "lc00_general_error": {
+        "name": "lc00 Summenfehler"
+      },
+      "lc01_general_error": {
+        "name": "lc01 Summenfehler"
+      },
+      "lc02_general_error": {
+        "name": "lc02 Summenfehler"
+      },
+      "lc03_general_error": {
+        "name": "lc03 Summenfehler"
+      },
+      "lc04_general_error": {
+        "name": "lc04 Summenfehler"
+      },
+      "lc05_general_error": {
+        "name": "lc05 Summenfehler"
+      },
+      "lc06_general_error": {
+        "name": "lc06 Summenfehler"
+      },
+      "lc07_general_error": {
+        "name": "lc07 Summenfehler"
+      },
+      "ld00_general_error": {
+        "name": "ld00 Summenfehler"
+      },
+      "ld01_general_error": {
+        "name": "ld01 Summenfehler"
+      },
+      "ld02_general_error": {
+        "name": "ld02 Summenfehler"
+      },
+      "ld03_general_error": {
+        "name": "ld03 Summenfehler"
+      },
+      "ld04_general_error": {
+        "name": "ld04 Summenfehler"
+      },
+      "ld05_general_error": {
+        "name": "ld05 Summenfehler"
+      },
+      "ld06_general_error": {
+        "name": "ld06 Summenfehler"
+      },
+      "ld07_general_error": {
+        "name": "ld07 Summenfehler"
+      },
+      "ld08_general_error": {
+        "name": "ld08 Summenfehler"
+      },
+      "ld09_general_error": {
+        "name": "ld09 Summenfehler"
+      },
+      "bc00_general_error": {
+        "name": "bc00 Summenfehler"
+      },
+      "bc01_general_error": {
+        "name": "bc01 Summenfehler"
+      },
+      "bc02_general_error": {
+        "name": "bc02 Summenfehler"
+      },
+      "bc03_general_error": {
+        "name": "bc03 Summenfehler"
+      },
+      "bc04_general_error": {
+        "name": "bc04 Summenfehler"
+      },
+      "bc05_general_error": {
+        "name": "bc05 Summenfehler"
+      },
+      "th00_general_error": {
+        "name": "th00 Summenfehler"
+      },
+      "th01_general_error": {
+        "name": "th01 Summenfehler"
+      },
+      "th02_general_error": {
+        "name": "th02 Summenfehler"
+      },
+      "th03_general_error": {
+        "name": "th03 Summenfehler"
+      },
+      "th04_general_error": {
+        "name": "th04 Summenfehler"
+      },
+      "th05_general_error": {
+        "name": "th05 Summenfehler"
+      },
+      "th06_general_error": {
+        "name": "th06 Summenfehler"
+      },
+      "th07_general_error": {
+        "name": "th07 Summenfehler"
+      },
+      "th08_general_error": {
+        "name": "th08 Summenfehler"
+      },
+      "th09_general_error": {
+        "name": "th09 Summenfehler"
+      },
+      "fc00_general_error": {
+        "name": "fc00 Summenfehler"
+      },
+      "fc01_general_error": {
+        "name": "fc01 Summenfehler"
+      },
+      "fc02_general_error": {
+        "name": "fc02 Summenfehler"
+      },
+      "fc03_general_error": {
+        "name": "fc03 Summenfehler"
+      },
+      "fc04_general_error": {
+        "name": "fc04 Summenfehler"
+      },
+      "fc05_general_error": {
+        "name": "fc05 Summenfehler"
+      },
+      "sc00_general_error": {
+        "name": "sc00 Summenfehler"
+      },
+      "sc01_general_error": {
+        "name": "sc01 Summenfehler"
+      },
+      "sc02_general_error": {
+        "name": "sc02 Summenfehler"
+      },
+      "sc03_general_error": {
+        "name": "sc03 Summenfehler"
+      },
+      "eno_general_error": {
+        "name": "EnOcean Summenfehler"
+      },
+      "output": {
+        "name": "Ausgang"
+      }
+    },
+    "cover": {
+      "blind": {
+        "name": "Jalousie"
+      }
+    },
+    "light": {
+      "light": {
+        "name": "Licht"
+      }
+    },
+    "sensor": {
+      "sys_ip_port": {
+        "name": "IP Adresse Steuerung"
+      },
+      "scan_time": {
+        "name": "Zykluszeit"
+      },
+      "scan_time_max": {
+        "name": "Zykluszeit maximum"
+      },
+      "cybro_uptime": {
+        "name": "Betriebszeit"
+      },
+      "operating_hours": {
+        "name": "Steuerung Betriebsstunden"
+      },
+      "scan_frequency": {
+        "name": "Steuerung Zyklen"
+      },
+      "iex_power_supply": {
+        "name": "IEX Spannung"
+      },
+      "lc00_iex_power_supply": {
+        "name": "lc00 IEX Spannung"
+      },
+      "lc01_iex_power_supply": {
+        "name": "lc01 IEX Spannung"
+      },
+      "lc02_iex_power_supply": {
+        "name": "lc02 IEX Spannung"
+      },
+      "lc03_iex_power_supply": {
+        "name": "lc03 IEX Spannung"
+      },
+      "lc04_iex_power_supply": {
+        "name": "lc04 IEX Spannung"
+      },
+      "lc05_iex_power_supply": {
+        "name": "lc05 IEX Spannung"
+      },
+      "lc06_iex_power_supply": {
+        "name": "lc06 IEX Spannung"
+      },
+      "lc07_iex_power_supply": {
+        "name": "lc07 IEX Spannung"
+      },
+      "ld00_iex_power_supply": {
+        "name": "ld00 IEX Spannung"
+      },
+      "ld01_iex_power_supply": {
+        "name": "ld01 IEX Spannung"
+      },
+      "ld02_iex_power_supply": {
+        "name": "ld02 IEX Spannung"
+      },
+      "ld03_iex_power_supply": {
+        "name": "ld03 IEX Spannung"
+      },
+      "ld04_iex_power_supply": {
+        "name": "ld04 IEX Spannung"
+      },
+      "ld05_iex_power_supply": {
+        "name": "ld05 IEX Spannung"
+      },
+      "ld06_iex_power_supply": {
+        "name": "ld06 IEX Spannung"
+      },
+      "ld07_iex_power_supply": {
+        "name": "ld07 IEX Spannung"
+      },
+      "ld08_iex_power_supply": {
+        "name": "ld08 IEX Spannung"
+      },
+      "ld09_iex_power_supply": {
+        "name": "ld09 IEX Spannung"
+      },
+      "bc00_iex_power_supply": {
+        "name": "bc00 IEX Spannung"
+      },
+      "bc01_iex_power_supply": {
+        "name": "bc01 IEX Spannung"
+      },
+      "bc02_iex_power_supply": {
+        "name": "bc02 IEX Spannung"
+      },
+      "bc03_iex_power_supply": {
+        "name": "bc03 IEX Spannung"
+      },
+      "bc04_iex_power_supply": {
+        "name": "bc04 IEX Spannung"
+      },
+      "bc05_iex_power_supply": {
+        "name": "bc05 IEX Spannung"
+      },
+      "th00_iex_power_supply": {
+        "name": "th00 IEX Spannung"
+      },
+      "th01_iex_power_supply": {
+        "name": "th01 IEX Spannung"
+      },
+      "th02_iex_power_supply": {
+        "name": "th02 IEX Spannung"
+      },
+      "th03_iex_power_supply": {
+        "name": "th03 IEX Spannung"
+      },
+      "th04_iex_power_supply": {
+        "name": "th04 IEX Spannung"
+      },
+      "th05_iex_power_supply": {
+        "name": "th05 IEX Spannung"
+      },
+      "th06_iex_power_supply": {
+        "name": "th06 IEX Spannung"
+      },
+      "th07_iex_power_supply": {
+        "name": "th07 IEX Spannung"
+      },
+      "th08_iex_power_supply": {
+        "name": "th08 IEX Spannung"
+      },
+      "th09_iex_power_supply": {
+        "name": "th09 IEX Spannung"
+      },
+      "fc00_iex_power_supply": {
+        "name": "fc00 IEX Spannung"
+      },
+      "fc01_iex_power_supply": {
+        "name": "fc01 IEX Spannung"
+      },
+      "fc02_iex_power_supply": {
+        "name": "fc02 IEX Spannung"
+      },
+      "fc03_iex_power_supply": {
+        "name": "fc03 IEX Spannung"
+      },
+      "fc04_iex_power_supply": {
+        "name": "fc04 IEX Spannung"
+      },
+      "fc05_iex_power_supply": {
+        "name": "fc05 IEX Spannung"
+      },
+      "sc00_iex_power_supply": {
+        "name": "sc00 IEX Spannung"
+      },
+      "sc01_iex_power_supply": {
+        "name": "sc01 IEX Spannung"
+      },
+      "sc02_iex_power_supply": {
+        "name": "sc02 IEX Spannung"
+      },
+      "sc03_iex_power_supply": {
+        "name": "sc03 IEX Spannung"
+      },
+      "cybro_power_supply": {
+        "name": "Versorgungspannung Steuerung"
+      },
+      "temperature_1": {
+        "name": "Externe Temperatur"
+      },
+      "light_sensor": {
+        "name": "Lichtsensor"
+      },
+      "max_timer_remain": {
+        "name": "Max Funktion Restzeit"
+      },
+      "outdoor_temperature": {
+        "name": "Aussentemperatur"
+      },
+      "wall_temperature": {
+        "name": "Wandtemperatur"
+      },
+      "water_temperature": {
+        "name": "Wassertemperatur"
+      },
+      "auxilary_temperature": {
+        "name": "Externe Temperatur"
+      }
+    },
+    "select": {
+      "temperature_source": {
+        "name": "Temperatursensor Quelle",
+        "state": {
+          "internal_sensor": "Interer Sensor",
+          "external_sensor": "Externer Sensor",
+          "remote_sensor": "Remote Sensor"
+        }
+      },
+      "display_mode": {
+        "name": "Anzeigemodus",
+        "state": {
+          "nothing": "Leeres Display",
+          "---": "---",
+          "temperature": "Aktuelle Temperatur"
+        }
+      },
+      "fan_limit": {
+        "name": "Lüfter Grenzwert Stufe",
+        "state": {
+          "off": "Aus",
+          "fan1": "Lüfter Stufe 1",
+          "fan2": "Lüfter Stufe 2",
+          "fan3": "Lüfter Stufe 3",
+          "max": "Lüfter Max Stufe/Funktion"
+        }
+      },
+      "hvac_mode": {
+        "name": "Betriebsmodus HVAC",
+        "state": {
+          "off": "Aus",
+          "heating": "Heizen",
+          "cooling": "Kühlen"
+        }
+      }
+    },
+    "number": {
+      "setpoint_idle": {
+        "name": "Sollwert idle"
+      },
+      "setpoint_idle_c": {
+        "name": "Sollwert idle kühlen"
+      },
+      "setpoint_idle_h": {
+        "name": "Sollwert idle heizen"
+      },
+      "setpoint_offset": {
+        "name": "Sollwert Offset"
+      },
+      "setpoint_offset_c": {
+        "name": "Sollwert Offset kühlen"
+      },
+      "setpoint_offset_h": {
+        "name": "Sollwert Offset heizen"
+      },
+      "setpoint_lo": {
+        "name": "Sollwert min"
+      },
+      "setpoint_lo_c": {
+        "name": "Sollwert min kühlen"
+      },
+      "setpoint_lo_h": {
+        "name": "Sollwert min heizen"
+      },
+      "setpoint_hi": {
+        "name": "Sollwert max"
+      },
+      "setpoint_hi_c": {
+        "name": "Sollwert max kühlen"
+      },
+      "setpoint_hi_h": {
+        "name": "Sollwert max heizen"
+      },
+      "hysteresis": {
+        "name": "Hystherese"
+      },
+      "hysteresis_c": {
+        "name": "Hystherese kühlen"
+      },
+      "hysteresis_h": {
+        "name": "Hystherese heizen"
+      },
+      "max_temp": {
+        "name": "Max Temperatur extern"
+      },
+      "max_time": {
+        "name": "Max Freigabezeit Max Funktion"
+      },
+      "max_time_c": {
+        "name": "Max Freigabezeit Max Funktion kühlen"
+      },
+      "max_time_h": {
+        "name": "Max Freigabezeit Max Funktion heizen"
+      },
+      "setpoint_idle_heating": {
+        "name": "Sollwert idle heizen"
+      },
+      "setpoint_lo_heating": {
+        "name": "Sollwert min heizen"
+      },
+      "setpoint_hi_heating": {
+        "name": "Sollwert max heizen"
+      },
+      "setpoint_idle_cooling": {
+        "name": "Sollwert idle kühlen"
+      },
+      "setpoint_lo_cooling": {
+        "name": "Sollwert min kühlen"
+      },
+      "setpoint_hi_cooling": {
+        "name": "Sollwert max kühlen"
+      }
+    },
+    "switch": {
+      "window_enable": {
+        "name": "Fensterkontakt aktivieren"
+      },
+      "demand_enable": {
+        "name": "Anforderung aktivieren"
+      },
+      "outdoor_temperature_enable": {
+        "name": "Aussentemperatur aktivieren"
+      },
+      "wall_temperature_enable": {
+        "name": "Wandtemperatur aktivieren"
+      },
+      "water_temperature_enable": {
+        "name": "Wassertemperatur aktivieren"
+      },
+      "auxilary_temperature_enable": {
+        "name": "Externe Temperatur aktvieren"
+      },
+      "auto_limits_enable": {
+        "name": "Automatische Grenzwerte aktivieren"
+      },
+      "hvac_fan_option_b01": {
+        "name": "Lüfter Auto Stufe 1 Freigabe"
+      },
+      "hvac_fan_option_b02": {
+        "name": "Lüfter Auto Stufe 2 Freigabe"
+      },
+      "hvac_fan_option_b03": {
+        "name": "Lüfter Auto Stufe 3 Freigabe"
+      },
+      "hvac_fan_option_b04": {
+        "name": "Lüfter Max Funktion Freigabe"
+      }
+    }
+  }
+}

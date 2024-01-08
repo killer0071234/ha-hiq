@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 from typing import Any
+from re import sub
+from dataclasses import dataclass
 
 from homeassistant.components.cover import (
     ATTR_POSITION,
     CoverDeviceClass,
     CoverEntity,
     CoverEntityFeature,
+    CoverEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -47,6 +50,19 @@ async def async_setup_entry(
         async_add_entities(blinds)
 
 
+@dataclass
+class HiqCoverEntityDescription(CoverEntityDescription):
+    """HIQ Cover Entity."""
+
+    def __post_init__(self):
+        """Defaults the translation_key to the sensor key."""
+        self.has_entity_name = True
+        self.translation_key = (
+            self.translation_key
+            or sub(r"c\d+\.", "", self.key).replace(".", "_").lower()
+        )
+
+
 def find_blinds(
     coordinator: HiqDataUpdateCoordinator,
     add_all: bool,
@@ -77,11 +93,14 @@ def find_blinds(
                 res.append(
                     HiqUpdateCover(
                         coordinator,
-                        key,
-                        var_sp,
-                        var_up,
-                        var_dn,
-                        enabled=ge_ok,
+                        entity_description=HiqCoverEntityDescription(
+                            key=key,
+                            translation_key="blind",
+                            entity_registry_enabled_default=ge_ok,
+                        ),
+                        var_setpoint_name=var_sp,
+                        var_up_name=var_up,
+                        var_down_name=var_dn,
                         dev_info=dev_info,
                     )
                 )
@@ -123,25 +142,22 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
     def __init__(
         self,
         coordinator: HiqDataUpdateCoordinator,
-        var_name: str = "",
+        entity_description: HiqCoverEntityDescription | None = None,
+        unique_id: str | None = None,
         var_setpoint_name: str = "",
         var_up_name: str = "",
         var_down_name: str = "",
-        enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Initialize HIQ-Home blind."""
         super().__init__(coordinator=coordinator)
-        if var_name == "":
-            return
-        self._attr_unique_id = var_name
-        self._attr_name = f"Blind {var_name}"
+        self.entity_description = entity_description
+        self._attr_unique_id = unique_id or entity_description.key
+        # self._attr_name = f"Blind {var_name}"
         self._attr_device_info = dev_info
         self._setpoint_var = var_setpoint_name
         self._moving_up_var = var_up_name
         self._moving_dn_var = var_down_name
-        if enabled is False:
-            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
         if self._moving_dn_var != "":
@@ -236,7 +252,7 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
         try:
             desc = self.coordinator.data.vars[self._attr_unique_id].description
         except KeyError:
-            desc = self._attr_name
+            desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
         }

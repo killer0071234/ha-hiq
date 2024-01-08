@@ -1,7 +1,11 @@
 """Support for HIQ-Home sensors."""
 from __future__ import annotations
 
-from re import search
+from re import search, sub
+from collections.abc import Callable
+from dataclasses import dataclass
+
+from typing import Any
 
 from datetime import datetime
 
@@ -10,6 +14,7 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
+    SensorEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -98,6 +103,21 @@ async def async_setup_entry(
         async_add_entities(hvac_tags)
 
 
+@dataclass
+class HiqSensorEntityDescription(SensorEntityDescription):
+    """HIQ Sensor Entity."""
+
+    value_conversion_function: Callable[[Any], str] | None = None
+
+    def __post_init__(self):
+        """Defaults the translation_key to the sensor key."""
+        self.has_entity_name = True
+        self.translation_key = (
+            self.translation_key
+            or sub(r"c\d+\.", "", self.key).replace(".", "_").lower()
+        )
+
+
 def add_system_tags(
     coordinator: HiqDataUpdateCoordinator,
     add_all: bool = False,
@@ -122,17 +142,16 @@ def add_system_tags(
     res.append(
         HiqSensorEntity(
             coordinator=coordinator,
-            var_name=f"{var_prefix}sys.ip_port",
-            unique_id=None,
-            var_description="",
-            var_unit=None,
+            entity_description=HiqSensorEntityDescription(
+                key=f"{var_prefix}sys.ip_port",
+                # native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+                # device_class=SensorDeviceClass.,
+                # state_class=SensorStateClass.MEASUREMENT, # set to None for string sensors (currently the only one)
+                entity_category=EntityCategory.DIAGNOSTIC,
+                entity_registry_enabled_default=False,
+            ),
             var_type=VarType.STR,
-            attr_entity_category=EntityCategory.DIAGNOSTIC,
-            attr_device_class=None,
-            attr_state_class=None,  # set to None for string sensors (currently the only one)
             val_fact=1.0,
-            display_precision=None,
-            enabled=False,
             dev_info=dev_info,
         )
     )
@@ -143,16 +162,16 @@ def add_system_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=key,
-                        unique_id=None,
-                        var_description="",
-                        var_unit=UnitOfTime.MILLISECONDS,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                            entity_registry_enabled_default=add_all,
+                            suggested_display_precision=0,
+                        ),
                         var_type=VarType.INT,
-                        attr_entity_category=EntityCategory.DIAGNOSTIC,
-                        attr_device_class=None,
                         val_fact=1.0,
-                        display_precision=0,
-                        enabled=add_all,
                         dev_info=dev_info,
                     )
                 )
@@ -160,16 +179,17 @@ def add_system_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=key,
-                        unique_id=None,
-                        var_description="",
-                        var_unit=UnitOfTime.HOURS,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            native_unit_of_measurement=UnitOfTime.HOURS,
+                            device_class=SensorDeviceClass.DURATION,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                            entity_registry_enabled_default=add_all,
+                            suggested_display_precision=0,
+                        ),
                         var_type=VarType.INT,
-                        attr_entity_category=EntityCategory.DIAGNOSTIC,
-                        attr_device_class=SensorDeviceClass.DURATION,
                         val_fact=1.0,
-                        display_precision=0,
-                        enabled=add_all,
                         dev_info=dev_info,
                     )
                 )
@@ -177,16 +197,17 @@ def add_system_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=key,
-                        unique_id=None,
-                        var_description="",
-                        var_unit=UnitOfFrequency.HERTZ,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            native_unit_of_measurement=UnitOfFrequency.HERTZ,
+                            # device_class=SensorDeviceClass.DURATION,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                            entity_registry_enabled_default=add_all,
+                            suggested_display_precision=0,
+                        ),
                         var_type=VarType.INT,
-                        attr_entity_category=EntityCategory.DIAGNOSTIC,
-                        attr_device_class=None,
                         val_fact=1.0,
-                        display_precision=0,
-                        enabled=add_all,
                         dev_info=dev_info,
                     )
                 )
@@ -197,16 +218,17 @@ def add_system_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=key,
-                        unique_id=None,
-                        var_description="",
-                        var_unit=UnitOfElectricPotential.VOLT,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+                            device_class=SensorDeviceClass.VOLTAGE,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_category=EntityCategory.DIAGNOSTIC,
+                            entity_registry_enabled_default=add_all,
+                            suggested_display_precision=1,
+                        ),
                         var_type=VarType.FLOAT,
-                        attr_entity_category=EntityCategory.DIAGNOSTIC,
-                        attr_device_class=SensorDeviceClass.VOLTAGE,
                         val_fact=0.1,
-                        display_precision=1,
-                        enabled=add_all,
                         dev_info=dev_info,
                     )
                 )
@@ -246,16 +268,17 @@ def find_temperatures(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            var_description="",
-                            var_unit=UnitOfTemperature.CELSIUS,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                                device_class=SensorDeviceClass.TEMPERATURE,
+                                state_class=SensorStateClass.MEASUREMENT,
+                                # entity_category=EntityCategory.DIAGNOSTIC,
+                                entity_registry_enabled_default=ge_ok,
+                                suggested_display_precision=1,
+                            ),
                             var_type=VarType.FLOAT,
-                            attr_entity_category=None,
-                            attr_device_class=SensorDeviceClass.TEMPERATURE,
                             val_fact=0.1,
-                            display_precision=1,
-                            enabled=ge_ok,
                             dev_info=dev_info,
                         )
                     )
@@ -263,16 +286,17 @@ def find_temperatures(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            var_description="",
-                            var_unit=PERCENTAGE,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=PERCENTAGE,
+                                device_class=SensorDeviceClass.HUMIDITY,
+                                state_class=SensorStateClass.MEASUREMENT,
+                                # entity_category=EntityCategory.DIAGNOSTIC,
+                                entity_registry_enabled_default=ge_ok,
+                                suggested_display_precision=0,
+                            ),
                             var_type=VarType.FLOAT,
-                            attr_entity_category=None,
-                            attr_device_class=SensorDeviceClass.HUMIDITY,
                             val_fact=1.0,
-                            display_precision=0,
-                            enabled=ge_ok,
                             dev_info=dev_info,
                         )
                     )
@@ -312,16 +336,17 @@ def find_weather(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            var_description="",
-                            var_unit=UnitOfTemperature.CELSIUS,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                                device_class=SensorDeviceClass.TEMPERATURE,
+                                state_class=SensorStateClass.MEASUREMENT,
+                                # entity_category=EntityCategory.DIAGNOSTIC,
+                                entity_registry_enabled_default=ge_ok,
+                                suggested_display_precision=1,
+                            ),
                             var_type=VarType.FLOAT,
-                            attr_entity_category=None,
-                            attr_device_class=SensorDeviceClass.TEMPERATURE,
                             val_fact=0.1,
-                            display_precision=1,
-                            enabled=ge_ok,
                             dev_info=dev_info,
                         )
                     )
@@ -329,16 +354,17 @@ def find_weather(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            var_description="",
-                            var_unit=PERCENTAGE,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=PERCENTAGE,
+                                device_class=SensorDeviceClass.HUMIDITY,
+                                state_class=SensorStateClass.MEASUREMENT,
+                                # entity_category=EntityCategory.DIAGNOSTIC,
+                                entity_registry_enabled_default=ge_ok,
+                                suggested_display_precision=0,
+                            ),
                             var_type=VarType.FLOAT,
-                            attr_entity_category=None,
-                            attr_device_class=SensorDeviceClass.HUMIDITY,
                             val_fact=1.0,
-                            display_precision=0,
-                            enabled=ge_ok,
                             dev_info=dev_info,
                         )
                     )
@@ -346,16 +372,18 @@ def find_weather(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            attr_device_class=SensorDeviceClass.WIND_SPEED,
-                            attr_entity_category=None,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
+                                device_class=SensorDeviceClass.WIND_SPEED,
+                                state_class=SensorStateClass.MEASUREMENT,
+                                # entity_category=EntityCategory.DIAGNOSTIC,
+                                entity_registry_enabled_default=ge_ok,
+                                suggested_display_precision=1,
+                            ),
                             val_fact=0.1,
                             var_type=VarType.FLOAT,
-                            var_unit=UnitOfSpeed.KILOMETERS_PER_HOUR,
-                            display_precision=1,
                             dev_info=dev_info,
-                            enabled=ge_ok,
                         )
                     )
 
@@ -393,16 +421,16 @@ def find_power_meter(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            var_description="",
-                            var_unit=UnitOfPower.WATT,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfPower.WATT,
+                                device_class=SensorDeviceClass.POWER,
+                                state_class=SensorStateClass.MEASUREMENT,
+                                entity_registry_enabled_default=is_ok,
+                                suggested_display_precision=0,
+                            ),
                             var_type=VarType.FLOAT,
-                            attr_entity_category=None,
-                            attr_device_class=SensorDeviceClass.POWER,
                             val_fact=1.0,
-                            display_precision=0,
-                            enabled=is_ok,
                             dev_info=dev_info,
                         )
                     )
@@ -416,16 +444,16 @@ def find_power_meter(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            var_description="",
-                            var_unit=UnitOfElectricPotential.VOLT,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+                                device_class=SensorDeviceClass.VOLTAGE,
+                                state_class=SensorStateClass.MEASUREMENT,
+                                entity_registry_enabled_default=False,
+                                suggested_display_precision=0,
+                            ),
                             var_type=VarType.FLOAT,
-                            attr_entity_category=None,
-                            attr_device_class=SensorDeviceClass.VOLTAGE,
                             val_fact=fact,
-                            display_precision=0,
-                            enabled=False,
                             dev_info=dev_info,
                         )
                     )
@@ -435,16 +463,16 @@ def find_power_meter(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            var_description="",
-                            var_unit=UnitOfElectricCurrent.MILLIAMPERE,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfElectricCurrent.MILLIAMPERE,
+                                device_class=SensorDeviceClass.CURRENT,
+                                state_class=SensorStateClass.MEASUREMENT,
+                                entity_registry_enabled_default=False,
+                                suggested_display_precision=0,
+                            ),
                             var_type=VarType.FLOAT,
-                            attr_entity_category=None,
-                            attr_device_class=SensorDeviceClass.CURRENT,
                             val_fact=1.0,
-                            display_precision=0,
-                            enabled=False,
                             dev_info=dev_info,
                         )
                     )
@@ -454,17 +482,16 @@ def find_power_meter(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            var_description="",
-                            var_unit=UnitOfEnergy.KILO_WATT_HOUR,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+                                device_class=SensorDeviceClass.ENERGY,
+                                state_class=SensorStateClass.TOTAL_INCREASING,
+                                entity_registry_enabled_default=is_ok,
+                                suggested_display_precision=0,
+                            ),
                             var_type=VarType.FLOAT,
-                            attr_entity_category=None,
-                            attr_device_class=SensorDeviceClass.ENERGY,
-                            attr_state_class=SensorStateClass.TOTAL_INCREASING,
                             val_fact=1.0,
-                            display_precision=0,
-                            enabled=is_ok,
                             dev_info=dev_info,
                         )
                     )
@@ -474,17 +501,16 @@ def find_power_meter(
                     res.append(
                         HiqSensorEntity(
                             coordinator=coordinator,
-                            var_name=key,
-                            unique_id=None,
-                            var_description="",
-                            var_unit=UnitOfEnergy.WATT_HOUR,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+                                device_class=SensorDeviceClass.ENERGY,
+                                state_class=SensorStateClass.TOTAL_INCREASING,
+                                entity_registry_enabled_default=False,
+                                suggested_display_precision=0,
+                            ),
                             var_type=VarType.FLOAT,
-                            attr_entity_category=None,
-                            attr_device_class=SensorDeviceClass.ENERGY,
-                            attr_state_class=SensorStateClass.TOTAL_INCREASING,
                             val_fact=1.0,
-                            display_precision=0,
-                            enabled=False,
                             dev_info=dev_info,
                         )
                     )
@@ -538,16 +564,17 @@ def add_th_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=f"{unique_id} thermostat temperature",
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            # translation_key="temperature",
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=SensorDeviceClass.TEMPERATURE,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_registry_enabled_default=ge_ok,
+                            suggested_display_precision=1,
+                        ),
                         var_type=VarType.FLOAT,
-                        attr_entity_category=None,
-                        attr_device_class=SensorDeviceClass.TEMPERATURE,
                         val_fact=0.1,
-                        display_precision=1,
-                        enabled=ge_ok,
                         dev_info=dev_info,
                     )
                 )
@@ -557,16 +584,17 @@ def add_th_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=f"{unique_id} thermostat temperature 1",
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            translation_key="temperature_1",
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=SensorDeviceClass.TEMPERATURE,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_registry_enabled_default=ge_ok,
+                            suggested_display_precision=1,
+                        ),
                         var_type=VarType.FLOAT,
-                        attr_entity_category=None,
-                        attr_device_class=SensorDeviceClass.TEMPERATURE,
                         val_fact=0.1,
-                        display_precision=1,
-                        enabled=ge_ok,
                         dev_info=dev_info,
                     )
                 )
@@ -577,16 +605,17 @@ def add_th_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=f"{unique_id} thermostat humidity",
-                        unique_id=key,
-                        var_description="",
-                        var_unit=PERCENTAGE,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            # translation_key="humidity",
+                            native_unit_of_measurement=PERCENTAGE,
+                            device_class=SensorDeviceClass.HUMIDITY,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_registry_enabled_default=ge_ok,
+                            suggested_display_precision=0,
+                        ),
                         var_type=VarType.FLOAT,
-                        attr_entity_category=None,
-                        attr_device_class=SensorDeviceClass.HUMIDITY,
                         val_fact=1.0,
-                        display_precision=0,
-                        enabled=ge_ok,
                         dev_info=dev_info,
                     )
                 )
@@ -597,16 +626,17 @@ def add_th_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=f"{unique_id} thermostat light sensor",
-                        unique_id=key,
-                        var_description="",
-                        var_unit=PERCENTAGE,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            translation_key="light_sensor",
+                            native_unit_of_measurement=PERCENTAGE,
+                            # device_class=SensorDeviceClass.HUMIDITY,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_registry_enabled_default=False,
+                            suggested_display_precision=1,
+                        ),
                         var_type=VarType.FLOAT,
-                        attr_entity_category=None,
-                        attr_device_class=None,
                         val_fact=0.097751711,  # sensor is returning 0..1023 = 0..100%
-                        display_precision=1,
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -617,16 +647,17 @@ def add_th_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=f"{unique_id} thermostat max timer remain",
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTime.SECONDS,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            translation_key="max_timer_remain",
+                            native_unit_of_measurement=UnitOfTime.SECONDS,
+                            device_class=SensorDeviceClass.DURATION,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_registry_enabled_default=False,
+                            suggested_display_precision=0,
+                        ),
                         var_type=VarType.INT,
-                        attr_entity_category=None,
-                        attr_device_class=SensorDeviceClass.DURATION,
                         val_fact=1.0,
-                        display_precision=0,
-                        enabled=False,
                         dev_info=dev_info,
                     )
                 )
@@ -675,16 +706,16 @@ def add_hvac_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=f"{unique_id} HVAC outdoor temperature",
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=SensorDeviceClass.TEMPERATURE,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_registry_enabled_default=is_ok,
+                            suggested_display_precision=1,
+                        ),
                         var_type=VarType.FLOAT,
-                        attr_entity_category=None,
-                        attr_device_class=SensorDeviceClass.TEMPERATURE,
                         val_fact=0.1,
-                        display_precision=1,
-                        enabled=True,
                         dev_info=dev_info,
                     )
                 )
@@ -694,16 +725,16 @@ def add_hvac_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=f"{unique_id} HVAC wall temperature",
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=SensorDeviceClass.TEMPERATURE,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_registry_enabled_default=is_ok,
+                            suggested_display_precision=1,
+                        ),
                         var_type=VarType.FLOAT,
-                        attr_entity_category=None,
-                        attr_device_class=SensorDeviceClass.TEMPERATURE,
                         val_fact=0.1,
-                        display_precision=1,
-                        enabled=is_ok,
                         dev_info=dev_info,
                     )
                 )
@@ -713,16 +744,16 @@ def add_hvac_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=f"{unique_id} HVAC water temperature",
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=SensorDeviceClass.TEMPERATURE,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_registry_enabled_default=is_ok,
+                            suggested_display_precision=1,
+                        ),
                         var_type=VarType.FLOAT,
-                        attr_entity_category=None,
-                        attr_device_class=SensorDeviceClass.TEMPERATURE,
                         val_fact=0.1,
-                        display_precision=1,
-                        enabled=is_ok,
                         dev_info=dev_info,
                     )
                 )
@@ -732,16 +763,16 @@ def add_hvac_tags(
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
-                        var_name=f"{unique_id} HVAC auxilary temperature",
-                        unique_id=key,
-                        var_description="",
-                        var_unit=UnitOfTemperature.CELSIUS,
+                        entity_description=HiqSensorEntityDescription(
+                            key=key,
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                            device_class=SensorDeviceClass.TEMPERATURE,
+                            state_class=SensorStateClass.MEASUREMENT,
+                            entity_registry_enabled_default=is_ok,
+                            suggested_display_precision=1,
+                        ),
                         var_type=VarType.FLOAT,
-                        attr_entity_category=None,
-                        attr_device_class=SensorDeviceClass.TEMPERATURE,
                         val_fact=0.1,
-                        display_precision=1,
-                        enabled=is_ok,
                         dev_info=dev_info,
                     )
                 )
@@ -760,36 +791,17 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
     def __init__(
         self,
         coordinator: HiqDataUpdateCoordinator,
-        var_name: str = "",
+        entity_description: HiqSensorEntityDescription | None = None,
         unique_id: str | None = None,
-        var_description: str = "",
-        var_unit: str | None = None,
         var_type: VarType = VarType.INT,
-        attr_entity_category: EntityCategory | None = None,
-        attr_device_class: SensorDeviceClass | None = None,
-        attr_state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT,
         val_fact: float = 1.0,
-        display_precision: int | None = 1,
-        enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Initialize a HIQ-Home sensor entity."""
         super().__init__(coordinator=coordinator)
-        if var_name == "":
-            return
-        self._attr_native_unit_of_measurement = var_unit
-        self._unique_id = var_name
-        self._attr_unique_id = unique_id or var_name
-        self._attr_name = var_description if var_description != "" else var_name
-        self._state = None
+        self.entity_description = entity_description
+        self._attr_unique_id = unique_id or entity_description.key
         self._attr_device_info = dev_info
-        self._attr_entity_category = attr_entity_category
-        self._attr_suggested_display_precision = display_precision
-
-        self._attr_device_class = attr_device_class
-        self._attr_state_class = attr_state_class
-        if enabled is False:
-            self._attr_entity_registry_enabled_default = False
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=var_type)
         self._var_type = var_type
@@ -799,7 +811,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
     def native_value(self) -> datetime | StateType | None:
         """Return the state of the sensor."""
         return self.coordinator.get_value(
-            self._attr_unique_id, self._val_fact, self._attr_suggested_display_precision
+            self._attr_unique_id, self._val_fact, self._suggested_precision_or_none()
         )
 
     @property
@@ -808,7 +820,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         try:
             desc = self.coordinator.data.vars[self._attr_unique_id].description
         except KeyError:
-            desc = self._attr_name
+            desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
         }
