@@ -195,7 +195,6 @@ def add_hvac_tags(
                         entity_registry_enabled_default=False,
                     ),
                     var_write_req=get_write_req_th(key, unique_id),
-                    attr_entity_category=EntityCategory.CONFIG,
                     dev_info=dev_info,
                 )
             )
@@ -213,11 +212,8 @@ class HiqSwitchEntity(HiqEntity, SwitchEntity):
         coordinator: HiqDataUpdateCoordinator,
         entity_description: HiqSwitchEntityDescription | None = None,
         unique_id: str | None = None,
-        var_description: str = "",
         var_write_req: str | None = None,
         var_invert: bool = False,
-        attr_entity_category: EntityCategory | None = None,
-        enabled: bool = True,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Initialize a HIQ-Home button entity."""

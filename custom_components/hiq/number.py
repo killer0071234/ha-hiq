@@ -83,14 +83,6 @@ def add_th_tags(
     """
     res: list[HiqNumberEntity] = []
 
-    def _format_name(key: str, name: str) -> str:
-        """Append cool or heat to name."""
-        if key.endswith("_h"):
-            return f"{name} heating"
-        if key.endswith("_c"):
-            return f"{name} cooling"
-        return name
-
     # find different thermostat vars
     for key in coordinator.data.plc_info.plc_vars:
         unique_id = key
@@ -257,9 +249,6 @@ def add_th_tags(
                             max_value=40.0,
                             entity_registry_enabled_default=False,
                         ),
-                        var_name=_format_name(
-                            key, f"{unique_id} thermostat max temp external"
-                        ),
                         var_type=VarType.FLOAT,
                         val_fact=0.1,
                         var_write_req=get_write_req_th(key, unique_id),
@@ -307,11 +296,6 @@ def add_hvac_tags(
     eg: c1000.outdoor_temperature and so on.
     """
     res: list[HiqNumberEntity] = []
-
-    def _format_name(key: str, name: str, unique_id: str) -> str:
-        """Format key to name."""
-        subpart = key.replace(unique_id, "")
-        return name + subpart.replace("_", " ").replace(".", " ")
 
     # find different hvac related vars
     for key in coordinator.data.plc_info.plc_vars:
