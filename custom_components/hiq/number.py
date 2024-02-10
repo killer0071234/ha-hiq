@@ -26,7 +26,6 @@ from homeassistant.helpers.typing import StateType
 from .const import (
     AREA_CLIMATE,
     ATTR_DESCRIPTION,
-    CONF_IGNORE_GENERAL_ERROR,
     DOMAIN,
     LOGGER,
     MANUFACTURER,
@@ -45,11 +44,8 @@ async def async_setup_entry(
     """Set up HIQ-Home numbers based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
-
     th_tags = add_th_tags(
         coordinator,
-        ignore_general_error,
     )
     if th_tags is not None:
         async_add_entities(th_tags)
@@ -76,7 +72,6 @@ class HiqNumberEntityDescription(NumberEntityDescription):
 
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
-    add_all: bool = False,
 ) -> list[HiqNumberEntity] | None:
     """Find numbers for thermostat tags in the plc vars.
     eg: c1000.th00_setpoint_idle and so on.
@@ -104,8 +99,7 @@ def add_th_tags(
             f"{unique_id}_setpoint_idle_c",
             f"{unique_id}_setpoint_idle_h",
         ):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
@@ -130,8 +124,7 @@ def add_th_tags(
             f"{unique_id}_setpoint_offset_c",
             f"{unique_id}_setpoint_offset_h",
         ):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
@@ -157,8 +150,7 @@ def add_th_tags(
             f"{unique_id}_setpoint_lo_c",
             f"{unique_id}_setpoint_lo_h",
         ):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
@@ -184,8 +176,7 @@ def add_th_tags(
             f"{unique_id}_setpoint_hi_c",
             f"{unique_id}_setpoint_hi_h",
         ):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
@@ -211,8 +202,7 @@ def add_th_tags(
             f"{unique_id}_hysteresis_c",
             f"{unique_id}_hysteresis_h",
         ):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
@@ -234,8 +224,7 @@ def add_th_tags(
                 )
         # max temp
         elif key == f"{unique_id}_max_temp":
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,
@@ -261,8 +250,7 @@ def add_th_tags(
             f"{unique_id}_max_time_c",
             f"{unique_id}_max_time_h",
         ):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 res.append(
                     HiqNumberEntity(
                         coordinator=coordinator,

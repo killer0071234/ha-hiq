@@ -21,7 +21,6 @@ DEFAULT_HOST = "85493909-cybroscgiserver"
 DEFAULT_PORT = 4000
 
 # Options
-CONF_IGNORE_GENERAL_ERROR = "ignore_general_error"
 
 # Attributes
 AREA_SYSTEM = "System"

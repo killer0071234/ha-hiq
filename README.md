@@ -37,7 +37,6 @@ Without a running scgi server it is not possible to use this integration!
 
 During creation of the device it scans for supported device types and creates it in home assistant.
 If the `general_error` of the HIQ expansion unit is set, the device will be ignored (Default behaviour of hiq software).
-To add all possible entities there exists a option.
 
 Currently supported are:
 

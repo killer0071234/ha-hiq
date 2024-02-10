@@ -15,7 +15,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import AREA_CLIMATE
 from .const import AREA_SYSTEM
 from .const import ATTR_DESCRIPTION
-from .const import CONF_IGNORE_GENERAL_ERROR
 from .const import DEVICE_DESCRIPTION
 from .const import DEVICE_HW_VERSION
 from .const import DEVICE_SW_VERSION
@@ -36,18 +35,14 @@ async def async_setup_entry(
     """Set up a HIQ binary sensor based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
-
     sys_tags = add_system_tags(
         coordinator,
-        ignore_general_error,
     )
     if sys_tags is not None:
         async_add_entities(sys_tags)
 
     th_tags = add_th_tags(
         coordinator,
-        ignore_general_error,
     )
     if th_tags is not None:
         async_add_entities(th_tags)
@@ -68,7 +63,6 @@ class HiqBinarySensorEntityDescription(BinarySensorEntityDescription):
 
 def add_system_tags(
     coordinator: HiqDataUpdateCoordinator,
-    add_all: bool = False,
 ) -> list[HiqBinarySensor] | None:
     """Find system tags in the plc vars.
     eg: c1000.scan_time and so on.
@@ -124,7 +118,6 @@ def add_system_tags(
 
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
-    add_all: bool = False,
 ) -> list[HiqBinarySensor] | None:
     """Find binary sensors for thermostat tags in the plc vars.
     eg: c1000.th00_ix00 and so on.
@@ -135,8 +128,7 @@ def add_th_tags(
     for key in coordinator.data.plc_info.plc_vars:
         # get window contact input
         if search(r"c\d+\.th\d+_ix00", key):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 unique_id = key
                 # identifier is cNAD.thNR
                 grp = search(r"c\d+\.th\d+", key)
@@ -150,7 +142,6 @@ def add_th_tags(
                             device_class=BinarySensorDeviceClass.WINDOW,
                             entity_registry_enabled_default=False,
                         ),
-                        # var_name=f"{unique_id} thermostat window",
                         value_on="0",
                         dev_info=DeviceInfo(
                             identifiers={
@@ -165,8 +156,7 @@ def add_th_tags(
                 )
         # get heating output
         if search(r"c\d+\.th\d+_output", key):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 unique_id = key
                 # identifier is cNAD.thNR
                 grp = search(r"c\d+\.th\d+", key)
@@ -180,7 +170,6 @@ def add_th_tags(
                             translation_key="output",
                             entity_registry_enabled_default=False,
                         ),
-                        # var_name=f"{unique_id} thermostat output",
                         # DeviceClass.HEAT as default, could also be cool but most of the devices are used for heating
                         # attr_device_class=BinarySensorDeviceClass.HEAT,
                         dev_info=DeviceInfo(

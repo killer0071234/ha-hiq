@@ -15,19 +15,9 @@
         "data": {
           "host": "scgi server host (for cybroscgiserver addon use '85493909-cybroscgiserver')",
           "port": "scgi server port (for cybroscgiserver addon use '4000')",
-          "address": "HIQ controller address (NAD)",
-          "ignore_general_error": "Ignore 'general_error' from expansion unit.\nif checked, all found devices will be add to home assistant, use at your own risk!"
+          "address": "HIQ controller address (NAD)"
         },
         "description": "Set up your HIQ-Home control to integrate with Home Assistant.\nBefore you continue make sure you had a running cybro scgi server!\nSee integration documentation for details."
-      }
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "data": {
-          "ignore_general_error": "Ignore 'general_error' from expansion unit.\nif checked, all found devices will be add to home assistant, use at your own risk!"
-        }
       }
     }
   },
