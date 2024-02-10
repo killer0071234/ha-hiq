@@ -19,7 +19,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     AREA_LIGHTS,
     ATTR_DESCRIPTION,
-    CONF_IGNORE_GENERAL_ERROR,
     DEVICE_DESCRIPTION,
     DOMAIN,
     LOGGER,
@@ -40,16 +39,13 @@ async def async_setup_entry(
     """Set up HIQ-Home light based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
-
     lights = find_on_off_lights(
         coordinator,
-        ignore_general_error,
     )
     if lights is not None:
         async_add_entities(lights)
 
-    lights = find_dimm_lights(coordinator, ignore_general_error)
+    lights = find_dimm_lights(coordinator)
     if lights is not None:
         async_add_entities(lights)
 
@@ -82,7 +78,6 @@ def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool
 
 def find_on_off_lights(
     coordinator: HiqDataUpdateCoordinator,
-    add_all: bool,
 ) -> list[HiqUpdateLight] | None:
     """Find simple light objects in the plc vars.
     eg: c1000.lc00_qx00 and so on.
@@ -94,8 +89,7 @@ def find_on_off_lights(
             and key.find("_qx") != -1
             and _is_dimm_light(key) is False
         ):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 dev_info = DeviceInfo(
                     identifiers={(DOMAIN, key)},
                     manufacturer=MANUFACTURER,
@@ -115,7 +109,6 @@ def find_on_off_lights(
                         entity_description=HiqLightEntityDescription(
                             key=key,
                             translation_key="light",
-                            entity_registry_enabled_default=ge_ok,
                         ),
                         dev_info=dev_info,
                     )
@@ -128,7 +121,6 @@ def find_on_off_lights(
 
 def find_dimm_lights(
     coordinator: HiqDataUpdateCoordinator,
-    add_all: bool,
 ) -> list[HiqUpdateLight] | None:
     """Find dimmable light objects in the plc vars.
     eg: c1000.ld00_qw00 and so on.
@@ -136,8 +128,7 @@ def find_dimm_lights(
     res: list[HiqUpdateLight] = []
     for key in coordinator.data.plc_info.plc_vars:
         if key.find(".ld") != -1 and key.find("_qw") != -1:
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 is_rgb_light = _is_rgb_light(coordinator, key)
                 rgb_hue_out = None
                 rgb_sat_out = None
@@ -183,7 +174,6 @@ def find_dimm_lights(
                         entity_description=HiqLightEntityDescription(
                             key=key,
                             translation_key="light",
-                            entity_registry_enabled_default=ge_ok,
                         ),
                         dev_info=dev_info,
                         dimming_out=key,

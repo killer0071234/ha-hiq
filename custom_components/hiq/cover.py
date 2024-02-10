@@ -19,7 +19,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import AREA_BLINDS
 from .const import ATTR_DESCRIPTION
-from .const import CONF_IGNORE_GENERAL_ERROR
 from .const import DEVICE_DESCRIPTION
 from .const import DEVICE_HW_VERSION
 from .const import DEVICE_SW_VERSION
@@ -40,11 +39,8 @@ async def async_setup_entry(
     """Set up HIQ-Home blind based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
-
     blinds = find_blinds(
         coordinator,
-        ignore_general_error,
     )
     if blinds is not None:
         async_add_entities(blinds)
@@ -65,7 +61,6 @@ class HiqCoverEntityDescription(CoverEntityDescription):
 
 def find_blinds(
     coordinator: HiqDataUpdateCoordinator,
-    add_all: bool,
 ) -> list[HiqUpdateCover] | None:
     """Find blind objects in the plc vars.
     eg: c1000.bc00_blinds_position_00 and so on.
@@ -73,8 +68,7 @@ def find_blinds(
     res: list[HiqUpdateCover] = []
     for key in coordinator.data.plc_info.plc_vars:
         if key.find(".bc") != -1 and key.find("_blinds_position") != -1:
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 dev_info = DeviceInfo(
                     identifiers={(DOMAIN, key)},
                     manufacturer=MANUFACTURER,
@@ -96,7 +90,6 @@ def find_blinds(
                         entity_description=HiqCoverEntityDescription(
                             key=key,
                             translation_key="blind",
-                            entity_registry_enabled_default=ge_ok,
                         ),
                         var_setpoint_name=var_sp,
                         var_up_name=var_up,
@@ -153,7 +146,6 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
         super().__init__(coordinator=coordinator)
         self.entity_description = entity_description
         self._attr_unique_id = unique_id or entity_description.key
-        # self._attr_name = f"Blind {var_name}"
         self._attr_device_info = dev_info
         self._setpoint_var = var_setpoint_name
         self._moving_up_var = var_up_name

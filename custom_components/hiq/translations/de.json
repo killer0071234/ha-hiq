@@ -15,19 +15,9 @@
         "data": {
           "host": "scgi Server host (für das cybroscgiserver addon '85493909-cybroscgiserver')",
           "port": "scgi Server port (für das cybroscgiserver addon '4000')",
-          "address": "Adresse der HIQ Steuerung (NAD)",
-          "ignore_general_error": "Ignoriere 'general_error' der Erweiterungsmodule.\nWenn aktiviert, werden alle gefundenen Module zu Home Assistant hinzugefügt, Verwendung auf eingene Gefahr!"
+          "address": "Adresse der HIQ Steuerung (NAD)"
         },
         "description": "Richte HIQ-Home mit Home Assistant ein.\nVor der Einrichtung der Integration muss ein cybro scgi Server laufen!\nSiehe Dokumentation der Integration für Details."
-      }
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "data": {
-          "ignore_general_error": "Ignoriere 'general_error' der Erweiterungsmodule.\nWenn aktiviert, werden alle gefundenen Module zu Home Assistant hinzugefügt, Verwendung auf eingene Gefahr!"
-        }
       }
     }
   },

@@ -19,7 +19,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     AREA_CLIMATE,
     ATTR_DESCRIPTION,
-    CONF_IGNORE_GENERAL_ERROR,
     DOMAIN,
     LOGGER,
     MANUFACTURER,
@@ -38,11 +37,8 @@ async def async_setup_entry(
     """Set up HIQ-Home switch based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
-
     th_tags = add_th_tags(
         coordinator,
-        ignore_general_error,
     )
     if th_tags is not None:
         async_add_entities(th_tags)
@@ -72,7 +68,6 @@ class HiqSwitchEntityDescription(Generic[T], SwitchEntityDescription):
 
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
-    add_all: bool = False,
 ) -> list[HiqSwitchEntity] | None:
     """Find switch for thermostat tags in the plc vars.
     eg: c1000.th00_window_enable and so on.
@@ -96,8 +91,7 @@ def add_th_tags(
 
         # window enable
         if key in (f"{unique_id}_window_enable",):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 res.append(
                     HiqSwitchEntity(
                         coordinator=coordinator,
@@ -113,8 +107,7 @@ def add_th_tags(
                 )
         # demand enable
         elif key in (f"{unique_id}_demand_enable",):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 res.append(
                     HiqSwitchEntity(
                         coordinator=coordinator,

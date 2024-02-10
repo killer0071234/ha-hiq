@@ -28,7 +28,6 @@ from homeassistant.const import (
 
 from .const import (
     AREA_CLIMATE,
-    CONF_IGNORE_GENERAL_ERROR,
     DOMAIN,
     ATTR_FLOOR_TEMP,
     ATTR_SETPOINT_IDLE,
@@ -104,11 +103,8 @@ async def async_setup_entry(
     """Set up a HIQ climate device based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
-
     thermostats = find_thermostats(
         coordinator,
-        ignore_general_error,
     )
     if thermostats is not None:
         async_add_entities(thermostats)
@@ -116,7 +112,6 @@ async def async_setup_entry(
 
 def find_thermostats(
     coordinator: HiqDataUpdateCoordinator,
-    add_all: bool = False,
 ) -> list[HiqThermostat] | None:
     """Find system tags in the plc vars.
     eg: c1000.th00_ and so on.
@@ -126,8 +121,7 @@ def find_thermostats(
     # find thermostats (general_error)
     for key in coordinator.data.plc_info.plc_vars:
         if search(r"c\d+\.th\d+_general_error", key):
-            ge_ok = is_general_error_ok(coordinator, key)
-            if add_all or ge_ok:
+            if is_general_error_ok(coordinator, key):
                 unique_id = key
                 # identifier is cNAD.thNR
                 grp = search(r"c\d+\.th\d+", key)

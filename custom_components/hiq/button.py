@@ -18,7 +18,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     AREA_CLIMATE,
     ATTR_DESCRIPTION,
-    CONF_IGNORE_GENERAL_ERROR,
     DOMAIN,
     LOGGER,
     MANUFACTURER,
@@ -36,11 +35,8 @@ async def async_setup_entry(
     """Set up HIQ-Home select based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    ignore_general_error = entry.options.get(CONF_IGNORE_GENERAL_ERROR, False)
-
     hvac_tags = add_hvac_tags(
         coordinator,
-        ignore_general_error,
     )
     if hvac_tags is not None:
         async_add_entities(hvac_tags)
@@ -61,7 +57,6 @@ class HiqButtonEntityDescription(ButtonEntityDescription):
 
 def add_hvac_tags(
     coordinator: HiqDataUpdateCoordinator,
-    ignore_general_error: bool,
 ) -> list[HiqButtonEntity] | None:
     """Find and add HVAC tags in the plc vars.
     eg: c1000.outdoor_temperature and so on.
@@ -133,9 +128,7 @@ def add_hvac_tags(
             via_device=(DOMAIN, coordinator.cybro.nad),
         )
 
-        is_ge_ok = is_general_error_ok(coordinator, f"{thermostat}_general_error")
-
-        if is_ge_ok or ignore_general_error:
+        if is_general_error_ok(coordinator, f"{thermostat}_general_error"):
             # config 1 request
             key = f"{thermostat}_config1_req"
             if key in coordinator.data.plc_info.plc_vars:
