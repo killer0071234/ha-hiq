@@ -337,6 +337,18 @@ class HiqThermostat(HiqEntity, ClimateEntity):
             await self.coordinator.cybro.write_var(f"{self._prefix}_active", "1")
         await self.coordinator.async_refresh()
 
+    async def async_turn_on(self) -> None:
+        """Turn the climate on."""
+        for mode in (HVACMode.HEAT, HVACMode.COOL):
+            if mode not in self.hvac_modes:
+                continue
+            await self.async_set_hvac_mode(mode)
+            break
+
+    async def async_turn_off(self) -> None:
+        """Turn the climate off."""
+        await self.async_set_hvac_mode(HVACMode.OFF)
+
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
         if preset_mode == PRESET_BOOST:
