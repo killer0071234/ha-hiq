@@ -42,7 +42,10 @@ from .light import is_general_error_ok
 from . import get_write_req_th
 
 SUPPORT_FLAGS = (
-    ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
+    ClimateEntityFeature.TARGET_TEMPERATURE |
+    ClimateEntityFeature.PRESET_MODE |
+    ClimateEntityFeature.TURN_ON |
+    ClimateEntityFeature.TURN_OFF
 )
 
 SUPPORT_MODES_HEAT = [HVACMode.OFF, HVACMode.HEAT]
@@ -149,6 +152,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     _attr_supported_features = SUPPORT_FLAGS
     _attr_target_temperature_step = PRECISION_TENTHS
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _enable_turn_on_off_backwards_compatibility = False
 
     def __init__(
         self,
