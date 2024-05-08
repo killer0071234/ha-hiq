@@ -242,6 +242,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         self._attr_device_info = dev_info
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
+        self._attr_supported_color_modes = {ColorMode.ONOFF}
         if dimming_out:
             self._attr_color_mode = ColorMode.BRIGHTNESS
             self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
