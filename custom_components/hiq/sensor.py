@@ -767,7 +767,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
     def native_value(self) -> datetime | StateType | None:
         """Return the state of the sensor."""
         return self.coordinator.get_value(
-            self._attr_unique_id, self._val_fact, self._suggested_precision_or_none()
+            self._attr_unique_id, self._val_fact, self.suggested_display_precision
         )
 
     @property
