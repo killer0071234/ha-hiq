@@ -100,6 +100,7 @@ def add_hvac_tags(
     )
 
     # check for existing global parameter
+    has_para_for_thermostat: bool = False
     for hvac in hvacs:
         if hvac in (
             f"{unique_id}.hvac_temperature_source",
@@ -110,7 +111,8 @@ def add_hvac_tags(
             f"{unique_id}.hvac_fan_option_b04",
         ):
             has_para_for_thermostat = True
-    if has_para_for_thermostat is None:
+            break
+    if has_para_for_thermostat is False:
         return None
 
     # add config buttons for active thermostats
