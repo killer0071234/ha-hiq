@@ -13,6 +13,7 @@ from homeassistant.const import CONF_HOST
 from homeassistant.const import CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.template import Template
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -113,3 +114,22 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         except ValueError:
             LOGGER.debug("get_value: %s -> %s", str(tag), str(res.value))
             return res.value
+
+    def get_template_value(
+        self,
+        tag: str,
+        value_template: Template | None = None,
+        def_val: str | int | float | None = None,
+    ) -> str | int | float | None:
+        """Return a single Tag Value and format it with a given template."""
+        res = self.data.vars.get(tag, None)
+        if res is None:
+            return def_val
+        if res.value == "?" or res.value is None:
+            LOGGER.debug("get_template_value: %s -> ? (%s)", str(tag), str(def_val))
+            return def_val
+        value = res.value
+        if (template := value_template) is not None:
+            value = template.async_render_with_possible_json_value(value, None)
+        LOGGER.debug("get_template_value: %s -> %s", str(tag), str(value))
+        return value
