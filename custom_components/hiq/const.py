@@ -47,3 +47,6 @@ SERVICE_HOME = "home_event"
 SERVICE_ALARM = "alarm_event"
 SERVICE_PRECEDE = "precede_event"
 SERVICE_WRITE_TAG = "write_tag"
+
+# Schemas
+CONF_TAG = "tag"

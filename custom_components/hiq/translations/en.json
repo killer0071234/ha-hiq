@@ -1,13 +1,16 @@
 {
   "config": {
     "abort": {
-      "already_configured": "Device is already configured",
+      "already_configured": "PLC is already configured",
       "cannot_connect": "Failed to connect",
       "plc_not_existing": "PLC with address `{address}` does not exist in scgi server",
       "scgi_server_not_running": "scgi server is not running"
     },
     "error": {
-      "cannot_connect": "Failed to connect"
+      "already_configured": "PLC is already configured",
+      "cannot_connect": "Failed to connect to scgi server (is the server running?)",
+      "plc_not_existing": "PLC does not exist in scgi server",
+      "scgi_server_not_running": "scgi server is not running"
     },
     "flow_title": "{name}",
     "step": {

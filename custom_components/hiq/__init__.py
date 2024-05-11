@@ -1,15 +1,33 @@
 """Support for HIQ-Home."""
 from __future__ import annotations
+import voluptuous as vol
 
 import homeassistant.helpers.device_registry as dr
+from homeassistant.helpers import config_validation as cv
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_DEVICE_ID, ATTR_ENTITY_ID, CONF_ADDRESS, Platform
+from homeassistant.const import (
+    ATTR_DEVICE_ID,
+    ATTR_ENTITY_ID,
+    CONF_ADDRESS,
+    CONF_HOST,
+    CONF_PORT,
+    Platform,
+    CONF_VALUE_TEMPLATE,
+)
 from homeassistant.core import (
     HomeAssistant,
     ServiceCall,
 )
+from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
+from homeassistant.helpers.trigger_template_entity import (
+    TEMPLATE_SENSOR_BASE_SCHEMA,
+)
 
 from .const import (
+    CONF_TAG,
+    DEFAULT_HOST,
+    DEFAULT_PORT,
     DOMAIN,
     LOGGER,
     SERVICE_ALARM,
@@ -34,6 +52,69 @@ PLATFORMS = [
     Platform.SELECT,
     Platform.SWITCH,
 ]
+
+PLC_SCHEMA = {
+    vol.Required(CONF_HOST, default=DEFAULT_HOST): cv.string,
+    vol.Required(CONF_PORT, default=DEFAULT_PORT): cv.port,
+    vol.Required(CONF_ADDRESS, default=1000): cv.positive_int,
+}
+
+SENSOR_SCHEMA = vol.Schema(
+    {
+        **TEMPLATE_SENSOR_BASE_SCHEMA.schema,
+        vol.Required(CONF_TAG): cv.string,
+        vol.Optional(CONF_VALUE_TEMPLATE): cv.template,
+    }
+)
+
+COMBINED_SCHEMA = vol.Schema(
+    {
+        **PLC_SCHEMA,
+        vol.Optional(SENSOR_DOMAIN): vol.All(
+            cv.ensure_list, [vol.Schema(SENSOR_SCHEMA)]
+        ),
+        vol.Optional(BINARY_SENSOR_DOMAIN): vol.All(
+            cv.ensure_list, [vol.Schema(SENSOR_SCHEMA)]
+        ),
+    }
+)
+
+CONFIG_SCHEMA = vol.Schema(
+    {vol.Optional(DOMAIN): vol.All(cv.ensure_list, [COMBINED_SCHEMA])},
+    extra=vol.ALLOW_EXTRA,
+)
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate an old config entry."""
+    version = entry.version
+
+    LOGGER.debug("Migrating from version %s", version)
+
+    # 1 -> 2: move connection parameter from data to options
+    if version == 1:
+        version = 2
+
+        host = entry.data[CONF_HOST]
+        port = entry.data[CONF_PORT]
+        nad = entry.data[CONF_ADDRESS]
+        title = f"c{nad}@{host}:{port}"
+        hass.config_entries.async_update_entry(
+            entry,
+            unique_id=title,
+            title=title,
+            data={},
+            options={
+                CONF_HOST: host,
+                CONF_PORT: port,
+                CONF_ADDRESS: nad,
+            },
+            version=version,
+        )
+
+    LOGGER.info("Migration to version %s successful", version)
+
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
