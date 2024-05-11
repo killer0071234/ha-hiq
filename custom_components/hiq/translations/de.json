@@ -1,23 +1,26 @@
 {
   "config": {
     "abort": {
-      "already_configured": "Gerät ist bereits konfiguriert",
+      "already_configured": "Steuerung ist bereits konfiguriert",
       "cannot_connect": "Fehler beim verbinden",
       "plc_not_existing": "Steuerung mit der Adresse `{address}` existiert im scgi Server nicht",
       "scgi_server_not_running": "scgi Server läuft nicht"
     },
     "error": {
-      "cannot_connect": "Fehler beim verbinden"
+      "already_configured": "Steuerung ist bereits konfiguriert",
+      "cannot_connect": "Fehler beim verbinden zum SCGI Server (Läuft der Server?)",
+      "plc_not_existing": "Steuerung existiert im SCGI Server nicht",
+      "scgi_server_not_running": "SCGI Server läuft nicht"
     },
     "flow_title": "{name}",
     "step": {
       "user": {
         "data": {
-          "host": "scgi Server host (für das cybroscgiserver addon '85493909-cybroscgiserver')",
-          "port": "scgi Server port (für das cybroscgiserver addon '4000')",
+          "host": "SCGI Server host (für das cybroscgiserver addon '85493909-cybroscgiserver')",
+          "port": "SCGI Server port (für das cybroscgiserver addon '4000')",
           "address": "Adresse der HIQ Steuerung (NAD)"
         },
-        "description": "Richte HIQ-Home mit Home Assistant ein.\nVor der Einrichtung der Integration muss ein cybro scgi Server laufen!\nSiehe Dokumentation der Integration für Details."
+        "description": "Richte HIQ-Home mit Home Assistant ein.\nVor der Einrichtung der Integration muss ein cybro SCGI Server laufen!\nSiehe Dokumentation der Integration für Details."
       }
     }
   },

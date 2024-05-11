@@ -38,16 +38,16 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
     ) -> None:
         """Initialize global HIQ-Home data updater."""
         self.cybro = Cybro(
-            entry.data[CONF_HOST],
-            entry.data[CONF_PORT],
-            entry.data[CONF_ADDRESS],
+            entry.options[CONF_HOST],
+            entry.options[CONF_PORT],
+            entry.options[CONF_ADDRESS],
             session=async_get_clientsession(hass),
         )
-        self.unique_id = "c" + str(entry.data[CONF_ADDRESS])
+        self.unique_id = "c" + str(entry.options[CONF_ADDRESS])
         self.unsub: Callable | None = None
 
         update_interval = SCAN_INTERVAL
-        if entry.data[CONF_HOST] in (
+        if entry.options[CONF_HOST] in (
             DEFAULT_HOST,
             "localhost",
             "127.0.0.1",
