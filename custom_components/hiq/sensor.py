@@ -31,6 +31,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.template import Template
 from homeassistant.helpers.typing import StateType
 
 from .const import (
@@ -752,6 +753,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         var_type: VarType = VarType.INT,
         val_fact: float = 1.0,
         dev_info: DeviceInfo = None,
+        value_template: Template | None = None,
     ) -> None:
         """Initialize a HIQ-Home sensor entity."""
         super().__init__(coordinator=coordinator)
@@ -759,13 +761,21 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         self._attr_unique_id = unique_id or entity_description.key
         self._attr_device_info = dev_info
         LOGGER.debug(self._attr_unique_id)
-        coordinator.data.add_var(self._attr_unique_id, var_type=var_type)
-        self._var_type = var_type
+        # set var type to string for template handling (conversion shall be done in template)
+        self._var_type = var_type if value_template is None else VarType.STR
+        coordinator.data.add_var(self._attr_unique_id, var_type=self._var_type)
         self._val_fact = val_fact
+        self._value_template = value_template
 
     @property
     def native_value(self) -> datetime | StateType | None:
         """Return the state of the sensor."""
+
+        if self._value_template is not None:
+            return self.coordinator.get_template_value(
+                self._attr_unique_id, self._value_template
+            )
+
         return self.coordinator.get_value(
             self._attr_unique_id, self._val_fact, self.suggested_display_precision
         )
