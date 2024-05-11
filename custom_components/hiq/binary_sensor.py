@@ -11,6 +11,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers import template
+from homeassistant.helpers.template import Template
 
 from .const import AREA_CLIMATE
 from .const import AREA_SYSTEM
@@ -24,6 +26,8 @@ from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
 from .light import is_general_error_ok
+
+TEMPLATE_INVERTED = "{{value | string() == '0'}}"
 
 
 async def async_setup_entry(
@@ -43,6 +47,7 @@ async def async_setup_entry(
 
     th_tags = add_th_tags(
         coordinator,
+        hass,
     )
     if th_tags is not None:
         async_add_entities(th_tags)
@@ -118,6 +123,7 @@ def add_system_tags(
 
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
+    hass: HomeAssistant | None = None,
 ) -> list[HiqBinarySensor] | None:
     """Find binary sensors for thermostat tags in the plc vars.
     eg: c1000.th00_ix00 and so on.
@@ -142,7 +148,6 @@ def add_th_tags(
                             device_class=BinarySensorDeviceClass.WINDOW,
                             entity_registry_enabled_default=False,
                         ),
-                        value_on="0",
                         dev_info=DeviceInfo(
                             identifiers={
                                 (coordinator.cybro.nad, f"{unique_id} thermostat")
@@ -152,6 +157,7 @@ def add_th_tags(
                             suggested_area=AREA_CLIMATE,
                             via_device=(DOMAIN, coordinator.cybro.nad),
                         ),
+                        value_template=Template(TEMPLATE_INVERTED, hass),
                     )
                 )
         # get heating output
@@ -205,21 +211,31 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
         coordinator: HiqDataUpdateCoordinator,
         entity_description: HiqBinarySensorEntityDescription | None = None,
         unique_id: str | None = None,
-        value_on: str = "1",
         dev_info: DeviceInfo | None = None,
+        value_template: Template | None = None,
     ) -> None:
         """Pass coordinator to CoordinatorEntity."""
         super().__init__(coordinator=coordinator)
         self.entity_description = entity_description
         self._attr_unique_id = unique_id or entity_description.key
         self._attr_device_info = dev_info
-        self._value_on = value_on
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
+        self._value_template = value_template
 
     @property
     def is_on(self) -> bool | None:
         """Return entity state."""
-        return self.coordinator.get_value(self._attr_unique_id)
+
+        if self._value_template is not None:
+            return template.result_as_boolean(
+                self.coordinator.get_template_value(
+                    self._attr_unique_id, self._value_template
+                )
+            )
+
+        return template.result_as_boolean(
+            self.coordinator.get_value(self._attr_unique_id)
+        )
 
     @property
     def extra_state_attributes(self):
