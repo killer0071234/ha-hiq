@@ -119,8 +119,8 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         self,
         tag: str,
         value_template: Template | None = None,
-        def_val: str | int | float | None = None,
-    ) -> str | int | float | None:
+        def_val: bool | str | int | float | None = None,
+    ) -> bool | str | int | float | None:
         """Return a single Tag Value and format it with a given template."""
         res = self.data.vars.get(tag, None)
         if res is None:
