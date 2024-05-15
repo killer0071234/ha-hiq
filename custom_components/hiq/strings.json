@@ -8,6 +8,11 @@
           "host": "[%key:common::config_flow::data::host%]",
           "port": "[%key:common::config_flow::data::port%]",
           "address": "[%key:common::config_flow::data::address%]"
+        },
+        "data_description": {
+          "host": "[%key:common::config_flow::data_description::host%]",
+          "port": "[%key:common::config_flow::data_description::port%]",
+          "address": "[%key:common::config_flow::data_description::address%]"
         }
       }
     },
@@ -16,12 +21,6 @@
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "plc_not_existing": "[%key:common::config_flow::error::plc_not_existing%]",
       "scgi_server_not_running": "[%key:common::config_flow::error::scgi_server_not_running%]"
-    },
-    "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "scgi_server_not_running": "scgi server is not running",
-      "plc_not_existing": "PLC with address `{address}` does not exist"
     }
   },
   "entity": {
@@ -34,6 +33,9 @@
       },
       "general_error": {
         "name": "General error"
+      },
+      "general_error_iex": {
+        "name": "{module} General error"
       },
       "output": {
         "name": "Output"
@@ -79,137 +81,8 @@
       "iex_power_supply": {
         "name": "Iex voltage"
       },
-      "lc00_iex_power_supply": {
-        "name": "lc00 iex voltage"
-      },
-      "lc01_iex_power_supply": {
-        "name": "lc01 iex voltage"
-      },
-      "lc02_iex_power_supply": {
-        "name": "lc02 iex voltage"
-      },
-      "lc03_iex_power_supply": {
-        "name": "lc03 iex voltage"
-      },
-      "lc04_iex_power_supply": {
-        "name": "lc04 iex voltage"
-      },
-      "lc05_iex_power_supply": {
-        "name": "lc05 iex voltage"
-      },
-      "lc06_iex_power_supply": {
-        "name": "lc06 iex voltage"
-      },
-      "lc07_iex_power_supply": {
-        "name": "lc07 iex voltage"
-      },
-      "ld00_iex_power_supply": {
-        "name": "ld00 iex voltage"
-      },
-      "ld01_iex_power_supply": {
-        "name": "ld01 iex voltage"
-      },
-      "ld02_iex_power_supply": {
-        "name": "ld02 iex voltage"
-      },
-      "ld03_iex_power_supply": {
-        "name": "ld03 iex voltage"
-      },
-      "ld04_iex_power_supply": {
-        "name": "ld04 iex voltage"
-      },
-      "ld05_iex_power_supply": {
-        "name": "ld05 iex voltage"
-      },
-      "ld06_iex_power_supply": {
-        "name": "ld06 iex voltage"
-      },
-      "ld07_iex_power_supply": {
-        "name": "ld07 iex voltage"
-      },
-      "ld08_iex_power_supply": {
-        "name": "ld08 iex voltage"
-      },
-      "ld09_iex_power_supply": {
-        "name": "ld09 iex voltage"
-      },
-      "bc00_iex_power_supply": {
-        "name": "bc00 iex voltage"
-      },
-      "bc01_iex_power_supply": {
-        "name": "bc01 iex voltage"
-      },
-      "bc02_iex_power_supply": {
-        "name": "bc02 iex voltage"
-      },
-      "bc03_iex_power_supply": {
-        "name": "bc03 iex voltage"
-      },
-      "bc04_iex_power_supply": {
-        "name": "bc04 iex voltage"
-      },
-      "bc05_iex_power_supply": {
-        "name": "bc05 iex voltage"
-      },
-      "th00_iex_power_supply": {
-        "name": "th00 iex voltage"
-      },
-      "th01_iex_power_supply": {
-        "name": "th01 iex voltage"
-      },
-      "th02_iex_power_supply": {
-        "name": "th02 iex voltage"
-      },
-      "th03_iex_power_supply": {
-        "name": "th03 iex voltage"
-      },
-      "th04_iex_power_supply": {
-        "name": "th04 iex voltage"
-      },
-      "th05_iex_power_supply": {
-        "name": "th05 iex voltage"
-      },
-      "th06_iex_power_supply": {
-        "name": "th06 iex voltage"
-      },
-      "th07_iex_power_supply": {
-        "name": "th07 iex voltage"
-      },
-      "th08_iex_power_supply": {
-        "name": "th08 iex voltage"
-      },
-      "th09_iex_power_supply": {
-        "name": "th09 iex voltage"
-      },
-      "fc00_iex_power_supply": {
-        "name": "fc00 iex voltage"
-      },
-      "fc01_iex_power_supply": {
-        "name": "fc01 iex voltage"
-      },
-      "fc02_iex_power_supply": {
-        "name": "fc02 iex voltage"
-      },
-      "fc03_iex_power_supply": {
-        "name": "fc03 iex voltage"
-      },
-      "fc04_iex_power_supply": {
-        "name": "fc04 iex voltage"
-      },
-      "fc05_iex_power_supply": {
-        "name": "fc05 iex voltage"
-      },
-      "sc00_iex_power_supply": {
-        "name": "sc00 iex voltage"
-      },
-      "sc01_iex_power_supply": {
-        "name": "sc01 iex voltage"
-      },
-      "sc02_iex_power_supply": {
-        "name": "sc02 iex voltage"
-      },
-      "sc03_iex_power_supply": {
-        "name": "sc03 iex voltage"
+      "iex_power_supply_iex": {
+        "name": "{module} iex voltage"
       },
       "eno_general_error": {
         "name": "EnOcean general error"

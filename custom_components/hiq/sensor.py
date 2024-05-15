@@ -1,53 +1,47 @@
 """Support for HIQ-Home sensors."""
 from __future__ import annotations
 
-from re import search, sub
 from collections.abc import Callable
 from dataclasses import dataclass
-
+from datetime import datetime
+from re import search
+from re import sub
 from typing import Any
 
-from datetime import datetime
-
 from cybro import VarType
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
-    SensorEntityDescription,
-)
+from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntityDescription
+from homeassistant.components.sensor import SensorStateClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    PERCENTAGE,
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfEnergy,
-    UnitOfFrequency,
-    UnitOfPower,
-    UnitOfSpeed,
-    UnitOfTemperature,
-    UnitOfTime,
-)
+from homeassistant.const import PERCENTAGE
+from homeassistant.const import UnitOfElectricCurrent
+from homeassistant.const import UnitOfElectricPotential
+from homeassistant.const import UnitOfEnergy
+from homeassistant.const import UnitOfFrequency
+from homeassistant.const import UnitOfPower
+from homeassistant.const import UnitOfSpeed
+from homeassistant.const import UnitOfTemperature
+from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.typing import StateType
 
-from .const import (
-    AREA_ENERGY,
-    AREA_SYSTEM,
-    AREA_WEATHER,
-    AREA_CLIMATE,
-    ATTR_DESCRIPTION,
-    DEVICE_DESCRIPTION,
-    DEVICE_HW_VERSION,
-    DEVICE_SW_VERSION,
-    DOMAIN,
-    LOGGER,
-    MANUFACTURER,
-    MANUFACTURER_URL,
-)
+from .const import AREA_CLIMATE
+from .const import AREA_ENERGY
+from .const import AREA_SYSTEM
+from .const import AREA_WEATHER
+from .const import ATTR_DESCRIPTION
+from .const import DEVICE_DESCRIPTION
+from .const import DEVICE_HW_VERSION
+from .const import DEVICE_SW_VERSION
+from .const import DOMAIN
+from .const import LOGGER
+from .const import MANUFACTURER
+from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
@@ -203,11 +197,19 @@ def add_system_tags(
                 key.find("iex_power_supply") != -1
                 or key.find("cybro_power_supply") != -1
             ):
+                module_name = key.removeprefix(var_prefix).split("_").pop(0)
+                translation_key = "iex_power_supply_iex"
+                translation_placeholders = {"module": module_name}
+                if module_name in ("iex", "cybro"):
+                    translation_key = f"{module_name}_power_supply"
+                    translation_placeholders = None
                 res.append(
                     HiqSensorEntity(
                         coordinator=coordinator,
                         entity_description=HiqSensorEntityDescription(
                             key=key,
+                            translation_key=translation_key,
+                            translation_placeholders=translation_placeholders,
                             native_unit_of_measurement=UnitOfElectricPotential.VOLT,
                             device_class=SensorDeviceClass.VOLTAGE,
                             state_class=SensorStateClass.MEASUREMENT,
