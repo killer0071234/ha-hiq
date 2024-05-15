@@ -19,6 +19,7 @@ from homeassistant.helpers.template import Template
 from .const import AREA_CLIMATE
 from .const import AREA_SYSTEM
 from .const import ATTR_DESCRIPTION
+from .const import ATTR_VARIABLE
 from .const import DEVICE_DESCRIPTION
 from .const import DEVICE_HW_VERSION
 from .const import DEVICE_SW_VERSION
@@ -258,4 +259,5 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
             desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
+            ATTR_VARIABLE: self._attr_unique_id,
         }

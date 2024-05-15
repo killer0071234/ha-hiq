@@ -1,27 +1,25 @@
 """Support for HIQ-Home button."""
 from __future__ import annotations
 
-from re import search, sub
 from dataclasses import dataclass
-
+from re import search
+from re import sub
 
 from cybro import VarType
-from homeassistant.components.button import (
-    ButtonEntity,
-    ButtonEntityDescription,
-)
+from homeassistant.components.button import ButtonEntity
+from homeassistant.components.button import ButtonEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (
-    AREA_CLIMATE,
-    ATTR_DESCRIPTION,
-    DOMAIN,
-    LOGGER,
-    MANUFACTURER,
-)
+from .const import AREA_CLIMATE
+from .const import ATTR_DESCRIPTION
+from .const import ATTR_VARIABLE
+from .const import DOMAIN
+from .const import LOGGER
+from .const import MANUFACTURER
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
@@ -201,6 +199,7 @@ class HiqButtonEntity(HiqEntity, ButtonEntity):
             desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
+            ATTR_VARIABLE: self._attr_unique_id,
         }
 
     async def async_press(self) -> None:
