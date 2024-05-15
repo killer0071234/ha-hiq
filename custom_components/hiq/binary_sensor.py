@@ -1,17 +1,19 @@
 """Support for HIQ-Home binary sensor."""
 from __future__ import annotations
-from re import search, sub
+
 from dataclasses import dataclass
+from re import search
+from re import sub
+
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
-from homeassistant.components.binary_sensor import (
-    BinarySensorEntity,
-    BinarySensorEntityDescription,
-)
+from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import BinarySensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo, EntityCategory
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers import template
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.template import Template
 
 from .const import AREA_CLIMATE
@@ -24,8 +26,8 @@ from .const import DOMAIN
 from .const import MANUFACTURER
 from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
-from .models import HiqEntity
 from .light import is_general_error_ok
+from .models import HiqEntity
 
 TEMPLATE_INVERTED = "{{value | string() == '0'}}"
 
@@ -103,11 +105,21 @@ def add_system_tags(
                     )
                 )
             if key.find("general_error") != -1:
+                module_name = key.removeprefix(var_prefix).split("_").pop(0)
+                translation_key = "general_error_iex"
+                translation_placeholders = {"module": module_name}
+                if module_name == "general":
+                    translation_key = "general_error"
+                    translation_placeholders = None
+                elif module_name == "eno":
+                    translation_placeholders = {"module": "EnOcean"}
                 res.append(
                     HiqBinarySensor(
                         coordinator,
                         entity_description=HiqBinarySensorEntityDescription(
                             key=key,
+                            translation_key=translation_key,
+                            translation_placeholders=translation_placeholders,
                             device_class=BinarySensorDeviceClass.PROBLEM,
                             entity_category=EntityCategory.DIAGNOSTIC,
                             entity_registry_enabled_default=False,

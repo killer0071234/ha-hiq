@@ -1,24 +1,23 @@
 {
   "config": {
-    "abort": {
-      "already_configured": "PLC is already configured",
-      "cannot_connect": "Failed to connect",
-      "plc_not_existing": "PLC with address `{address}` does not exist in scgi server",
-      "scgi_server_not_running": "scgi server is not running"
-    },
     "error": {
-      "already_configured": "PLC is already configured",
-      "cannot_connect": "Failed to connect to scgi server (is the server running?)",
-      "plc_not_existing": "PLC does not exist in scgi server",
+      "already_configured": "HIQ controller is already configured in Home Assistant",
+      "cannot_connect": "Failed to connect to scgi server (Is the server running?, Is the server installed?, Is the cybroscgiserver addon installed?)",
+      "plc_not_existing": "HIQ controller does not exist in scgi server (Is the address / NAD correct?)",
       "scgi_server_not_running": "scgi server is not running"
     },
     "flow_title": "{name}",
     "step": {
       "user": {
         "data": {
-          "host": "scgi server host (for cybroscgiserver addon use '85493909-cybroscgiserver')",
-          "port": "scgi server port (for cybroscgiserver addon use '4000')",
+          "host": "scgi server host",
+          "port": "scgi server port",
           "address": "HIQ controller address (NAD)"
+        },
+        "data_description": {
+          "host": "scgi server Hostname / IP (for cybroscgiserver addon use '85493909-cybroscgiserver')",
+          "port": "scgi server Port (for cybroscgiserver addon use '4000')",
+          "address": "HIQ controller address (NAD) (eg: 1000)"
         },
         "description": "Set up your HIQ-Home control to integrate with Home Assistant.\nBefore you continue make sure you had a running cybro scgi server!\nSee integration documentation for details."
       }
@@ -35,137 +34,8 @@
       "general_error": {
         "name": "General error"
       },
-      "lc00_general_error": {
-        "name": "lc00 general error"
-      },
-      "lc01_general_error": {
-        "name": "lc01 general error"
-      },
-      "lc02_general_error": {
-        "name": "lc02 general error"
-      },
-      "lc03_general_error": {
-        "name": "lc03 general error"
-      },
-      "lc04_general_error": {
-        "name": "lc04 general error"
-      },
-      "lc05_general_error": {
-        "name": "lc05 general error"
-      },
-      "lc06_general_error": {
-        "name": "lc06 general error"
-      },
-      "lc07_general_error": {
-        "name": "lc07 general error"
-      },
-      "ld00_general_error": {
-        "name": "ld00 general error"
-      },
-      "ld01_general_error": {
-        "name": "ld01 general error"
-      },
-      "ld02_general_error": {
-        "name": "ld02 general error"
-      },
-      "ld03_general_error": {
-        "name": "ld03 general error"
-      },
-      "ld04_general_error": {
-        "name": "ld04 general error"
-      },
-      "ld05_general_error": {
-        "name": "ld05 general error"
-      },
-      "ld06_general_error": {
-        "name": "ld06 general error"
-      },
-      "ld07_general_error": {
-        "name": "ld07 general error"
-      },
-      "ld08_general_error": {
-        "name": "ld08 general error"
-      },
-      "ld09_general_error": {
-        "name": "ld09 general error"
-      },
-      "bc00_general_error": {
-        "name": "bc00 general error"
-      },
-      "bc01_general_error": {
-        "name": "bc01 general error"
-      },
-      "bc02_general_error": {
-        "name": "bc02 general error"
-      },
-      "bc03_general_error": {
-        "name": "bc03 general error"
-      },
-      "bc04_general_error": {
-        "name": "bc04 general error"
-      },
-      "bc05_general_error": {
-        "name": "bc05 general error"
-      },
-      "th00_general_error": {
-        "name": "th00 general error"
-      },
-      "th01_general_error": {
-        "name": "th01 general error"
-      },
-      "th02_general_error": {
-        "name": "th02 general error"
-      },
-      "th03_general_error": {
-        "name": "th03 general error"
-      },
-      "th04_general_error": {
-        "name": "th04 general error"
-      },
-      "th05_general_error": {
-        "name": "th05 general error"
-      },
-      "th06_general_error": {
-        "name": "th06 general error"
-      },
-      "th07_general_error": {
-        "name": "th07 general error"
-      },
-      "th08_general_error": {
-        "name": "th08 general error"
-      },
-      "th09_general_error": {
-        "name": "th09 general error"
-      },
-      "fc00_general_error": {
-        "name": "fc00 general error"
-      },
-      "fc01_general_error": {
-        "name": "fc01 general error"
-      },
-      "fc02_general_error": {
-        "name": "fc02 general error"
-      },
-      "fc03_general_error": {
-        "name": "fc03 general error"
-      },
-      "fc04_general_error": {
-        "name": "fc04 general error"
-      },
-      "fc05_general_error": {
-        "name": "fc05 general error"
-      },
-      "sc00_general_error": {
-        "name": "sc00 general error"
-      },
-      "sc01_general_error": {
-        "name": "sc01 general error"
-      },
-      "sc02_general_error": {
-        "name": "sc02 general error"
-      },
-      "sc03_general_error": {
-        "name": "sc03 general error"
+      "general_error_iex": {
+        "name": "{module} General error"
       },
       "eno_general_error": {
         "name": "EnOcean general error"
@@ -214,137 +84,8 @@
       "iex_power_supply": {
         "name": "Iex voltage"
       },
-      "lc00_iex_power_supply": {
-        "name": "lc00 iex voltage"
-      },
-      "lc01_iex_power_supply": {
-        "name": "lc01 iex voltage"
-      },
-      "lc02_iex_power_supply": {
-        "name": "lc02 iex voltage"
-      },
-      "lc03_iex_power_supply": {
-        "name": "lc03 iex voltage"
-      },
-      "lc04_iex_power_supply": {
-        "name": "lc04 iex voltage"
-      },
-      "lc05_iex_power_supply": {
-        "name": "lc05 iex voltage"
-      },
-      "lc06_iex_power_supply": {
-        "name": "lc06 iex voltage"
-      },
-      "lc07_iex_power_supply": {
-        "name": "lc07 iex voltage"
-      },
-      "ld00_iex_power_supply": {
-        "name": "ld00 iex voltage"
-      },
-      "ld01_iex_power_supply": {
-        "name": "ld01 iex voltage"
-      },
-      "ld02_iex_power_supply": {
-        "name": "ld02 iex voltage"
-      },
-      "ld03_iex_power_supply": {
-        "name": "ld03 iex voltage"
-      },
-      "ld04_iex_power_supply": {
-        "name": "ld04 iex voltage"
-      },
-      "ld05_iex_power_supply": {
-        "name": "ld05 iex voltage"
-      },
-      "ld06_iex_power_supply": {
-        "name": "ld06 iex voltage"
-      },
-      "ld07_iex_power_supply": {
-        "name": "ld07 iex voltage"
-      },
-      "ld08_iex_power_supply": {
-        "name": "ld08 iex voltage"
-      },
-      "ld09_iex_power_supply": {
-        "name": "ld09 iex voltage"
-      },
-      "bc00_iex_power_supply": {
-        "name": "bc00 iex voltage"
-      },
-      "bc01_iex_power_supply": {
-        "name": "bc01 iex voltage"
-      },
-      "bc02_iex_power_supply": {
-        "name": "bc02 iex voltage"
-      },
-      "bc03_iex_power_supply": {
-        "name": "bc03 iex voltage"
-      },
-      "bc04_iex_power_supply": {
-        "name": "bc04 iex voltage"
-      },
-      "bc05_iex_power_supply": {
-        "name": "bc05 iex voltage"
-      },
-      "th00_iex_power_supply": {
-        "name": "th00 iex voltage"
-      },
-      "th01_iex_power_supply": {
-        "name": "th01 iex voltage"
-      },
-      "th02_iex_power_supply": {
-        "name": "th02 iex voltage"
-      },
-      "th03_iex_power_supply": {
-        "name": "th03 iex voltage"
-      },
-      "th04_iex_power_supply": {
-        "name": "th04 iex voltage"
-      },
-      "th05_iex_power_supply": {
-        "name": "th05 iex voltage"
-      },
-      "th06_iex_power_supply": {
-        "name": "th06 iex voltage"
-      },
-      "th07_iex_power_supply": {
-        "name": "th07 iex voltage"
-      },
-      "th08_iex_power_supply": {
-        "name": "th08 iex voltage"
-      },
-      "th09_iex_power_supply": {
-        "name": "th09 iex voltage"
-      },
-      "fc00_iex_power_supply": {
-        "name": "fc00 iex voltage"
-      },
-      "fc01_iex_power_supply": {
-        "name": "fc01 iex voltage"
-      },
-      "fc02_iex_power_supply": {
-        "name": "fc02 iex voltage"
-      },
-      "fc03_iex_power_supply": {
-        "name": "fc03 iex voltage"
-      },
-      "fc04_iex_power_supply": {
-        "name": "fc04 iex voltage"
-      },
-      "fc05_iex_power_supply": {
-        "name": "fc05 iex voltage"
-      },
-      "sc00_iex_power_supply": {
-        "name": "sc00 iex voltage"
-      },
-      "sc01_iex_power_supply": {
-        "name": "sc01 iex voltage"
-      },
-      "sc02_iex_power_supply": {
-        "name": "sc02 iex voltage"
-      },
-      "sc03_iex_power_supply": {
-        "name": "sc03 iex voltage"
+      "iex_power_supply_iex": {
+        "name": "{module} iex voltage"
       },
       "cybro_power_supply": {
         "name": "Controller supply voltage"
