@@ -122,7 +122,9 @@ async def async_setup_entry(
         sensor_config: ConfigType = vol.Schema(
             TEMPLATE_SENSOR_BASE_SCHEMA.schema, extra=vol.ALLOW_EXTRA
         )(sensor)
-        name: str = sensor_config[CONF_NAME]
+
+        name_string: Template = sensor_config.get(CONF_NAME)
+
         value_string: str | None = sensor_config.get(CONF_VALUE_TEMPLATE)
 
         value_template: Template | None = (
@@ -133,6 +135,7 @@ async def async_setup_entry(
                 coordinator=coordinator,
                 entity_description=HiqSensorEntityDescription(
                     key=f"{var_prefix}{sensor_config.get(CONF_TAG)}",
+                    name=name_string.template,
                     state_class=SensorStateClass(sensor_config[CONF_STATE_CLASS])
                     if sensor_config.get(CONF_STATE_CLASS) is not None
                     else None,
