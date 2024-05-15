@@ -1,32 +1,30 @@
 """Support for HIQ-Home lights."""
 from __future__ import annotations
 
-from typing import Any
-from re import sub
 from dataclasses import dataclass
+from re import sub
+from typing import Any
 
-from homeassistant.components.light import (
-    LightEntity,
-    LightEntityDescription,
-    ColorMode,
-    ATTR_BRIGHTNESS,
-    ATTR_HS_COLOR,
-)
+from homeassistant.components.light import ATTR_BRIGHTNESS
+from homeassistant.components.light import ATTR_HS_COLOR
+from homeassistant.components.light import ColorMode
+from homeassistant.components.light import LightEntity
+from homeassistant.components.light import LightEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from .const import (
-    AREA_LIGHTS,
-    ATTR_DESCRIPTION,
-    DEVICE_DESCRIPTION,
-    DOMAIN,
-    LOGGER,
-    MANUFACTURER,
-    MANUFACTURER_URL,
-    DEVICE_HW_VERSION,
-    DEVICE_SW_VERSION,
-)
+
+from .const import AREA_LIGHTS
+from .const import ATTR_DESCRIPTION
+from .const import ATTR_VARIABLE
+from .const import DEVICE_DESCRIPTION
+from .const import DEVICE_HW_VERSION
+from .const import DEVICE_SW_VERSION
+from .const import DOMAIN
+from .const import LOGGER
+from .const import MANUFACTURER
+from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
 
@@ -313,4 +311,5 @@ class HiqUpdateLight(HiqEntity, LightEntity):
             desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
+            ATTR_VARIABLE: self._attr_unique_id,
         }

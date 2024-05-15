@@ -1,17 +1,15 @@
 """Support for HIQ-Home blinds."""
 from __future__ import annotations
 
-from typing import Any
-from re import sub
 from dataclasses import dataclass
+from re import sub
+from typing import Any
 
-from homeassistant.components.cover import (
-    ATTR_POSITION,
-    CoverDeviceClass,
-    CoverEntity,
-    CoverEntityFeature,
-    CoverEntityDescription,
-)
+from homeassistant.components.cover import ATTR_POSITION
+from homeassistant.components.cover import CoverDeviceClass
+from homeassistant.components.cover import CoverEntity
+from homeassistant.components.cover import CoverEntityDescription
+from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -19,6 +17,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import AREA_BLINDS
 from .const import ATTR_DESCRIPTION
+from .const import ATTR_VARIABLE
 from .const import DEVICE_DESCRIPTION
 from .const import DEVICE_HW_VERSION
 from .const import DEVICE_SW_VERSION
@@ -247,4 +246,5 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
             desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
+            ATTR_VARIABLE: self._attr_unique_id,
         }

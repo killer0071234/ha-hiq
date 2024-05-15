@@ -1,32 +1,31 @@
 """Support for HIQ-Home switch."""
 from __future__ import annotations
 
-from re import search, sub
 from dataclasses import dataclass
-from typing import Generic, TypeVar
-
+from re import search
+from re import sub
+from typing import Generic
+from typing import TypeVar
 
 from cybro import VarType
-from homeassistant.components.switch import (
-    SwitchEntity,
-    SwitchEntityDescription,
-)
+from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.switch import SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (
-    AREA_CLIMATE,
-    ATTR_DESCRIPTION,
-    DOMAIN,
-    LOGGER,
-    MANUFACTURER,
-)
+from . import get_write_req_th
+from .const import AREA_CLIMATE
+from .const import ATTR_DESCRIPTION
+from .const import ATTR_VARIABLE
+from .const import DOMAIN
+from .const import LOGGER
+from .const import MANUFACTURER
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
-from . import get_write_req_th
 
 
 async def async_setup_entry(
@@ -283,4 +282,5 @@ class HiqSwitchEntity(HiqEntity, SwitchEntity):
             desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
+            ATTR_VARIABLE: self._attr_unique_id,
         }

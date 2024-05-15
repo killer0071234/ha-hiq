@@ -1,39 +1,35 @@
 """Support for HIQ-Home number."""
 from __future__ import annotations
 
-from re import search, sub
 from dataclasses import dataclass
-
 from datetime import datetime
+from re import search
+from re import sub
 
 from cybro import VarType
-from homeassistant.components.number import (
-    NumberDeviceClass,
-    NumberEntity,
-    NumberMode,
-    NumberEntityDescription,
-)
+from homeassistant.components.number import NumberDeviceClass
+from homeassistant.components.number import NumberEntity
+from homeassistant.components.number import NumberEntityDescription
+from homeassistant.components.number import NumberMode
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    UnitOfTemperature,
-    UnitOfTime,
-)
+from homeassistant.const import UnitOfTemperature
+from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import (
-    AREA_CLIMATE,
-    ATTR_DESCRIPTION,
-    DOMAIN,
-    LOGGER,
-    MANUFACTURER,
-)
+from . import get_write_req_th
+from .const import AREA_CLIMATE
+from .const import ATTR_DESCRIPTION
+from .const import ATTR_VARIABLE
+from .const import DOMAIN
+from .const import LOGGER
+from .const import MANUFACTURER
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
-from . import get_write_req_th
 
 
 async def async_setup_entry(
@@ -385,6 +381,7 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
             desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
+            ATTR_VARIABLE: self._attr_unique_id,
         }
 
     async def async_set_native_value(self, value: float) -> None:
