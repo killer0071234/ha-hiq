@@ -11,7 +11,7 @@ MANUFACTURER_URL = "http://hiq-home.com/"
 ATTRIBUTION_PLC = "Data read from HIQ controller"
 DEVICE_DESCRIPTION = "HIQ controller"
 DEVICE_HW_VERSION = "2/3"
-DEVICE_SW_VERSION = "0.2.0"
+DEVICE_SW_VERSION = "0.3.0"
 
 LOGGER = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=10)
@@ -19,6 +19,7 @@ SCAN_INTERVAL_ADDON = timedelta(seconds=5)
 
 DEFAULT_HOST = "85493909-cybroscgiserver"
 DEFAULT_PORT = 4000
+DEFAULT_NAME = "hiq custom sensor"
 
 # Options
 
@@ -51,3 +52,4 @@ SERVICE_WRITE_TAG = "write_tag"
 
 # Schemas
 CONF_TAG = "tag"
+CONF_INDEX = "index"

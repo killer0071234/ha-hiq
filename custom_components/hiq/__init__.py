@@ -1,43 +1,37 @@
 """Support for HIQ-Home."""
 from __future__ import annotations
-import voluptuous as vol
 
+import homeassistant.helpers.config_validation as cv
 import homeassistant.helpers.device_registry as dr
-from homeassistant.helpers import config_validation as cv
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    ATTR_DEVICE_ID,
-    ATTR_ENTITY_ID,
-    CONF_ADDRESS,
-    CONF_HOST,
-    CONF_PORT,
-    Platform,
-    CONF_VALUE_TEMPLATE,
-)
-from homeassistant.core import (
-    HomeAssistant,
-    ServiceCall,
-)
+import voluptuous as vol
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import ATTR_DEVICE_ID
+from homeassistant.const import ATTR_ENTITY_ID
+from homeassistant.const import CONF_ADDRESS
+from homeassistant.const import CONF_HOST
+from homeassistant.const import CONF_PORT
+from homeassistant.const import CONF_VALUE_TEMPLATE
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.core import ServiceCall
 from homeassistant.helpers.trigger_template_entity import (
     TEMPLATE_SENSOR_BASE_SCHEMA,
 )
 
-from .const import (
-    CONF_TAG,
-    DEFAULT_HOST,
-    DEFAULT_PORT,
-    DOMAIN,
-    LOGGER,
-    SERVICE_ALARM,
-    SERVICE_CHARGE_OFF,
-    SERVICE_CHARGE_ON,
-    SERVICE_HOME,
-    SERVICE_PRECEDE,
-    SERVICE_PRESENCE_SIGNAL,
-    SERVICE_WRITE_TAG,
-)
+from .const import CONF_TAG
+from .const import DEFAULT_HOST
+from .const import DEFAULT_PORT
+from .const import DOMAIN
+from .const import LOGGER
+from .const import SERVICE_ALARM
+from .const import SERVICE_CHARGE_OFF
+from .const import SERVICE_CHARGE_ON
+from .const import SERVICE_HOME
+from .const import SERVICE_PRECEDE
+from .const import SERVICE_PRESENCE_SIGNAL
+from .const import SERVICE_WRITE_TAG
 from .coordinator import HiqDataUpdateCoordinator
 
 PLATFORMS = [
