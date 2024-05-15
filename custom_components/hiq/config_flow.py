@@ -107,7 +107,7 @@ DATA_SCHEMA_PLC = vol.Schema(PLC_SETUP)
 DATA_SCHEMA_EDIT_SENSOR = vol.Schema(SENSOR_SETUP)
 DATA_SCHEMA_SENSOR = vol.Schema(
     {
-        vol.Optional(CONF_NAME): TextSelector(),
+        #vol.Optional(CONF_NAME): TextSelector(),
         **SENSOR_SETUP,
     }
 )
