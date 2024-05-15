@@ -23,6 +23,55 @@
       }
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "add_sensor": "Benutzerdefinierten Sensor hinzufügen",
+          "select_edit_sensor": "Benutzerdefinierten Sensor konfigurieren",
+          "remove_sensor": "Benutzerdefinierten Sensor löschen"
+        }
+      },
+      "add_sensor": {
+        "description": "Füge einen benutzerdefinierten Sensor hinzu.",
+        "data": {
+          "name": "Name",
+          "tag": "Variable in HIQ Steuerung",
+          "device_class": "Device Class",
+          "state_class": "State Class",
+          "unit_of_measurement": "Unit of Measurement",
+          "value_template": "Value Template"
+        },
+        "data_description": {
+          "name": "Name des benutzerdefinierten Sensors",
+          "tag": "Definiert welche Variable aus der HIQ Steuerung gelesen werden soll. zB: cybro_serial",
+          "device_class": "Der Typ/die Klasse des Sensors, um das Symbol im Frontend festzulegen.",
+          "state_class": "Die Zustandsklasse des Sensors.",
+          "unit_of_measurement": "Wähle eine Maßeinheit oder erstelle eine eigene.",
+          "value_template": "Definiert eine Vorlage, um den Status des Sensors abzurufen."
+        }
+      },
+      "edit_sensor": {
+        "description": "Bearbeite den benutzerdefinierten Sensor.",
+        "data": {
+          "name": "Name",
+          "tag": "Variable in HIQ Steuerung",
+          "device_class": "Device Class",
+          "state_class": "State Class",
+          "unit_of_measurement": "Unit of Measurement",
+          "value_template": "Value Template"
+        },
+        "data_description": {
+          "name": "Name des benutzerdefinierten Sensors",
+          "tag": "Definiert welche Variable aus der HIQ Steuerung gelesen werden soll. zB: cybro_serial",
+          "device_class": "Der Typ/die Klasse des Sensors, um das Symbol im Frontend festzulegen.",
+          "state_class": "Die Zustandsklasse des Sensors.",
+          "unit_of_measurement": "Wähle eine Maßeinheit oder erstelle eine eigene.",
+          "value_template": "Definiert eine Vorlage, um den Status des Sensors abzurufen."
+        }
+      }
+    }
+  },
   "entity": {
     "binary_sensor": {
       "scan_overrun": {

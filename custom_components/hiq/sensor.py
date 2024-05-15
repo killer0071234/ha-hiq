@@ -8,12 +8,18 @@ from re import search
 from re import sub
 from typing import Any
 
+import voluptuous as vol
 from cybro import VarType
+from homeassistant.components.sensor import CONF_STATE_CLASS
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.sensor import SensorEntityDescription
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_DEVICE_CLASS
+from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_UNIT_OF_MEASUREMENT
+from homeassistant.const import CONF_VALUE_TEMPLATE
 from homeassistant.const import PERCENTAGE
 from homeassistant.const import UnitOfElectricCurrent
 from homeassistant.const import UnitOfElectricPotential
@@ -28,6 +34,10 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.template import Template
+from homeassistant.helpers.trigger_template_entity import (
+    TEMPLATE_SENSOR_BASE_SCHEMA,
+)
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.typing import StateType
 
 from .const import AREA_CLIMATE
@@ -36,6 +46,7 @@ from .const import AREA_SYSTEM
 from .const import AREA_WEATHER
 from .const import ATTR_DESCRIPTION
 from .const import ATTR_VARIABLE
+from .const import CONF_TAG
 from .const import DEVICE_DESCRIPTION
 from .const import DEVICE_HW_VERSION
 from .const import DEVICE_SW_VERSION
@@ -89,6 +100,53 @@ async def async_setup_entry(
     )
     if hvac_tags is not None:
         async_add_entities(hvac_tags)
+
+    # add custom defined sensors
+    custom_entities: list = []
+    config = dict(entry.options)
+    if config.get("sensor") is None:
+        return
+    var_prefix = f"c{coordinator.cybro.nad}."
+    dev_info = DeviceInfo(
+        identifiers={(DOMAIN, f"{coordinator.data.plc_info.nad} custom")},
+        manufacturer=MANUFACTURER,
+        name=f"c{coordinator.cybro.nad} custom",
+        # suggested_area=AREA_SYSTEM,
+        model=DEVICE_DESCRIPTION,
+        configuration_url=MANUFACTURER_URL,
+        entry_type=None,
+        sw_version=DEVICE_SW_VERSION,
+        hw_version=DEVICE_HW_VERSION,
+    )
+    for sensor in config["sensor"]:
+        sensor_config: ConfigType = vol.Schema(
+            TEMPLATE_SENSOR_BASE_SCHEMA.schema, extra=vol.ALLOW_EXTRA
+        )(sensor)
+        name: str = sensor_config[CONF_NAME]
+        value_string: str | None = sensor_config.get(CONF_VALUE_TEMPLATE)
+
+        value_template: Template | None = (
+            Template(value_string, hass) if value_string is not None else None
+        )
+        custom_entities.append(
+            HiqSensorEntity(
+                coordinator=coordinator,
+                entity_description=HiqSensorEntityDescription(
+                    key=f"{var_prefix}{sensor_config.get(CONF_TAG)}",
+                    state_class=SensorStateClass(sensor_config[CONF_STATE_CLASS])
+                    if sensor_config.get(CONF_STATE_CLASS) is not None
+                    else None,
+                    device_class=SensorDeviceClass(sensor_config[CONF_DEVICE_CLASS])
+                    if sensor_config.get(CONF_DEVICE_CLASS) is not None
+                    else None,
+                    unit_of_measurement=sensor_config.get(CONF_UNIT_OF_MEASUREMENT),
+                ),
+                dev_info=dev_info,
+                value_template=value_template,
+            )
+        )
+
+    async_add_entities(custom_entities)
 
 
 @dataclass
