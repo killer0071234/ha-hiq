@@ -1,3 +1,13 @@
+alarm_event:
+  name: Home event
+  description: Send smartphone alarm event to HIQ - controller.
+  target:
+    device:
+      integration: hiq
+    entity:
+      integration: hiq
+      domain:
+       - binary_sensor
 presence_signal:
   name: Presence signal
   description: Send smartphone presence signal to HIQ - controller.
@@ -61,7 +71,7 @@ precede_event:
           unit_of_measurement: "min"
 write_tag:
   name: Write tag
-  description: Set tag in HIQ - controller.
+  description: Set / Write a Variable / Tag in HIQ - controller.
   target:
     device:
       integration: hiq
@@ -71,15 +81,15 @@ write_tag:
        - binary_sensor
   fields:
     tag:
-      name: Tag
-      description: Controller tag name.
+      name: Variable / Tag
+      description: Controller Variable / Tag name.
       required: true
       example: "smartphone_presence_signal"
       selector:
         text:
     value:
       name: Value
-      description: Tag value to write.
+      description: Variable / Tag value to write.
       required: true
       example: 10
       selector:
