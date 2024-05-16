@@ -64,6 +64,7 @@ PLC_SETUP = {
 
 
 async def get_sensor_setup(handler: SchemaCommonFlowHandler) -> vol.Schema:
+    """Return sensor setup schema."""
     hass = async_get_hass()
 
     coordinator = hass.data.get(DOMAIN)[handler.parent_handler.config_entry.entry_id]
