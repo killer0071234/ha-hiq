@@ -227,7 +227,7 @@ def _get_tag_list(hass: HomeAssistant, data: dict, tag_name: str) -> list:
     """Generate a tag list for write to the controller."""
     # read all possible adresses from HA
     addresses = [
-        f"c{entity_id.data[CONF_ADDRESS]}"
+        f"c{entity_id.options[CONF_ADDRESS]}"
         for entity_id in hass.config_entries.async_entries(DOMAIN)
     ]
     target_entities = []
@@ -249,7 +249,7 @@ def _get_tag_list(hass: HomeAssistant, data: dict, tag_name: str) -> list:
                         continue
                     if entry.domain != DOMAIN:
                         continue
-                    if addr := entry.data.get(CONF_ADDRESS):
+                    if addr := entry.options.get(CONF_ADDRESS):
                         target_entities += [f"c{addr}.{tag_name}"]
                         LOGGER.debug("addr = %s", addr)
 
