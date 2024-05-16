@@ -62,9 +62,35 @@ PLC_SETUP = {
     ),
 }
 
+
+async def get_sensor_setup(handler: SchemaCommonFlowHandler) -> vol.Schema:
+    hass = async_get_hass()
+
+    coordinator = hass.data.get(DOMAIN)[handler.parent_handler.config_entry.entry_id]
+    var_prefix = f"c{handler.options.get(CONF_ADDRESS)}."
+
+    variables = list(coordinator.data.vars.keys())
+    # remove foreign variables and the prefix
+    variables = [
+        var.removeprefix(var_prefix) for var in variables if var.find(var_prefix) != -1
+    ]
+
+    return vol.Schema(
+        {
+            vol.Required(CONF_TAG): SelectSelector(
+                SelectSelectorConfig(
+                    options=variables,
+                    mode=SelectSelectorMode.DROPDOWN,
+                    sort=True,
+                )
+            ),
+            **SENSOR_SETUP,
+        }
+    )
+
+
 SENSOR_SETUP = {
     vol.Optional(CONF_NAME): TextSelector(),
-    vol.Required(CONF_TAG): TextSelector(),
     vol.Optional(CONF_VALUE_TEMPLATE): TemplateSelector(),
     vol.Optional(CONF_DEVICE_CLASS): SelectSelector(
         SelectSelectorConfig(
@@ -107,10 +133,11 @@ DATA_SCHEMA_PLC = vol.Schema(PLC_SETUP)
 DATA_SCHEMA_EDIT_SENSOR = vol.Schema(SENSOR_SETUP)
 DATA_SCHEMA_SENSOR = vol.Schema(
     {
-        #vol.Optional(CONF_NAME): TextSelector(),
+        # vol.Optional(CONF_NAME): TextSelector(),
         **SENSOR_SETUP,
     }
 )
+
 
 async def validate_plc_setup(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
@@ -165,11 +192,12 @@ async def _async_get_device(hass, host: str, port: int, address: int) -> Device:
         device_type=1,
     )
 
+
 async def validate_sensor_setup(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
     """Validate sensor input."""
-    #user_input[CONF_INDEX] = int(user_input[CONF_INDEX])
+    # user_input[CONF_INDEX] = int(user_input[CONF_INDEX])
     user_input[CONF_UNIQUE_ID] = str(uuid.uuid1())
 
     # Default name is tag name
@@ -217,7 +245,7 @@ async def validate_sensor_edit(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
     """Update edited sensor."""
-    #user_input[CONF_INDEX] = int(user_input[CONF_INDEX])
+    # user_input[CONF_INDEX] = int(user_input[CONF_INDEX])
 
     # Default name is tag name
     if user_input.get(CONF_NAME) is None:
@@ -279,11 +307,9 @@ CONFIG_FLOW = {
 }
 
 OPTIONS_FLOW = {
-    "init": SchemaFlowMenuStep(
-        ["add_sensor", "select_edit_sensor", "remove_sensor"]
-    ),
+    "init": SchemaFlowMenuStep(["add_sensor", "select_edit_sensor", "remove_sensor"]),
     "add_sensor": SchemaFlowFormStep(
-        DATA_SCHEMA_SENSOR,
+        get_sensor_setup,
         suggested_values=None,
         validate_user_input=validate_sensor_setup,
     ),
