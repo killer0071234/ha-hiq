@@ -70,7 +70,7 @@ async def get_sensor_setup(handler: SchemaCommonFlowHandler) -> vol.Schema:
     coordinator = hass.data.get(DOMAIN)[handler.parent_handler.config_entry.entry_id]
     var_prefix = f"c{handler.options.get(CONF_ADDRESS)}."
 
-    variables = list(coordinator.data.vars.keys())
+    variables = list(coordinator.data.plc_info.plc_vars.keys())
     # remove foreign variables and the prefix
     variables = [
         var.removeprefix(var_prefix) for var in variables if var.find(var_prefix) != -1
