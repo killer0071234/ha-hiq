@@ -33,6 +33,11 @@ Without a running scgi server it is not possible to use this integration!
 
 - Native manual install from source.
 
+If you had a running CybroScgiServer (from one of the 3 possibilities from above), you can continue and add this integration to Home Assistant from the HACS-store.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.][hacs-integration-badge]][hacs-integration]
+
+
 ## Supported entities
 
 During creation of the device it scans for supported device types and creates it in home assistant.
@@ -132,6 +137,11 @@ XXXX is the NAD of the controller, and YYYY is the IEX module prefix
 ### sensor<a name="sensor"></a>
 
 To have a basic diagnostic, there are some `sensor` Entities exposed.
+
+It is also possible to add custom sensors from variables in the HIQ controller.
+To add custom sensors, navigate to HIQ integration and click on `configure`.
+
+[![Open your Home Assistant instance and show an integration.][integration-badge]][integration]
 
 #### For the controller:
 
@@ -401,3 +411,7 @@ Code template was mainly taken from [@amosyuen](https://github.com/amosyuen)'s [
 [user_profile]: https://github.com/killer0071234
 [scgi-docker-shield]: https://img.shields.io/badge/dockerhub-cybroscgiserver-brightgreen.svg?style=for-the-badge
 [scgi-docker]: https://hub.docker.com/r/killer007/cybroscgiserver
+[integration-badge]: https://my.home-assistant.io/badges/integration.svg
+[integration]: https://my.home-assistant.io/redirect/integration/?domain=hiq
+[hacs-integration-badge]: https://my.home-assistant.io/badges/hacs_repository.svg
+[hacs-integration]: https://my.home-assistant.io/redirect/hacs_repository/?owner=killer0071234&repository=ha-hiq
