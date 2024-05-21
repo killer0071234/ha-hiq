@@ -11,7 +11,7 @@ MANUFACTURER_URL = "http://hiq-home.com/"
 ATTRIBUTION_PLC = "Data read from HIQ controller"
 DEVICE_DESCRIPTION = "HIQ controller"
 DEVICE_HW_VERSION = "2/3"
-DEVICE_SW_VERSION = "0.3.0"
+DEVICE_SW_VERSION = "0.3.3"
 
 LOGGER = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=10)
