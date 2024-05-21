@@ -142,7 +142,7 @@ async def async_setup_entry(
                     device_class=SensorDeviceClass(sensor_config[CONF_DEVICE_CLASS])
                     if sensor_config.get(CONF_DEVICE_CLASS) is not None
                     else None,
-                    unit_of_measurement=sensor_config.get(CONF_UNIT_OF_MEASUREMENT),
+                    native_unit_of_measurement=sensor_config.get(CONF_UNIT_OF_MEASUREMENT),
                 ),
                 dev_info=dev_info,
                 value_template=value_template,
