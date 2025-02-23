@@ -10,6 +10,7 @@ from homeassistant.components.light import ATTR_HS_COLOR
 from homeassistant.components.light import ColorMode
 from homeassistant.components.light import LightEntity
 from homeassistant.components.light import LightEntityDescription
+from homeassistant.components.light import filter_supported_color_modes
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -240,15 +241,23 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         self._attr_device_info = dev_info
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
-        self._attr_supported_color_modes = {ColorMode.ONOFF}
+        supported_color_modes: set[ColorMode] = set()
         if dimming_out:
             self._attr_color_mode = ColorMode.BRIGHTNESS
-            self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
+            supported_color_modes.add(ColorMode.BRIGHTNESS)
             LOGGER.debug("dimming light: %s", self._attr_unique_id)
         if rgb_hue_out and rgb_sat_out:
             self._attr_color_mode = ColorMode.HS
-            self._attr_supported_color_modes = {ColorMode.HS}
+            supported_color_modes.add(ColorMode.HS)
             LOGGER.debug("rgb light: %s", self._attr_unique_id)
+
+        if not supported_color_modes:
+            self._attr_color_mode = ColorMode.ONOFF
+            supported_color_modes.add(ColorMode.ONOFF)
+        # Validate the color_modes configuration
+        self._attr_supported_color_modes = filter_supported_color_modes(
+            supported_color_modes
+        )
 
     @property
     def hs_color(self) -> tuple[float, float] | None:
