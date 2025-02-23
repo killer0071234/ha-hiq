@@ -12,5 +12,5 @@
     "cybro==0.2.0",
     "xmltodict==0.13.0"
   ],
-  "version": "0.0.10"
+  "version": "0.3.3"
 }
