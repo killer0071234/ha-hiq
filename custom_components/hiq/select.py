@@ -4,8 +4,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from re import search
 from re import sub
-from typing import Generic
-from typing import TypeVar
 
 from cybro import VarType
 from homeassistant.components.select import SelectEntity
@@ -75,11 +73,8 @@ async def async_setup_entry(
         async_add_entities(hvac_tags)
 
 
-T = TypeVar("T")
-
-
 @dataclass
-class HiqSelectEntityDescription(Generic[T], SelectEntityDescription):
+class HiqSelectEntityDescription[T](SelectEntityDescription):
     """HIQ Select Entity Description."""
 
     def __post_init__(self):
