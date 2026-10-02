@@ -172,7 +172,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
             manufacturer=MANUFACTURER,
             name=f"{self._prefix} thermostat",
             suggested_area=AREA_CLIMATE,
-            via_device=(DOMAIN, coordinator.cybro.nad),
+            **coordinator.via_device_info,
         )
         self._attr_name = f"{self._prefix} thermostat"
         self._attr_unique_id = f"{self._prefix}_thermostat"

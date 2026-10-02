@@ -168,7 +168,7 @@ def add_th_tags(
                             manufacturer=MANUFACTURER,
                             name=f"{unique_id} thermostat",
                             suggested_area=AREA_CLIMATE,
-                            via_device=(DOMAIN, coordinator.cybro.nad),
+                            **coordinator.via_device_info,
                         ),
                         value_template=Template(TEMPLATE_INVERTED, hass),
                     )
@@ -198,7 +198,7 @@ def add_th_tags(
                             manufacturer=MANUFACTURER,
                             name=f"{unique_id} thermostat",
                             suggested_area=AREA_CLIMATE,
-                            via_device=(DOMAIN, coordinator.cybro.nad),
+                            **coordinator.via_device_info,
                         ),
                     )
                 )

@@ -308,7 +308,7 @@ def find_temperatures(
         entry_type=None,
         sw_version=DEVICE_SW_VERSION,
         hw_version=DEVICE_HW_VERSION,
-        via_device=(DOMAIN, coordinator.cybro.nad),
+        **coordinator.via_device_info,
     )
 
     for key in coordinator.data.plc_info.plc_vars:
@@ -370,7 +370,7 @@ def find_weather(
         entry_type=None,
         sw_version=DEVICE_SW_VERSION,
         hw_version=DEVICE_HW_VERSION,
-        via_device=(DOMAIN, coordinator.cybro.nad),
+        **coordinator.via_device_info,
     )
 
     for key in coordinator.data.plc_info.plc_vars:
@@ -451,7 +451,7 @@ def find_power_meter(
         entry_type=None,
         sw_version=DEVICE_SW_VERSION,
         hw_version=DEVICE_HW_VERSION,
-        via_device=(DOMAIN, coordinator.cybro.nad),
+        **coordinator.via_device_info,
     )
     for key in coordinator.data.plc_info.plc_vars:
         if key.find(var_prefix) != -1:
@@ -586,7 +586,7 @@ def add_th_tags(
             manufacturer=MANUFACTURER,
             name=f"{unique_id} thermostat",
             suggested_area=AREA_CLIMATE,
-            via_device=(DOMAIN, coordinator.cybro.nad),
+            **coordinator.via_device_info,
         )
 
         # get temperature
@@ -717,7 +717,7 @@ def add_hvac_tags(
             manufacturer=MANUFACTURER,
             name=f"{unique_id} HVAC",
             suggested_area=AREA_CLIMATE,
-            via_device=(DOMAIN, coordinator.cybro.nad),
+            **coordinator.via_device_info,
         )
 
         # get temperature(s)
