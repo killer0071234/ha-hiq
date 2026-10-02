@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any
 
 from cybro import Cybro
 from cybro import CybroConnectionTimeoutError
@@ -13,6 +14,7 @@ from homeassistant.const import CONF_HOST
 from homeassistant.const import CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
@@ -45,6 +47,7 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         )
         self.unique_id = "c" + str(entry.options[CONF_ADDRESS])
         self.unsub: Callable | None = None
+        self.device_id: str | None = None
 
         update_interval = SCAN_INTERVAL
         if entry.options[CONF_HOST] in (
@@ -80,6 +83,14 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         self.async_update_listeners()
 
         return device
+
+    @property
+    def via_device_info(self) -> dict[str, Any]:
+        """Return the DeviceInfo fields linking a device to the controller."""
+        # via_device_id was added in HA 2026.8, via_device is removed in 2027.8
+        if "via_device_id" in DeviceInfo.__optional_keys__ and self.device_id:
+            return {"via_device_id": self.device_id}
+        return {"via_device": (DOMAIN, self.cybro.nad)}
 
     def get_value(
         self,

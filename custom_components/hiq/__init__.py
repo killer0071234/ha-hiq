@@ -20,11 +20,17 @@ from homeassistant.helpers.trigger_template_entity import (
     TEMPLATE_SENSOR_BASE_SCHEMA,
 )
 
+from .const import AREA_SYSTEM
 from .const import CONF_TAG
 from .const import DEFAULT_HOST
 from .const import DEFAULT_PORT
+from .const import DEVICE_DESCRIPTION
+from .const import DEVICE_HW_VERSION
+from .const import DEVICE_SW_VERSION
 from .const import DOMAIN
 from .const import LOGGER
+from .const import MANUFACTURER
+from .const import MANUFACTURER_URL
 from .const import SERVICE_ALARM
 from .const import SERVICE_CHARGE_OFF
 from .const import SERVICE_CHARGE_ON
@@ -116,6 +122,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = HiqDataUpdateCoordinator(hass, entry=entry)
 
     await coordinator.async_config_entry_first_refresh()
+
+    # Register the controller first, so other devices can reference it
+    controller = dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, coordinator.cybro.nad)},
+        manufacturer=MANUFACTURER,
+        name=f"c{coordinator.cybro.nad} diagnostic",
+        suggested_area=AREA_SYSTEM,
+        model=DEVICE_DESCRIPTION,
+        configuration_url=MANUFACTURER_URL,
+        sw_version=DEVICE_SW_VERSION,
+        hw_version=DEVICE_HW_VERSION,
+    )
+    coordinator.device_id = controller.id
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
@@ -213,7 +233,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.services.async_remove(DOMAIN, SERVICE_ALARM)
             hass.services.async_remove(DOMAIN, SERVICE_PRECEDE)
             hass.services.async_remove(DOMAIN, SERVICE_WRITE_TAG)
-        del hass.data[DOMAIN]
+            del hass.data[DOMAIN]
 
     return unload_ok
 

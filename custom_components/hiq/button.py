@@ -94,7 +94,7 @@ def add_hvac_tags(
         manufacturer=MANUFACTURER,
         name=f"{unique_id} HVAC",
         suggested_area=AREA_CLIMATE,
-        via_device=(DOMAIN, coordinator.cybro.nad),
+        **coordinator.via_device_info,
     )
 
     # check for existing global parameter
@@ -125,7 +125,7 @@ def add_hvac_tags(
             manufacturer=MANUFACTURER,
             name=f"{unique_id} thermostat",
             suggested_area=AREA_CLIMATE,
-            via_device=(DOMAIN, coordinator.cybro.nad),
+            **coordinator.via_device_info,
         )
 
         if is_general_error_ok(coordinator, f"{thermostat}_general_error"):
