@@ -11,6 +11,7 @@ from typing import Any
 import voluptuous as vol
 from cybro import VarType
 from homeassistant.components.sensor import CONF_STATE_CLASS
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.sensor import SensorEntityDescription
@@ -18,6 +19,7 @@ from homeassistant.components.sensor import SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEVICE_CLASS
 from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_UNIQUE_ID
 from homeassistant.const import CONF_UNIT_OF_MEASUREMENT
 from homeassistant.const import CONF_VALUE_TEMPLATE
 from homeassistant.const import PERCENTAGE
@@ -30,6 +32,8 @@ from homeassistant.const import UnitOfSpeed
 from homeassistant.const import UnitOfTemperature
 from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -130,11 +134,16 @@ async def async_setup_entry(
         value_template: Template | None = (
             Template(value_string, hass) if value_string is not None else None
         )
+        var = f"{var_prefix}{sensor_config.get(CONF_TAG)}"
+        unique_id = sensor_config.get(CONF_UNIQUE_ID) or var
+        if unique_id != var:
+            _migrate_custom_sensor_unique_id(hass, dev_info, var, unique_id)
         custom_entities.append(
             HiqSensorEntity(
                 coordinator=coordinator,
+                unique_id=unique_id,
                 entity_description=HiqSensorEntityDescription(
-                    key=f"{var_prefix}{sensor_config.get(CONF_TAG)}",
+                    key=var,
                     name=name_string.template,
                     state_class=SensorStateClass(sensor_config[CONF_STATE_CLASS])
                     if sensor_config.get(CONF_STATE_CLASS) is not None
@@ -150,6 +159,31 @@ async def async_setup_entry(
         )
 
     async_add_entities(custom_entities)
+
+
+def _migrate_custom_sensor_unique_id(
+    hass: HomeAssistant, dev_info: DeviceInfo, old_unique_id: str, unique_id: str
+) -> None:
+    """Move a custom sensor from the tag name to its own unique id.
+
+    Custom sensors used the tag name as unique id before, which collides with
+    built-in sensors of the same tag, so only entities of the custom device move.
+    """
+    entity_registry = er.async_get(hass)
+    if entity_registry.async_get_entity_id(SENSOR_DOMAIN, DOMAIN, unique_id):
+        return
+    if not (
+        entity_id := entity_registry.async_get_entity_id(
+            SENSOR_DOMAIN, DOMAIN, old_unique_id
+        )
+    ):
+        return
+    entity = entity_registry.async_get(entity_id)
+    device = dr.async_get(hass).async_get(entity.device_id or "")
+    if device is None or not device.identifiers & dev_info["identifiers"]:
+        return
+    LOGGER.debug("Migrate unique id of %s to %s", entity_id, unique_id)
+    entity_registry.async_update_entity(entity_id, new_unique_id=unique_id)
 
 
 @dataclass
@@ -824,10 +858,11 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         self.entity_description = entity_description
         self._attr_unique_id = unique_id or entity_description.key
         self._attr_device_info = dev_info
+        self._var = entity_description.key
         LOGGER.debug(self._attr_unique_id)
         # set var type to string for template handling (conversion shall be done in template)
         self._var_type = var_type if value_template is None else VarType.STR
-        coordinator.data.add_var(self._attr_unique_id, var_type=self._var_type)
+        coordinator.data.add_var(self._var, var_type=self._var_type)
         self._val_fact = val_fact
         self._value_template = value_template
 
@@ -837,21 +872,21 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
 
         if self._value_template is not None:
             return self.coordinator.get_template_value(
-                self._attr_unique_id, self._value_template
+                self._var, self._value_template
             )
 
         return self.coordinator.get_value(
-            self._attr_unique_id, self._val_fact, self.suggested_display_precision
+            self._var, self._val_fact, self.suggested_display_precision
         )
 
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
         try:
-            desc = self.coordinator.data.vars[self._attr_unique_id].description
+            desc = self.coordinator.data.vars[self._var].description
         except KeyError:
             desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
-            ATTR_VARIABLE: self._attr_unique_id,
+            ATTR_VARIABLE: self._var,
         }

@@ -241,6 +241,9 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         self._attr_device_info = dev_info
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=0)
+        for var in (rgb_hue_out, rgb_sat_out):
+            if var:
+                coordinator.data.add_var(var, var_type=0)
         supported_color_modes: set[ColorMode] = set()
         if dimming_out:
             self._attr_color_mode = ColorMode.BRIGHTNESS
@@ -279,7 +282,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         if res is None or res.value == "?":
             LOGGER.debug("%s -> unknown brightness", self._attr_unique_id)
             return None
-        return int(int(res.value) * 2.55)
+        return round(int(res.value) * 2.55)
 
     @property
     def is_on(self) -> bool:

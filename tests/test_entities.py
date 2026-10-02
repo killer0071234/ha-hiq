@@ -98,7 +98,7 @@ async def test_number_with_write_request(
     await call_service(hass, "number", "set_value", entity_id, value=19.5)
 
     assert controller.writes == [
-        ("c1000.th00_setpoint_idle", "195.0"),
+        ("c1000.th00_setpoint_idle", "195"),
         ("c1000.th00_config2_req", "1"),
     ]
     assert hass.states.get(entity_id).state == "19.5"
@@ -121,10 +121,6 @@ async def test_number_int(
     ]
 
 
-@pytest.mark.xfail(
-    reason="0.1 scaled values are not rounded, 21.1 is written as 211.00000000000003",
-    strict=True,
-)
 async def test_number_written_in_whole_tenths(
     hass: HomeAssistant,
     controller: FakeController,
@@ -138,11 +134,6 @@ async def test_number_written_in_whole_tenths(
     assert controller.written("c1000.th00_setpoint_idle") == ["211"]
 
 
-@pytest.mark.xfail(
-    reason="min_value / max_value are ignored by Home Assistant, "
-    "native_min_value / native_max_value must be used",
-    strict=True,
-)
 async def test_number_limits(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
@@ -246,9 +237,6 @@ async def test_button(
     assert controller.writes == [("c1000.th00_config1_req", "1")]
 
 
-@pytest.mark.xfail(
-    reason="button debug log has 3 placeholders but 2 arguments", strict=True
-)
 async def test_button_debug_log(
     hass: HomeAssistant,
     caplog: pytest.LogCaptureFixture,
@@ -273,10 +261,6 @@ async def test_weather(hass: HomeAssistant, init_integration: MockConfigEntry) -
     assert state.attributes["wind_bearing"] == 90
 
 
-@pytest.mark.xfail(
-    reason="condition returns '' instead of None, so the state is empty",
-    strict=True,
-)
 async def test_weather_state(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
@@ -293,29 +277,13 @@ MODULE_SENSORS = {
 }
 
 
-async def test_module_sensors_after_reload(
+async def test_module_sensors(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
-    """Test sensors of temperature modules and the power meter."""
-    assert await hass.config_entries.async_reload(init_integration.entry_id)
-    await hass.async_block_till_done()
-    await refresh(hass, init_integration)
-
+    """Test sensors of temperature modules and the power meter on first setup."""
     states = {
         entity_id: (state.state, state.attributes.get("unit_of_measurement"))
         for entity_id in MODULE_SENSORS
         if (state := hass.states.get(entity_id))
     }
     assert states == MODULE_SENSORS
-
-
-@pytest.mark.xfail(
-    reason="the module status is checked before it was read from the controller, "
-    "so these sensors are only created after a reload",
-    strict=True,
-)
-async def test_module_sensors_on_first_setup(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
-    """Test sensors of temperature modules and the power meter are created."""
-    assert all(hass.states.get(entity_id) for entity_id in MODULE_SENSORS)

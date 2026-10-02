@@ -259,8 +259,8 @@ class HiqThermostat(HiqEntity, ClimateEntity):
             return CYBRO_TO_HA_HVAC_COOL_MAP[
                 self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
             ]
-        self._attr_hvac_modes = list(HVACMode.OFF)
-        HVACMode.OFF
+        self._attr_hvac_modes = [HVACMode.OFF]
+        return HVACMode.OFF
 
     @property
     def preset_mode(self) -> str | None:

@@ -205,7 +205,7 @@ class HiqButtonEntity(HiqEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Write Button press to tag."""
         LOGGER.debug(
-            "write value: %s -> %s (%s)",
+            "write value: %s -> %s",
             self._attr_unique_id,
             self._var_value,
         )

@@ -113,18 +113,11 @@ def test_flow_errors_translated(language: str) -> None:
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-@pytest.mark.xfail(
-    reason="already_configured is translated as error, the flow aborts with it",
-    strict=True,
-)
 def test_flow_abort_translated(language: str) -> None:
     """Test the abort reason of the config flow has a text."""
     assert "already_configured" in _translation(language)["config"].get("abort", {})
 
 
-@pytest.mark.xfail(
-    reason="strings.json is out of sync with translations/en.json", strict=True
-)
 def test_strings_match_english() -> None:
     """Test strings.json and translations/en.json have the same keys."""
     strings = _flatten(_json(INTEGRATION / "strings.json"))

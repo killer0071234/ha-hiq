@@ -173,14 +173,11 @@ async def test_options_flow_custom_sensor(
     assert _custom_entities(hass, entry) == [entity_id]
     assert hass.states.get(entity_id).state == "60"
 
-    # remove (registry cleanup: see test_options_flow_remove_sensor_from_registry)
+    # remove
     await _remove_sensor(hass, entry)
+    assert hass.states.get(entity_id) is None
 
 
-@pytest.mark.xfail(
-    reason="custom sensors use the tag as unique id, not their own unique_id",
-    strict=True,
-)
 async def test_options_flow_remove_sensor_from_registry(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
@@ -193,17 +190,71 @@ async def test_options_flow_remove_sensor_from_registry(
     assert er.async_get(hass).async_get(entity_id) is None
 
 
-@pytest.mark.xfail(
-    reason="custom sensors use the tag as unique id, not their own unique_id",
-    strict=True,
-)
 async def test_options_flow_custom_sensor_for_existing_tag(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Test a custom sensor for a tag that already has an entity is created."""
     await _add_sensor(hass, init_integration, {"tag": "scan_time"})
 
-    assert len(_custom_entities(hass, init_integration)) == 1
+    [entity_id] = _custom_entities(hass, init_integration)
+    assert hass.states.get(entity_id).state == "5"
+    assert hass.states.get("sensor.system_c1000_diagnostic_scan_time").state == "5"
+
+
+@pytest.mark.parametrize(
+    ("tag", "value", "device", "migrated"),
+    [
+        ("th00_max_time", "60", (DOMAIN, f"{NAD} custom"), True),
+        ("scan_time", "5", (DOMAIN, NAD), False),
+    ],
+    ids=["custom_sensor", "built_in_sensor"],
+)
+async def test_custom_sensor_unique_id_migration(
+    hass: HomeAssistant,
+    controller: FakeController,
+    enable_all_entities: None,
+    tag: str,
+    value: str,
+    device: tuple,
+    migrated: bool,
+) -> None:
+    """Test custom sensors move from the tag to their own unique id.
+
+    Built-in sensors used the same tag as unique id and must not be taken over.
+    """
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=2,
+        title=TITLE,
+        unique_id=TITLE,
+        options={
+            **OPTIONS,
+            "sensor": [{"tag": tag, "name": "Custom", "unique_id": "abc"}],
+        },
+    )
+    entry.add_to_hass(hass)
+    device_entry = dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id, identifiers={device}
+    )
+    entity_registry = er.async_get(hass)
+    old = entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"c{NAD}.{tag}",
+        config_entry=entry,
+        device_id=device_entry.id,
+        suggested_object_id="old_sensor",
+    )
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await _reload_data(hass, entry)
+
+    custom = entity_registry.async_get_entity_id("sensor", DOMAIN, "abc")
+    assert (custom == old.entity_id) is migrated
+    assert hass.states.get(custom).state == value
+    assert entity_registry.async_get(old.entity_id).unique_id == (
+        "abc" if migrated else f"c{NAD}.{tag}"
+    )
 
 
 async def test_options_flow_only_lists_own_variables(

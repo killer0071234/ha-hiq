@@ -170,11 +170,6 @@ async def test_set_temperature_boost(
     ]
 
 
-@pytest.mark.xfail(
-    reason="hvac_mode returns None and hvac_modes is ['o', 'f', 'f'] "
-    "when the controller hvac mode is off",
-    strict=True,
-)
 async def test_thermostat_hvac_off(
     hass: HomeAssistant,
     controller: FakeController,

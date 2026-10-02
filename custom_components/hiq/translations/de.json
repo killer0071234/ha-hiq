@@ -1,7 +1,6 @@
 {
   "config": {
     "error": {
-      "already_configured": "HIQ Steuerung ist bereits in Home Assistant konfiguriert",
       "cannot_connect": "Fehler beim verbinden zum SCGI Server (Läuft der Server?, Ist der Server installiert?, Ist das cybroscgiserver Addon installiert?)",
       "plc_not_existing": "HIQ Steuerung existiert im SCGI Server nicht (Ist die Adresse (NAD) richtig?)",
       "scgi_server_not_running": "SCGI Server läuft nicht"
@@ -21,6 +20,9 @@
         },
         "description": "Richte HIQ-Home mit Home Assistant ein.\nVor der Einrichtung der Integration muss ein cybro SCGI Server laufen!\nSiehe Dokumentation der Integration für Details."
       }
+    },
+    "abort": {
+      "already_configured": "HIQ Steuerung ist bereits in Home Assistant konfiguriert"
     }
   },
   "options": {
