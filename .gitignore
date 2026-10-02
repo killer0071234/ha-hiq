@@ -8,6 +8,7 @@ __pycache__
 
 # misc
 .coverage
+htmlcov
 .vscode
 coverage.xml
 

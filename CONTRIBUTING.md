@@ -16,7 +16,7 @@ Pull requests are the best way to propose changes to the codebase.
 1. Fork the repo and create your branch from `master`.
 2. If you've changed something, update the documentation.
 3. Make sure your code lints (using `scripts/lint`).
-4. Test you contribution.
+4. Make sure the tests pass (using `scripts/test`) and add tests for your change.
 5. Issue that pull request!
 
 ## Any contributions you make will be under the MIT Software License
@@ -47,6 +47,14 @@ People _love_ thorough bug reports. I'm not even kidding.
 Use [black](https://github.com/ambv/black) to make sure the code follows the style.
 
 ## Test your code modification
+
+The tests in [`tests`](./tests) run the integration in Home Assistant against a
+fake Cybro SCGI server ([`tests/fake_controller.py`](./tests/fake_controller.py)),
+so no controller is needed. Run them with `scripts/test`, or a single file with
+`scripts/test tests/test_light.py`.
+
+Tests marked with `xfail(strict=True)` document known bugs. When you fix one,
+the test starts passing and fails the run until you remove its `xfail` marker.
 
 This custom component is based on [integration_blueprint template](https://github.com/ludeeus/integration_blueprint).
 
