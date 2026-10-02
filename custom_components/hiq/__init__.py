@@ -16,6 +16,7 @@ from homeassistant.const import CONF_VALUE_TEMPLATE
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.core import ServiceCall
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.trigger_template_entity import (
     TEMPLATE_SENSOR_BASE_SCHEMA,
 )
@@ -84,6 +85,22 @@ CONFIG_SCHEMA = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
+SERVICE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_ENTITY_ID): cv.entity_ids,
+        vol.Optional(ATTR_DEVICE_ID): vol.All(cv.ensure_list, [cv.string]),
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
+SERVICE_PRECEDE_SCHEMA = SERVICE_SCHEMA.extend(
+    {vol.Required("time"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3600))}
+)
+
+SERVICE_WRITE_TAG_SCHEMA = SERVICE_SCHEMA.extend(
+    {vol.Required("tag"): cv.string, vol.Required("value"): cv.string}
+)
+
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate an old config entry."""
@@ -122,6 +139,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = HiqDataUpdateCoordinator(hass, entry=entry)
 
     await coordinator.async_config_entry_first_refresh()
+
+    # Entities are only created for working modules (and the power meter voltage
+    # scale depends on its value), so read these before the platforms are set up
+    for var in coordinator.data.plc_info.plc_vars:
+        if var.endswith(("_general_error", "_meter_error", "power_meter_voltage")):
+            coordinator.data.add_var(var)
+    await coordinator.async_refresh()
+    if not coordinator.last_update_success:
+        raise ConfigEntryNotReady(
+            f"Could not read module states from {coordinator.unique_id}"
+        )
 
     # Register the controller first, so other devices can reference it
     controller = dr.async_get(hass).async_get_or_create(
@@ -201,15 +229,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             LOGGER.debug("Write tag '%s' to '%s'", write_tag, call.data["value"])
             await coordinator.cybro.write_var(write_tag, call.data["value"])
 
-    hass.services.async_register(
-        DOMAIN, SERVICE_PRESENCE_SIGNAL, handle_presence_signal
-    )
-    hass.services.async_register(DOMAIN, SERVICE_CHARGE_ON, handle_charge_on_event)
-    hass.services.async_register(DOMAIN, SERVICE_CHARGE_OFF, handle_charge_off_event)
-    hass.services.async_register(DOMAIN, SERVICE_HOME, handle_home_event)
-    hass.services.async_register(DOMAIN, SERVICE_ALARM, handle_alarm_event)
-    hass.services.async_register(DOMAIN, SERVICE_PRECEDE, handle_precede_event)
-    hass.services.async_register(DOMAIN, SERVICE_WRITE_TAG, handle_write_tag)
+    for service, handler, schema in (
+        (SERVICE_PRESENCE_SIGNAL, handle_presence_signal, SERVICE_SCHEMA),
+        (SERVICE_CHARGE_ON, handle_charge_on_event, SERVICE_SCHEMA),
+        (SERVICE_CHARGE_OFF, handle_charge_off_event, SERVICE_SCHEMA),
+        (SERVICE_HOME, handle_home_event, SERVICE_SCHEMA),
+        (SERVICE_ALARM, handle_alarm_event, SERVICE_SCHEMA),
+        (SERVICE_PRECEDE, handle_precede_event, SERVICE_PRECEDE_SCHEMA),
+        (SERVICE_WRITE_TAG, handle_write_tag, SERVICE_WRITE_TAG_SCHEMA),
+    ):
+        hass.services.async_register(DOMAIN, service, handler, schema=schema)
 
     return True
 

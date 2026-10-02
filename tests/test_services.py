@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -86,11 +87,6 @@ async def test_write_tag_without_target(
     assert controller.writes == []
 
 
-@pytest.mark.xfail(
-    reason="services have no schema, a single entity_id string is iterated "
-    "character by character",
-    strict=True,
-)
 async def test_service_single_entity_id(
     hass: HomeAssistant,
     controller: FakeController,
@@ -102,3 +98,39 @@ async def test_service_single_entity_id(
     )
 
     assert controller.writes == [("c1000.smartphone_home_event", "1")]
+
+
+async def test_precede_event_time_as_float(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test the number selector value (a float) is written as whole minutes."""
+    await hass.services.async_call(
+        DOMAIN, "precede_event", {"entity_id": LIGHT, "time": 10.0}, blocking=True
+    )
+
+    assert controller.written("c1000.smartphone_precede_minutes") == ["10"]
+
+
+@pytest.mark.parametrize(
+    ("service", "data"),
+    [
+        ("precede_event", {}),
+        ("precede_event", {"time": 0}),
+        ("write_tag", {"tag": "lc00_qx00"}),
+        ("home_event", {"entity_id": "not an entity"}),
+    ],
+)
+async def test_service_invalid_data(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+    service: str,
+    data: dict,
+) -> None:
+    """Test invalid service data is rejected."""
+    with pytest.raises(vol.Invalid):
+        await hass.services.async_call(DOMAIN, service, data, blocking=True)
+
+    assert controller.writes == []

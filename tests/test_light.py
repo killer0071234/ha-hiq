@@ -114,9 +114,6 @@ async def test_light_state_changes_on_controller(
     assert hass.states.get(DIMMER).state == "off"
 
 
-@pytest.mark.xfail(
-    reason="int(100 * 2.55) is 254, the value is not rounded", strict=True
-)
 async def test_dimmable_light_full_brightness(
     hass: HomeAssistant,
     controller: FakeController,
@@ -129,10 +126,6 @@ async def test_dimmable_light_full_brightness(
     assert hass.states.get(DIMMER).attributes["brightness"] == 255
 
 
-@pytest.mark.xfail(
-    reason="hue / saturation variables are never added to the polled variables",
-    strict=True,
-)
 async def test_rgb_light_reports_color(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:

@@ -93,8 +93,8 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
 
     @property
     def condition(self) -> str | None:
-        """Return the current condition."""
-        return ""
+        """Return the current condition, the weather station has none."""
+        return None
 
     @property
     def native_temperature(self) -> float | None:
