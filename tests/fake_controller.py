@@ -86,6 +86,10 @@ HIQ_TAGS: dict[str, str] = {
     "power_meter_power": "1200",
     "power_meter_voltage": "2300",
     "power_meter_current": "52",
+    # three phase power meter
+    "power_meter_voltage1": "2420",
+    "power_meter_voltage2": "2393",
+    "power_meter_voltage3": "2392",
     # controller diagnostics
     "scan_time": "5",
     "scan_time_max": "9",
@@ -170,6 +174,23 @@ class FakeController:
             return "".join(f"<item>{nad}</item>" for nad in self.nads)
         return escape(self.values.get(name, "?"))
 
+    def _var_xml(self, name: str) -> str:
+        """Return the XML of a single requested variable."""
+        if name.endswith(".sys.variables"):
+            # the server lists all variables of the controller, without values
+            prefix = name.removesuffix("sys.variables")
+            return "".join(
+                f"<var><name>{escape(var)}</name><type>datatype.int</type>"
+                f"<description>Description of {escape(var)}</description></var>"
+                for var in self.values
+                if var.startswith(prefix) and ".sys." not in var
+            )
+        return (
+            f"<var><name>{escape(name)}</name>"
+            f"<value>{self._value_xml(name)}</value>"
+            f"<description>Description of {escape(name)}</description></var>"
+        )
+
     async def handle(
         self, method: str, url: URL, data: object
     ) -> AiohttpClientMockResponse:
@@ -182,12 +203,7 @@ class FakeController:
                 self.values[name] = value
                 self.writes.append((name, value))
             names.append(name)
-        body = "".join(
-            f"<var><name>{escape(name)}</name>"
-            f"<value>{self._value_xml(name)}</value>"
-            f"<description>Description of {escape(name)}</description></var>"
-            for name in names
-        )
+        body = "".join(self._var_xml(name) for name in names)
         return AiohttpClientMockResponse(
             method,
             url,

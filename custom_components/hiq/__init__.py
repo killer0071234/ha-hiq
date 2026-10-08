@@ -1,6 +1,8 @@
 """Support for HIQ-Home."""
 from __future__ import annotations
 
+from re import search
+
 import homeassistant.helpers.config_validation as cv
 import homeassistant.helpers.device_registry as dr
 import voluptuous as vol
@@ -143,7 +145,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Entities are only created for working modules (and the power meter voltage
     # scale depends on its value), so read these before the platforms are set up
     for var in coordinator.data.plc_info.plc_vars:
-        if var.endswith(("_general_error", "_meter_error", "power_meter_voltage")):
+        if search(r"(_general_error|_meter_error|power_meter_voltage\d*)$", var):
             coordinator.data.add_var(var)
     await coordinator.async_refresh()
     if not coordinator.last_update_success:
