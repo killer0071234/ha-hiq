@@ -125,9 +125,7 @@ class FakeController:
         self.online = True
         self.status = HTTPStatus.OK
         self.values: dict[str, str] = {
-            "sys.scgi_port_status": "active",
             "sys.server_uptime": "00 days, 01:02:03",
-            "sys.scgi_request_pending": "0",
             "sys.scgi_request_count": "1",
             "sys.push_port_status": "active",
             "sys.push_count": "0",
@@ -138,21 +136,22 @@ class FakeController:
             "sys.server_version": "3.1.3",
             "sys.udp_rx_count": "0",
             "sys.udp_tx_count": "0",
-            "sys.datalogger_status": "stopped",
         }
+        self.nads: list[int] = []
         self.writes: list[tuple[str, str]] = []
         self.add_controller(NAD, HIQ_TAGS if tags is None else tags)
 
     def add_controller(self, nad: int, tags: dict[str, str]) -> None:
         """Add a controller with the given variables."""
         prefix = f"c{nad}."
+        self.nads.append(nad)
         self.values |= {
             f"{prefix}sys.ip_port": "192.168.1.10:8442",
             f"{prefix}sys.timestamp": "2026-10-02 12:00:00",
-            f"{prefix}sys.plc_program_status": "ok",
+            f"{prefix}sys.plc_status": "ok",
             f"{prefix}sys.response_time": "3",
             f"{prefix}sys.bytes_transferred": "200",
-            f"{prefix}sys.comm_error_count": "0",
+            f"{prefix}sys.com_error_count": "0",
             f"{prefix}sys.alc_file": alc_file(tags),
         }
         self.values |= {f"{prefix}{name}": value for name, value in tags.items()}
@@ -164,6 +163,12 @@ class FakeController:
     def written(self, name: str) -> list[str]:
         """Return all values written to a variable, in order."""
         return [value for var, value in self.writes if var == name]
+
+    def _value_xml(self, name: str) -> str:
+        """Return the XML content of a variable value."""
+        if name == "sys.nad_list":
+            return "".join(f"<item>{nad}</item>" for nad in self.nads)
+        return escape(self.values.get(name, "?"))
 
     async def handle(
         self, method: str, url: URL, data: object
@@ -179,7 +184,7 @@ class FakeController:
             names.append(name)
         body = "".join(
             f"<var><name>{escape(name)}</name>"
-            f"<value>{escape(self.values.get(name, '?'))}</value>"
+            f"<value>{self._value_xml(name)}</value>"
             f"<description>Description of {escape(name)}</description></var>"
             for name in names
         )

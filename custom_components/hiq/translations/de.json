@@ -2,8 +2,7 @@
   "config": {
     "error": {
       "cannot_connect": "Fehler beim verbinden zum SCGI Server (Läuft der Server?, Ist der Server installiert?, Ist das cybroscgiserver Addon installiert?)",
-      "plc_not_existing": "HIQ Steuerung existiert im SCGI Server nicht (Ist die Adresse (NAD) richtig?)",
-      "scgi_server_not_running": "SCGI Server läuft nicht"
+      "plc_not_existing": "HIQ Steuerung existiert im SCGI Server nicht (Ist die Adresse (NAD) richtig?)"
     },
     "flow_title": "{name}",
     "step": {

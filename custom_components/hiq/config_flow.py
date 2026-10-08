@@ -168,9 +168,7 @@ async def validate_plc_setup(
             plc_config[CONF_ADDRESS],
         )
 
-        if device.server_info.scgi_port_status == "":
-            raise SchemaFlowError("scgi_server_not_running")
-        if device.plc_info.plc_program_status != "ok":
+        if device.plc_info.plc_status != "ok":
             raise SchemaFlowError("plc_not_existing")
 
         return plc_config
