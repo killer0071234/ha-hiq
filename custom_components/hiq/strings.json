@@ -228,6 +228,21 @@
       },
       "auxilary_temperature": {
         "name": "Auxilary temperature"
+      },
+      "power_meter_power_phase": {
+        "name": "Power L{phase}"
+      },
+      "power_meter_voltage_phase": {
+        "name": "Voltage L{phase}"
+      },
+      "power_meter_current_phase": {
+        "name": "Current L{phase}"
+      },
+      "power_meter_energy_real": {
+        "name": "Energy (precise)"
+      },
+      "power_meter_energy_watthours": {
+        "name": "Energy (Wh)"
       }
     },
     "select": {

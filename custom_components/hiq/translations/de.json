@@ -160,6 +160,21 @@
       },
       "auxilary_temperature": {
         "name": "Externe Temperatur"
+      },
+      "power_meter_power_phase": {
+        "name": "Leistung L{phase}"
+      },
+      "power_meter_voltage_phase": {
+        "name": "Spannung L{phase}"
+      },
+      "power_meter_current_phase": {
+        "name": "Strom L{phase}"
+      },
+      "power_meter_energy_real": {
+        "name": "Energie (genau)"
+      },
+      "power_meter_energy_watthours": {
+        "name": "Energie (Wh)"
       }
     },
     "select": {

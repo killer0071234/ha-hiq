@@ -496,6 +496,7 @@ def find_power_meter(
                             coordinator=coordinator,
                             entity_description=HiqSensorEntityDescription(
                                 key=key,
+                                **_power_meter_phase_name(key),
                                 native_unit_of_measurement=UnitOfPower.WATT,
                                 device_class=SensorDeviceClass.POWER,
                                 state_class=SensorStateClass.MEASUREMENT,
@@ -521,6 +522,7 @@ def find_power_meter(
                             coordinator=coordinator,
                             entity_description=HiqSensorEntityDescription(
                                 key=key,
+                                **_power_meter_phase_name(key),
                                 native_unit_of_measurement=UnitOfElectricPotential.VOLT,
                                 device_class=SensorDeviceClass.VOLTAGE,
                                 state_class=SensorStateClass.MEASUREMENT,
@@ -539,6 +541,7 @@ def find_power_meter(
                             coordinator=coordinator,
                             entity_description=HiqSensorEntityDescription(
                                 key=key,
+                                **_power_meter_phase_name(key),
                                 native_unit_of_measurement=UnitOfElectricCurrent.MILLIAMPERE,
                                 device_class=SensorDeviceClass.CURRENT,
                                 state_class=SensorStateClass.MEASUREMENT,
@@ -589,6 +592,17 @@ def find_power_meter(
     if len(res) > 0:
         return res
     return None
+
+
+def _power_meter_phase_name(var: str) -> dict[str, Any]:
+    """Return the name of a single phase sensor of the power meter, eg: Power L1."""
+    phase = search(r"_(power|voltage|current)(\d)$", var)
+    if phase is None:
+        return {}
+    return {
+        "translation_key": f"power_meter_{phase.group(1)}_phase",
+        "translation_placeholders": {"phase": phase.group(2)},
+    }
 
 
 def _is_power_meter_ok(coordinator: HiqDataUpdateCoordinator, var: str):
