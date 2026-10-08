@@ -6,7 +6,10 @@ import logging
 
 import pytest
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.hiq.const import DOMAIN
 
 from .common import call_service, refresh
 from .fake_controller import FakeController
@@ -287,3 +290,21 @@ async def test_module_sensors(
         if (state := hass.states.get(entity_id))
     }
     assert states == MODULE_SENSORS
+
+
+async def test_three_phase_power_meter_voltage(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test the voltages of all phases are scaled like the mean voltage.
+
+    The SCGI server lists all variables without a value on a full update,
+    the phase voltages must be read before the sensors are set up.
+    """
+    entity_registry = er.async_get(hass)
+    voltages = {}
+    for phase in ("", "1", "2", "3"):
+        entity_id = entity_registry.async_get_entity_id(
+            "sensor", DOMAIN, f"c1000.power_meter_voltage{phase}"
+        )
+        voltages[phase] = hass.states.get(entity_id).state
+    assert voltages == {"": "230.0", "1": "242.0", "2": "239.0", "3": "239.0"}
