@@ -1,4 +1,5 @@
 """Support for HIQ-Home sensors."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -28,7 +29,6 @@ from homeassistant.const import UnitOfElectricPotential
 from homeassistant.const import UnitOfEnergy
 from homeassistant.const import UnitOfFrequency
 from homeassistant.const import UnitOfPower
-from homeassistant.const import UnitOfSpeed
 from homeassistant.const import UnitOfTemperature
 from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
@@ -82,10 +82,6 @@ async def async_setup_entry(
     )
     if temps is not None:
         async_add_entities(temps)
-
-    # weather = find_weather(coordinator)
-    # if weather is not None:
-    #    async_add_entities(weather)
 
     power_meter = find_power_meter(
         coordinator,
@@ -151,7 +147,9 @@ async def async_setup_entry(
                     device_class=SensorDeviceClass(sensor_config[CONF_DEVICE_CLASS])
                     if sensor_config.get(CONF_DEVICE_CLASS) is not None
                     else None,
-                    native_unit_of_measurement=sensor_config.get(CONF_UNIT_OF_MEASUREMENT),
+                    native_unit_of_measurement=sensor_config.get(
+                        CONF_UNIT_OF_MEASUREMENT
+                    ),
                 ),
                 dev_info=dev_info,
                 value_template=value_template,
@@ -406,87 +404,6 @@ def _module_sensor_name(
     }
 
 
-def find_weather(
-    coordinator: HiqDataUpdateCoordinator,
-) -> list[HiqSensorEntity] | None:
-    """Find simple temperature objects in the plc vars.
-    eg: c1000.weather_temperature and so on.
-    """
-    res: list[HiqSensorEntity] = []
-    var_prefix = f"c{coordinator.data.plc_info.nad}.weather_"
-    dev_info = DeviceInfo(
-        identifiers={(DOMAIN, var_prefix)},
-        manufacturer=MANUFACTURER,
-        name=f"c{coordinator.cybro.nad} weather",
-        suggested_area=AREA_WEATHER,
-        model=DEVICE_DESCRIPTION,
-        configuration_url=MANUFACTURER_URL,
-        entry_type=None,
-        sw_version=DEVICE_SW_VERSION,
-        hw_version=DEVICE_HW_VERSION,
-        **coordinator.via_device_info,
-    )
-
-    for key in coordinator.data.plc_info.plc_vars:
-        if key.find(var_prefix) != -1:
-            if is_general_error_ok(coordinator, key):
-                if key.find("_temperature") != -1:
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                                device_class=SensorDeviceClass.TEMPERATURE,
-                                state_class=SensorStateClass.MEASUREMENT,
-                                # entity_category=EntityCategory.DIAGNOSTIC,
-                                suggested_display_precision=1,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=0.1,
-                            dev_info=dev_info,
-                        )
-                    )
-                elif key.find("_humidity") != -1:
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                native_unit_of_measurement=PERCENTAGE,
-                                device_class=SensorDeviceClass.HUMIDITY,
-                                state_class=SensorStateClass.MEASUREMENT,
-                                # entity_category=EntityCategory.DIAGNOSTIC,
-                                suggested_display_precision=0,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=1.0,
-                            dev_info=dev_info,
-                        )
-                    )
-                elif key.find("_wind_speed") != -1:
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
-                                device_class=SensorDeviceClass.WIND_SPEED,
-                                state_class=SensorStateClass.MEASUREMENT,
-                                # entity_category=EntityCategory.DIAGNOSTIC,
-                                suggested_display_precision=1,
-                            ),
-                            val_fact=0.1,
-                            var_type=VarType.FLOAT,
-                            dev_info=dev_info,
-                        )
-                    )
-
-    if len(res) > 0:
-        return res
-    return None
-
-
 def find_power_meter(
     coordinator: HiqDataUpdateCoordinator,
 ) -> list[HiqSensorEntity] | None:
@@ -644,10 +561,7 @@ def _power_meter_phase_name(var: str) -> dict[str, Any]:
 
 
 def _is_power_meter_ok(coordinator: HiqDataUpdateCoordinator, var: str):
-    ge_names = var.split("_")
-    if ge_names is None:
-        return False
-    ge_name = f"{ge_names[0]}_meter_error"
+    ge_name = f"{var.split('_')[0]}_meter_error"
     coordinator.data.add_var(ge_name)
     ge_val = coordinator.data.vars.get(ge_name, None)
     if ge_val is None:
@@ -927,9 +841,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         """Return the state of the sensor."""
 
         if self._value_template is not None:
-            return self.coordinator.get_template_value(
-                self._var, self._value_template
-            )
+            return self.coordinator.get_template_value(self._var, self._value_template)
 
         return self.coordinator.get_value(
             self._var, self._val_fact, self.suggested_display_precision

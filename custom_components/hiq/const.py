@@ -1,4 +1,5 @@
 """Constants for the HIQ-Home integration."""
+
 import logging
 from datetime import timedelta
 from typing import Final

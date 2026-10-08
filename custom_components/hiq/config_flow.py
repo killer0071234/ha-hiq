@@ -1,4 +1,5 @@
 """Config flow to configure the HIQ-Home integration."""
+
 from __future__ import annotations
 
 import uuid

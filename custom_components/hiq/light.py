@@ -1,4 +1,5 @@
 """Support for HIQ-Home lights."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -64,10 +65,7 @@ class HiqLightEntityDescription(LightEntityDescription):
 
 def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
     """Check if general error of own module is ok."""
-    ge_names = var.split("_")
-    if ge_names is None:
-        return False
-    ge_name = f"{ge_names[0]}_general_error"
+    ge_name = f"{var.split('_')[0]}_general_error"
     coordinator.data.add_var(ge_name)
     ge_val = coordinator.data.vars.get(ge_name, None)
     if ge_val is None:
@@ -194,8 +192,6 @@ def _is_dimm_light(var: str) -> bool:
 def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
     """Check if we had a rgb light."""
     var_names = var.split("_")
-    if var_names is None:
-        return False
     if var_names[1] in ("qw00", "qw01", "qw02", "qw03"):
         rgb_mode_var = f"{var_names[0]}_rgb_mode"
     elif var_names[1] in ("qw04", "qw05", "qw06", "qw07"):
@@ -299,7 +295,8 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         LOGGER.debug("Light '%s' -> %s", self._attr_unique_id, kwargs)
         if ATTR_BRIGHTNESS in kwargs:
             await self.coordinator.cybro.write_var(
-                self._dimming_out, str(max(1, round(int(kwargs[ATTR_BRIGHTNESS]) / 2.55)))
+                self._dimming_out,
+                str(max(1, round(int(kwargs[ATTR_BRIGHTNESS]) / 2.55))),
             )
         if ATTR_HS_COLOR in kwargs:
             hue, sat = kwargs[ATTR_HS_COLOR]

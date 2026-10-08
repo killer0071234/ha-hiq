@@ -1,4 +1,5 @@
 """Support for the Cybro weather."""
+
 from __future__ import annotations
 
 from cybro import VarType
