@@ -553,7 +553,7 @@ def find_power_meter(
                             dev_info=dev_info,
                         )
                     )
-            elif key in (f"{var_prefix}_energy", f"{var_prefix}_energy_real"):
+            elif key == f"{var_prefix}_energy":
                 if _is_power_meter_ok(coordinator, key):
                     res.append(
                         HiqSensorEntity(
@@ -564,6 +564,24 @@ def find_power_meter(
                                 device_class=SensorDeviceClass.ENERGY,
                                 state_class=SensorStateClass.TOTAL_INCREASING,
                                 suggested_display_precision=0,
+                            ),
+                            var_type=VarType.FLOAT,
+                            val_fact=1.0,
+                            dev_info=dev_info,
+                        )
+                    )
+            elif key == f"{var_prefix}_energy_real":
+                if _is_power_meter_ok(coordinator, key):
+                    res.append(
+                        HiqSensorEntity(
+                            coordinator=coordinator,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+                                device_class=SensorDeviceClass.ENERGY,
+                                state_class=SensorStateClass.TOTAL_INCREASING,
+                                entity_registry_enabled_default=False,
+                                suggested_display_precision=3,
                             ),
                             var_type=VarType.FLOAT,
                             val_fact=1.0,

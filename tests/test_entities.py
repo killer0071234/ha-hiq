@@ -324,7 +324,7 @@ POWER_METER_NAMES = {
     "power_meter_current2": "Current L2",
     "power_meter_current3": "Current L3",
     "power_meter_energy": "Energy",
-    "power_meter_energy_real": "Energy (precise)",
+    "power_meter_energy_real": "Energy real",
     "power_meter_energy_watthours": "Energy (Wh)",
 }
 

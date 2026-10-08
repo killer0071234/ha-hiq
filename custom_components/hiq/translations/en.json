@@ -239,7 +239,7 @@
         "name": "Current L{phase}"
       },
       "power_meter_energy_real": {
-        "name": "Energy (precise)"
+        "name": "Energy real"
       },
       "power_meter_energy_watthours": {
         "name": "Energy (Wh)"
