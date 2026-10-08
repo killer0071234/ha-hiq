@@ -2,8 +2,7 @@
   "config": {
     "error": {
       "cannot_connect": "Failed to connect to scgi server (Is the server running?, Is the server installed?, Is the cybroscgiserver addon installed?)",
-      "plc_not_existing": "HIQ controller does not exist in scgi server (Is the address / NAD correct?)",
-      "scgi_server_not_running": "scgi server is not running"
+      "plc_not_existing": "HIQ controller does not exist in scgi server (Is the address / NAD correct?)"
     },
     "flow_title": "{name}",
     "step": {

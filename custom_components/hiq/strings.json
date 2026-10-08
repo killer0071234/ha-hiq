@@ -18,8 +18,7 @@
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "plc_not_existing": "[%key:common::config_flow::error::plc_not_existing%]",
-      "scgi_server_not_running": "[%key:common::config_flow::error::scgi_server_not_running%]"
+      "plc_not_existing": "[%key:common::config_flow::error::plc_not_existing%]"
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"

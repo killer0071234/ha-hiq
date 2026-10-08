@@ -1,5 +1,5 @@
 -r requirements.txt
 # Integration requirements from custom_components/hiq/manifest.json
-cybro==0.2.0
+cybro==0.3.1
 # Must match the homeassistant version in requirements.txt
 pytest-homeassistant-custom-component==0.13.367

@@ -61,7 +61,7 @@ async def test_user_flow_plc_not_existing(
     hass: HomeAssistant, controller: FakeController
 ) -> None:
     """Test a controller without a running program is rejected."""
-    controller.values[f"c{NAD}.sys.plc_program_status"] = "missing"
+    controller.values[f"c{NAD}.sys.plc_status"] = "pgm missing"
     result = await _start_user_flow(hass)
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], OPTIONS)
