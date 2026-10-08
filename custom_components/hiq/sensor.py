@@ -354,6 +354,7 @@ def find_temperatures(
                             coordinator=coordinator,
                             entity_description=HiqSensorEntityDescription(
                                 key=key,
+                                **_module_sensor_name(coordinator, key),
                                 native_unit_of_measurement=UnitOfTemperature.CELSIUS,
                                 device_class=SensorDeviceClass.TEMPERATURE,
                                 state_class=SensorStateClass.MEASUREMENT,
@@ -370,6 +371,7 @@ def find_temperatures(
                             coordinator=coordinator,
                             entity_description=HiqSensorEntityDescription(
                                 key=key,
+                                **_module_sensor_name(coordinator, key),
                                 native_unit_of_measurement=PERCENTAGE,
                                 device_class=SensorDeviceClass.HUMIDITY,
                                 state_class=SensorStateClass.MEASUREMENT,
@@ -384,6 +386,24 @@ def find_temperatures(
     if len(res) > 0:
         return res
     return None
+
+
+def _module_sensor_name(
+    coordinator: HiqDataUpdateCoordinator, var: str
+) -> dict[str, Any]:
+    """Return the name of a temperature module sensor, eg: ts00 internal temperature."""
+    module_name, _, measurement = var.removeprefix(
+        f"c{coordinator.cybro.nad}."
+    ).partition("_")
+    translation_key = {
+        "temperature_0": "module_temperature_internal",
+        "temperature_1": "module_temperature_external",
+        "humidity": "module_humidity",
+    }.get(measurement, "module_temperature")
+    return {
+        "translation_key": translation_key,
+        "translation_placeholders": {"module": module_name},
+    }
 
 
 def find_weather(
