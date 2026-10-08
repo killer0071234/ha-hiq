@@ -111,7 +111,7 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
                 LOGGER.debug("get_value: %s -> %s", str(tag), str(res.value))
                 return res.value
             # try to parse float value, if fails, try to return int, else return as string
-            if factor != 1.0 or precision != 0 or res.value in (",", "."):
+            if factor != 1.0 or precision != 0 or any(c in res.value for c in ",."):
                 converted_numerical_value = float(res.value.replace(",", "")) * factor
                 value = f"{converted_numerical_value:z.{precision}f}"
                 LOGGER.debug(
