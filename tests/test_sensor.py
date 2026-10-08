@@ -21,7 +21,7 @@ async def test_power_meter_energy(
     mock_config_entry: MockConfigEntry,
     enable_all_entities: None,
 ) -> None:
-    """Test energy counters of the power meter are total increasing."""
+    """Test energy counters are total increasing, the real energy in Wh resolution."""
     await setup_with_tags(
         hass,
         aioclient_mock,
@@ -29,7 +29,7 @@ async def test_power_meter_energy(
         {
             "power_meter_error": "0",
             "power_meter_energy": "123",
-            "power_meter_energy_real": "120",
+            "power_meter_energy_real": "120.1826171875",
             "power_meter_energy_watthours": "4567",
         },
     )
@@ -52,8 +52,38 @@ async def test_power_meter_energy(
         )
     assert states == {
         "power_meter_energy": ("123", "kWh", "total_increasing"),
-        "power_meter_energy_real": ("120", "kWh", "total_increasing"),
+        "power_meter_energy_real": ("120.183", "kWh", "total_increasing"),
         "power_meter_energy_watthours": ("4567", "Wh", "total_increasing"),
+    }
+
+
+async def test_power_meter_energy_real_disabled_by_default(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test the real energy is disabled by default, it duplicates the energy."""
+    await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {
+            "power_meter_error": "0",
+            "power_meter_energy": "15787",
+            "power_meter_energy_real": "15787.1826171875",
+        },
+    )
+
+    entity_registry = er.async_get(hass)
+    disabled = {
+        tag: entity_registry.async_get(
+            entity_registry.async_get_entity_id("sensor", DOMAIN, f"c1000.{tag}")
+        ).disabled_by
+        for tag in ("power_meter_energy", "power_meter_energy_real")
+    }
+    assert disabled == {
+        "power_meter_energy": None,
+        "power_meter_energy_real": er.RegistryEntryDisabler.INTEGRATION,
     }
 
 

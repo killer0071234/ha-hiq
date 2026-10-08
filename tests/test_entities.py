@@ -308,3 +308,37 @@ async def test_three_phase_power_meter_voltage(
         )
         voltages[phase] = hass.states.get(entity_id).state
     assert voltages == {"": "230.0", "1": "242.0", "2": "239.0", "3": "239.0"}
+
+
+POWER_METER_NAMES = {
+    "power_meter_power": "Power",
+    "power_meter_power1": "Power L1",
+    "power_meter_power2": "Power L2",
+    "power_meter_power3": "Power L3",
+    "power_meter_voltage": "Voltage",
+    "power_meter_voltage1": "Voltage L1",
+    "power_meter_voltage2": "Voltage L2",
+    "power_meter_voltage3": "Voltage L3",
+    "power_meter_current": "Current",
+    "power_meter_current1": "Current L1",
+    "power_meter_current2": "Current L2",
+    "power_meter_current3": "Current L3",
+    "power_meter_energy": "Energy",
+    "power_meter_energy_real": "Energy real",
+    "power_meter_energy_watthours": "Energy (Wh)",
+}
+
+
+async def test_power_meter_names(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test every power meter sensor has its own name, phases are named L1..L3."""
+    entity_registry = er.async_get(hass)
+    names = {}
+    for tag in POWER_METER_NAMES:
+        entity_id = entity_registry.async_get_entity_id(
+            "sensor", DOMAIN, f"c1000.{tag}"
+        )
+        friendly_name = hass.states.get(entity_id).attributes["friendly_name"]
+        names[tag] = friendly_name.removeprefix("c1000 power meter ")
+    assert names == POWER_METER_NAMES

@@ -496,6 +496,7 @@ def find_power_meter(
                             coordinator=coordinator,
                             entity_description=HiqSensorEntityDescription(
                                 key=key,
+                                **_power_meter_phase_name(key),
                                 native_unit_of_measurement=UnitOfPower.WATT,
                                 device_class=SensorDeviceClass.POWER,
                                 state_class=SensorStateClass.MEASUREMENT,
@@ -521,6 +522,7 @@ def find_power_meter(
                             coordinator=coordinator,
                             entity_description=HiqSensorEntityDescription(
                                 key=key,
+                                **_power_meter_phase_name(key),
                                 native_unit_of_measurement=UnitOfElectricPotential.VOLT,
                                 device_class=SensorDeviceClass.VOLTAGE,
                                 state_class=SensorStateClass.MEASUREMENT,
@@ -539,6 +541,7 @@ def find_power_meter(
                             coordinator=coordinator,
                             entity_description=HiqSensorEntityDescription(
                                 key=key,
+                                **_power_meter_phase_name(key),
                                 native_unit_of_measurement=UnitOfElectricCurrent.MILLIAMPERE,
                                 device_class=SensorDeviceClass.CURRENT,
                                 state_class=SensorStateClass.MEASUREMENT,
@@ -550,7 +553,7 @@ def find_power_meter(
                             dev_info=dev_info,
                         )
                     )
-            elif key in (f"{var_prefix}_energy", f"{var_prefix}_energy_real"):
+            elif key == f"{var_prefix}_energy":
                 if _is_power_meter_ok(coordinator, key):
                     res.append(
                         HiqSensorEntity(
@@ -561,6 +564,24 @@ def find_power_meter(
                                 device_class=SensorDeviceClass.ENERGY,
                                 state_class=SensorStateClass.TOTAL_INCREASING,
                                 suggested_display_precision=0,
+                            ),
+                            var_type=VarType.FLOAT,
+                            val_fact=1.0,
+                            dev_info=dev_info,
+                        )
+                    )
+            elif key == f"{var_prefix}_energy_real":
+                if _is_power_meter_ok(coordinator, key):
+                    res.append(
+                        HiqSensorEntity(
+                            coordinator=coordinator,
+                            entity_description=HiqSensorEntityDescription(
+                                key=key,
+                                native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+                                device_class=SensorDeviceClass.ENERGY,
+                                state_class=SensorStateClass.TOTAL_INCREASING,
+                                entity_registry_enabled_default=False,
+                                suggested_display_precision=3,
                             ),
                             var_type=VarType.FLOAT,
                             val_fact=1.0,
@@ -589,6 +610,17 @@ def find_power_meter(
     if len(res) > 0:
         return res
     return None
+
+
+def _power_meter_phase_name(var: str) -> dict[str, Any]:
+    """Return the name of a single phase sensor of the power meter, eg: Power L1."""
+    phase = search(r"_(power|voltage|current)(\d)$", var)
+    if phase is None:
+        return {}
+    return {
+        "translation_key": f"power_meter_{phase.group(1)}_phase",
+        "translation_placeholders": {"phase": phase.group(2)},
+    }
 
 
 def _is_power_meter_ok(coordinator: HiqDataUpdateCoordinator, var: str):
