@@ -118,5 +118,9 @@ async def test_setup(
         for record in caplog.records
         if record.levelno >= logging.WARNING
         and "has not been tested by Home Assistant" not in record.getMessage()
+        # asyncio debug mode reports slow steps, which depends on the network
+        and not (
+            record.name == "asyncio" and record.getMessage().startswith("Executing")
+        )
     ]
     assert problems == []

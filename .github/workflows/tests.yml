@@ -10,6 +10,13 @@ on:
       - "main"
       - "master"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   pytest:
     name: "Pytest"
@@ -31,4 +38,4 @@ jobs:
           run: python3 -m pip install -r requirements_test.txt
 
         - name: "Run tests"
-          run: python3 -m pytest --cov --cov-report=term --cov-fail-under=90
+          run: python3 -m pytest --cov --cov-report=term --cov-fail-under=95
