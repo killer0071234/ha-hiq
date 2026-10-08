@@ -19,7 +19,6 @@ from homeassistant.components.climate.const import (
     PRESET_COMFORT,
     PRESET_BOOST,
     PRESET_ECO,
-    PRESET_NONE,
 )
 from homeassistant.const import (
     ATTR_TEMPERATURE,
@@ -43,32 +42,16 @@ from .light import is_general_error_ok
 from . import get_write_req_th
 
 SUPPORT_FLAGS = (
-    ClimateEntityFeature.TARGET_TEMPERATURE
-    | ClimateEntityFeature.PRESET_MODE
-    | ClimateEntityFeature.TURN_ON
-    | ClimateEntityFeature.TURN_OFF
+    ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
 )
-
-SUPPORT_MODES_HEAT = [HVACMode.OFF, HVACMode.HEAT]
-SUPPORT_MODES_COOL = [HVACMode.OFF, HVACMode.COOL]
 
 SUPPORT_PRESET_MODES_ALL = [PRESET_COMFORT, PRESET_BOOST, PRESET_ECO]
 SUPPORT_PRESET_MODES = [PRESET_COMFORT, PRESET_ECO]
 
-HA_TO_CYBRO_HVAC_HEAT_MAP = {
-    HVACMode.OFF: 0,
-    HVACMode.HEAT: 1,
-}
-CYBRO_TO_HA_HVAC_HEAT_MAP = {
-    value: key for key, value in HA_TO_CYBRO_HVAC_HEAT_MAP.items()
-}
-
-HA_TO_CYBRO_HVAC_COOL_MAP = {
-    HVACMode.OFF: 0,
-    HVACMode.COOL: 1,
-}
-CYBRO_TO_HA_HVAC_COOL_MAP = {
-    value: key for key, value in HA_TO_CYBRO_HVAC_COOL_MAP.items()
+# active selects the setpoint: comfort (setpoint + offset) or eco (setpoint idle)
+CYBRO_TO_HA_PRESET_MAP = {
+    0: PRESET_ECO,
+    1: PRESET_COMFORT,
 }
 
 HA_TO_CYBRO_HVAC_MODE_MAP = {
@@ -147,9 +130,6 @@ def find_thermostats(
 class HiqThermostat(HiqEntity, ClimateEntity):
     """Representation a Hiq thermostat."""
 
-    _attr_hvac_modes = SUPPORT_MODES_HEAT
-    _attr_hvac_mode = HVACMode.AUTO
-    _attr_preset_modes = SUPPORT_PRESET_MODES
     _attr_supported_features = SUPPORT_FLAGS
     _attr_target_temperature_step = PRECISION_TENTHS
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
@@ -250,19 +230,30 @@ class HiqThermostat(HiqEntity, ClimateEntity):
 
     @property
     def hvac_mode(self) -> HVACMode | None:
-        """Return the current HVAC mode for the device."""
-        mode = self._controller_hvac_mode
-        active = self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
-        if mode == HVACMode.HEAT:
-            self._attr_hvac_modes = SUPPORT_MODES_HEAT
-            return CYBRO_TO_HA_HVAC_HEAT_MAP.get(active)
-        if mode == HVACMode.COOL:
-            self._attr_hvac_modes = SUPPORT_MODES_COOL
-            return CYBRO_TO_HA_HVAC_COOL_MAP.get(active)
-        self._attr_hvac_modes = [HVACMode.OFF]
-        if mode == HVACMode.OFF:
-            return HVACMode.OFF
-        return None
+        """Return the current HVAC mode for the device.
+
+        Heating / cooling / off is set for all thermostats by the controller,
+        so a thermostat can only be set to the mode it currently has.
+        """
+        return self._controller_hvac_mode
+
+    @property
+    def hvac_modes(self) -> list[HVACMode]:
+        """Return the hvac modes, only the current one (set by the controller)."""
+        return [self._controller_hvac_mode or HVACMode.OFF]
+
+    @property
+    def preset_modes(self) -> list[str] | None:
+        """Return the presets, only while the controller is heating or cooling."""
+        if self._controller_hvac_mode not in (HVACMode.HEAT, HVACMode.COOL):
+            return None
+        # allow boost only if fan max is enabled on thermostat
+        fan_options = self.coordinator.get_value(
+            f"{self._prefix}_fan_options", 1.0, 0, 0
+        )
+        if fan_options >> 4 & 1:
+            return SUPPORT_PRESET_MODES_ALL
+        return SUPPORT_PRESET_MODES
 
     @property
     def preset_mode(self) -> str | None:
@@ -270,26 +261,13 @@ class HiqThermostat(HiqEntity, ClimateEntity):
 
         Requires ClimateEntityFeature.PRESET_MODE.
         """
-        # set supported presets
-        if self._controller_hvac_mode not in (HVACMode.HEAT, HVACMode.COOL):
-            self._attr_preset_modes = None
-        else:
-            self._attr_preset_modes = SUPPORT_PRESET_MODES
-            # allow boost only if fan max is enabled on thermostat
-            if (
-                self.coordinator.get_value(f"{self._prefix}_fan_options", 1.0, 0, 0)
-                >> 4
-                & 1
-            ) != 0:
-                self._attr_preset_modes = SUPPORT_PRESET_MODES_ALL
-
+        if self.preset_modes is None:
+            return None
         if self.coordinator.get_value(f"{self._prefix}_fan_limit", 1.0, 0, 0) == 4:
             return PRESET_BOOST
-        if self.coordinator.get_value(f"{self._prefix}_active", 1.0, 0, 0) == 1:
-            return PRESET_COMFORT
-        if self.coordinator.get_value(f"{self._prefix}_setpoint_idle", 0.1, 0, 0) > 0:
-            return PRESET_ECO
-        return PRESET_NONE
+        return CYBRO_TO_HA_PRESET_MAP.get(
+            self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
+        )
 
     @property
     def extra_state_attributes(self):
@@ -331,24 +309,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         return data
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        """Set HVAC mode to device."""
-        if hvac_mode == HVACMode.OFF:
-            await self.coordinator.cybro.write_var(f"{self._prefix}_active", "0")
-        else:
-            await self.coordinator.cybro.write_var(f"{self._prefix}_active", "1")
-        await self.coordinator.async_refresh()
-
-    async def async_turn_on(self) -> None:
-        """Turn the climate on."""
-        for mode in (HVACMode.HEAT, HVACMode.COOL):
-            if mode not in self.hvac_modes:
-                continue
-            await self.async_set_hvac_mode(mode)
-            break
-
-    async def async_turn_off(self) -> None:
-        """Turn the climate off."""
-        await self.async_set_hvac_mode(HVACMode.OFF)
+        """Set HVAC mode, only the current mode is offered (see hvac_mode)."""
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""

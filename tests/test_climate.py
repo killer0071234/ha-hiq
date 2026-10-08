@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import pytest
-from homeassistant.components.climate import HVACAction, HVACMode
+from homeassistant.components.climate import (
+    ClimateEntityFeature,
+    HVACAction,
+    HVACMode,
+)
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.hiq.const import ATTR_FLOOR_TEMP, ATTR_SETPOINT_IDLE
@@ -34,7 +39,10 @@ async def test_thermostat_heating(
     """Test a heating thermostat in comfort mode."""
     state = hass.states.get(THERMOSTAT)
     assert state.state == HVACMode.HEAT
-    assert state.attributes["hvac_modes"] == [HVACMode.OFF, HVACMode.HEAT]
+    assert state.attributes["hvac_modes"] == [HVACMode.HEAT]
+    assert state.attributes["supported_features"] == (
+        ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
+    )
     assert state.attributes["hvac_action"] == HVACAction.HEATING
     assert state.attributes["current_temperature"] == 21.5
     assert state.attributes["current_humidity"] == 45
@@ -57,16 +65,16 @@ async def test_thermostat_cooling(
 
     state = hass.states.get(THERMOSTAT)
     assert state.state == HVACMode.COOL
-    assert state.attributes["hvac_modes"] == [HVACMode.OFF, HVACMode.COOL]
+    assert state.attributes["hvac_modes"] == [HVACMode.COOL]
     assert state.attributes["hvac_action"] == HVACAction.COOLING
 
 
-async def test_thermostat_idle_and_off(
+async def test_thermostat_eco(
     hass: HomeAssistant,
     controller: FakeController,
     init_integration: MockConfigEntry,
 ) -> None:
-    """Test eco mode when the thermostat is not active."""
+    """Test a not active thermostat keeps heating to the eco (idle) setpoint."""
     await _set(
         hass,
         controller,
@@ -77,7 +85,7 @@ async def test_thermostat_idle_and_off(
     )
 
     state = hass.states.get(THERMOSTAT)
-    assert state.state == HVACMode.OFF
+    assert state.state == HVACMode.HEAT
     assert state.attributes["hvac_action"] == HVACAction.IDLE
     assert state.attributes["preset_mode"] == "eco"
     assert state.attributes["temperature"] == 18.0
@@ -103,10 +111,6 @@ async def test_thermostat_boost_needs_fan_max(
 @pytest.mark.parametrize(
     ("service", "data", "written"),
     [
-        ("set_hvac_mode", {"hvac_mode": "off"}, ("th00_active", "0")),
-        ("set_hvac_mode", {"hvac_mode": "heat"}, ("th00_active", "1")),
-        ("turn_off", {}, ("th00_active", "0")),
-        ("turn_on", {}, ("th00_active", "1")),
         ("set_preset_mode", {"preset_mode": "eco"}, ("th00_active", "0")),
         ("set_preset_mode", {"preset_mode": "comfort"}, ("th00_active", "1")),
     ],
@@ -123,6 +127,43 @@ async def test_thermostat_control(
     await call_service(hass, "climate", service, THERMOSTAT, **data)
 
     assert controller.writes == [(f"c1000.{written[0]}", written[1])]
+
+
+@pytest.mark.parametrize(
+    ("service", "data"),
+    [
+        ("set_hvac_mode", {"hvac_mode": "off"}),
+        ("turn_off", {}),
+        ("turn_on", {}),
+    ],
+)
+async def test_thermostat_cannot_be_switched_off(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+    service: str,
+    data: dict,
+) -> None:
+    """Test a single thermostat can not be switched off.
+
+    Heating / cooling / off is set for all thermostats by the hvac mode of the
+    controller, a thermostat only switches between comfort and eco.
+    """
+    with pytest.raises(HomeAssistantError):
+        await call_service(hass, "climate", service, THERMOSTAT, **data)
+
+    assert controller.writes == []
+
+
+async def test_set_hvac_mode_current(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test setting the current hvac mode changes nothing."""
+    await call_service(hass, "climate", "set_hvac_mode", THERMOSTAT, hvac_mode="heat")
+
+    assert controller.writes == []
 
 
 async def test_set_temperature_comfort(
@@ -181,14 +222,16 @@ async def test_thermostat_hvac_off(
     state = hass.states.get(THERMOSTAT)
     assert state.state == HVACMode.OFF
     assert state.attributes["hvac_modes"] == [HVACMode.OFF]
+    assert state.attributes.get("preset_modes") is None
+    assert state.attributes.get("preset_mode") is None
 
 
 @pytest.mark.parametrize(
-    ("values", "state", "action"),
+    ("values", "state", "action", "preset"),
     [
-        ({"hvac_mode": "3"}, "unknown", None),
-        ({"th00_active": "2"}, "unknown", HVACAction.HEATING),
-        ({"th00_output": "2"}, HVACMode.HEAT, None),
+        ({"hvac_mode": "3"}, "unknown", None, None),
+        ({"th00_active": "2"}, HVACMode.HEAT, HVACAction.HEATING, None),
+        ({"th00_output": "2"}, HVACMode.HEAT, None, "comfort"),
     ],
     ids=["hvac_mode", "active", "output"],
 )
@@ -199,6 +242,7 @@ async def test_thermostat_unexpected_values(
     values: dict[str, str],
     state: str,
     action: HVACAction | None,
+    preset: str | None,
 ) -> None:
     """Test unexpected values on the controller result in an unknown state."""
     await _set(hass, controller, init_integration, **values)
@@ -206,3 +250,31 @@ async def test_thermostat_unexpected_values(
     thermostat = hass.states.get(THERMOSTAT)
     assert thermostat.state == state
     assert thermostat.attributes.get("hvac_action") == action
+    assert thermostat.attributes.get("preset_mode") == preset
+
+
+@pytest.mark.parametrize(
+    ("hvac_mode", "hvac_modes", "preset_modes"),
+    [
+        ("0", [HVACMode.OFF], None),
+        ("1", [HVACMode.HEAT], ["comfort", "eco"]),
+        ("2", [HVACMode.COOL], ["comfort", "eco"]),
+    ],
+)
+async def test_thermostat_modes_match_state_after_setup(
+    hass: HomeAssistant,
+    controller: FakeController,
+    mock_config_entry: MockConfigEntry,
+    hvac_mode: str,
+    hvac_modes: list[HVACMode],
+    preset_modes: list[str] | None,
+) -> None:
+    """Test the offered modes fit the state already in the first state."""
+    controller.values["c1000.hvac_mode"] = hvac_mode
+    mock_config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get(THERMOSTAT)
+    assert state.attributes["hvac_modes"] == hvac_modes
+    assert state.attributes.get("preset_modes") == preset_modes
