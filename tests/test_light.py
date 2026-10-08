@@ -6,8 +6,11 @@ import pytest
 from homeassistant.components.light import ColorMode
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import (
+    AiohttpClientMocker,
+)
 
-from .common import call_service, refresh
+from .common import call_service, refresh, setup_with_tags
 from .fake_controller import FakeController
 
 ONOFF = "light.lights_light_c1000_lc00_qx00_light"
@@ -131,3 +134,100 @@ async def test_rgb_light_reports_color(
 ) -> None:
     """Test the color of an rgb light is read from the controller."""
     assert tuple(hass.states.get(RGB).attributes["hs_color"]) == (180, 80)
+
+
+async def test_rgb_light_unknown_color(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test an unknown hue on the controller results in no color."""
+    controller.values["c1000.ld00_qw01"] = "?"
+    await refresh(hass, init_integration)
+
+    assert hass.states.get(RGB).attributes["hs_color"] is None
+
+
+async def test_dimmable_light_unknown_brightness(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test an unknown dimmer value results in an unknown light."""
+    controller.values["c1000.ld01_qw00"] = "?"
+    await refresh(hass, init_integration)
+
+    state = hass.states.get(DIMMER)
+    assert state.state == "unknown"
+    assert state.attributes.get("brightness") is None
+
+
+async def test_second_rgb_channel(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test the second rgb channel uses qw05 / qw06 for hue and saturation."""
+    controller = await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {
+            "ld02_general_error": "0",
+            "ld02_rgb_mode_2": "1",
+            "ld02_qw04": "50",
+            "ld02_qw05": "25",
+            "ld02_qw06": "70",
+            "ld02_qw07": "0",
+        },
+    )
+    entity_id = "light.lights_light_c1000_ld02_qw04_light"
+
+    assert hass.states.async_entity_ids("light") == [entity_id]
+    state = hass.states.get(entity_id)
+    assert state.attributes["color_mode"] == ColorMode.HS
+    assert tuple(state.attributes["hs_color"]) == (90, 70)
+
+    await call_service(hass, "light", "turn_on", entity_id, hs_color=(180, 40))
+
+    assert controller.written("c1000.ld02_qw05") == ["50"]
+    assert controller.written("c1000.ld02_qw06") == ["40"]
+
+
+@pytest.mark.parametrize(
+    "tags",
+    [
+        # no rgb mode variable on the module
+        {"ld03_general_error": "0", "ld03_qw00": "40"},
+        # output outside of the rgb channels
+        {"ld03_general_error": "0", "ld03_rgb_mode": "1", "ld03_qw08": "40"},
+    ],
+    ids=["no_rgb_mode", "not_an_rgb_output"],
+)
+async def test_dimmable_light_without_rgb(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+    tags: dict[str, str],
+) -> None:
+    """Test dimmer outputs that can not be rgb are plain dimmable lights."""
+    await setup_with_tags(hass, aioclient_mock, mock_config_entry, tags)
+
+    (entity_id,) = hass.states.async_entity_ids("light")
+    state = hass.states.get(entity_id)
+    assert state.attributes["supported_color_modes"] == [ColorMode.BRIGHTNESS]
+    assert state.attributes["brightness"] == 102
+
+
+async def test_no_lights(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test a controller without light outputs has no lights."""
+    await setup_with_tags(hass, aioclient_mock, mock_config_entry, {})
+
+    assert hass.states.async_entity_ids("light") == []
