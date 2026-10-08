@@ -124,7 +124,7 @@ def find_thermostats(
 
     # find thermostats (general_error)
     for key in coordinator.data.plc_info.plc_vars:
-        if search(r"c\d+\.th\d+_general_error", key):
+        if search(r"c\d+\.th\d+_general_error$", key):
             if is_general_error_ok(coordinator, key):
                 unique_id = key
                 # identifier is cNAD.thNR
@@ -195,6 +195,13 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         coordinator.data.add_var(f"{self._nad}.hvac_mode")
 
     @property
+    def _controller_hvac_mode(self) -> HVACMode | None:
+        """Return the hvac mode of the controller, None if it is unexpected."""
+        return CYBRO_TO_HA_HVAC_MODE_MAP.get(
+            self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=1)
+        )
+
+    @property
     def current_temperature(self) -> float | None:
         """Return the reported current temperature for the device."""
         return self.coordinator.get_value(f"{self._prefix}_temperature", 0.1, 1)
@@ -213,18 +220,15 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     @property
     def hvac_action(self) -> HVACAction | None:
         """Return the hvac action."""
-        mode = CYBRO_TO_HA_HVAC_MODE_MAP[
-            self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=1)
-        ]
+        mode = self._controller_hvac_mode
+        output = self.coordinator.get_value(f"{self._prefix}_output", def_val=0)
         if mode == HVACMode.HEAT:
-            return CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP[
-                self.coordinator.get_value(f"{self._prefix}_output", def_val=0)
-            ]
+            return CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP.get(output)
         if mode == HVACMode.COOL:
-            return CYBRO_TO_HA_HVAC_ACTION_COOL_MAP[
-                self.coordinator.get_value(f"{self._prefix}_output", def_val=0)
-            ]
-        return HVACAction.OFF
+            return CYBRO_TO_HA_HVAC_ACTION_COOL_MAP.get(output)
+        if mode == HVACMode.OFF:
+            return HVACAction.OFF
+        return None
 
     @property
     def target_temperature(self) -> float | None:
@@ -247,21 +251,18 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     @property
     def hvac_mode(self) -> HVACMode | None:
         """Return the current HVAC mode for the device."""
-        mode = CYBRO_TO_HA_HVAC_MODE_MAP[
-            self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=1)
-        ]
+        mode = self._controller_hvac_mode
+        active = self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
         if mode == HVACMode.HEAT:
             self._attr_hvac_modes = SUPPORT_MODES_HEAT
-            return CYBRO_TO_HA_HVAC_HEAT_MAP[
-                self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
-            ]
+            return CYBRO_TO_HA_HVAC_HEAT_MAP.get(active)
         if mode == HVACMode.COOL:
             self._attr_hvac_modes = SUPPORT_MODES_COOL
-            return CYBRO_TO_HA_HVAC_COOL_MAP[
-                self.coordinator.get_value(f"{self._prefix}_active", def_val=0)
-            ]
+            return CYBRO_TO_HA_HVAC_COOL_MAP.get(active)
         self._attr_hvac_modes = [HVACMode.OFF]
-        return HVACMode.OFF
+        if mode == HVACMode.OFF:
+            return HVACMode.OFF
+        return None
 
     @property
     def preset_mode(self) -> str | None:
@@ -270,12 +271,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         Requires ClimateEntityFeature.PRESET_MODE.
         """
         # set supported presets
-        if (
-            CYBRO_TO_HA_HVAC_MODE_MAP[
-                self.coordinator.get_value(f"{self._nad}.hvac_mode", def_val=1)
-            ]
-            == HVACMode.OFF
-        ):
+        if self._controller_hvac_mode not in (HVACMode.HEAT, HVACMode.COOL):
             self._attr_preset_modes = None
         else:
             self._attr_preset_modes = SUPPORT_PRESET_MODES

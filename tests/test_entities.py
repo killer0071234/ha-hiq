@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 import logging
 
 import pytest
@@ -365,3 +366,18 @@ async def test_temperature_module_names(
         friendly_name = hass.states.get(entity_id).attributes["friendly_name"]
         names[tag] = friendly_name.removeprefix("c1000 temperatures ")
     assert names == TEMPERATURE_NAMES
+
+
+async def test_entity_names_unique(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test no two entities share a name (Home Assistant would number them)."""
+    entity_registry = er.async_get(hass)
+    names = Counter(
+        hass.states.get(entry.entity_id).attributes["friendly_name"]
+        for entry in er.async_entries_for_config_entry(
+            entity_registry, init_integration.entry_id
+        )
+    )
+
+    assert [name for name, count in names.items() if count > 1] == []

@@ -181,3 +181,28 @@ async def test_thermostat_hvac_off(
     state = hass.states.get(THERMOSTAT)
     assert state.state == HVACMode.OFF
     assert state.attributes["hvac_modes"] == [HVACMode.OFF]
+
+
+@pytest.mark.parametrize(
+    ("values", "state", "action"),
+    [
+        ({"hvac_mode": "3"}, "unknown", None),
+        ({"th00_active": "2"}, "unknown", HVACAction.HEATING),
+        ({"th00_output": "2"}, HVACMode.HEAT, None),
+    ],
+    ids=["hvac_mode", "active", "output"],
+)
+async def test_thermostat_unexpected_values(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+    values: dict[str, str],
+    state: str,
+    action: HVACAction | None,
+) -> None:
+    """Test unexpected values on the controller result in an unknown state."""
+    await _set(hass, controller, init_integration, **values)
+
+    thermostat = hass.states.get(THERMOSTAT)
+    assert thermostat.state == state
+    assert thermostat.attributes.get("hvac_action") == action
