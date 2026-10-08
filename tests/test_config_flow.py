@@ -25,8 +25,12 @@ async def _start_user_flow(hass: HomeAssistant) -> dict:
     return result
 
 
-async def test_user_flow(hass: HomeAssistant, controller: FakeController) -> None:
-    """Test a controller is added and set up."""
+@pytest.mark.parametrize("plc_status", ["ok", "run"])
+async def test_user_flow(
+    hass: HomeAssistant, controller: FakeController, plc_status: str
+) -> None:
+    """Test a running controller is added and set up."""
+    controller.values[f"c{NAD}.sys.plc_status"] = plc_status
     result = await _start_user_flow(hass)
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], OPTIONS)
