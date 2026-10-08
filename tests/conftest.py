@@ -8,7 +8,6 @@ from unittest.mock import PropertyMock, patch
 
 import backoff._async
 import pytest
-from cybro import Device
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
@@ -24,15 +23,6 @@ from .fake_controller import FakeController
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Enable loading the integration from custom_components."""
-
-
-@pytest.fixture(autouse=True)
-def reset_cybro_device() -> Generator[None]:
-    """Reset the variable cache cybro keeps on the Device class."""
-    yield
-    Device.vars.clear()
-    Device.user_vars.clear()
-    Device.vars_types.clear()
 
 
 class _NoSleepAsyncio:
