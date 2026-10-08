@@ -1,4 +1,5 @@
 """Support for HIQ-Home button."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

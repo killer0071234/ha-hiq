@@ -1,4 +1,5 @@
 """Support for HIQ-Home select."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

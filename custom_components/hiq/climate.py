@@ -1,4 +1,5 @@
 """Support for HIQ-Home climate device."""
+
 from __future__ import annotations
 
 from re import search
@@ -42,10 +43,10 @@ from .light import is_general_error_ok
 from . import get_write_req_th
 
 SUPPORT_FLAGS = (
-    ClimateEntityFeature.TARGET_TEMPERATURE |
-    ClimateEntityFeature.PRESET_MODE |
-    ClimateEntityFeature.TURN_ON |
-    ClimateEntityFeature.TURN_OFF
+    ClimateEntityFeature.TARGET_TEMPERATURE
+    | ClimateEntityFeature.PRESET_MODE
+    | ClimateEntityFeature.TURN_ON
+    | ClimateEntityFeature.TURN_OFF
 )
 
 SUPPORT_MODES_HEAT = [HVACMode.OFF, HVACMode.HEAT]

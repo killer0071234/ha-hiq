@@ -1,4 +1,5 @@
 """Models for HIQ-Home."""
+
 from homeassistant.const import (
     ATTR_CONFIGURATION_URL,
     ATTR_IDENTIFIERS,

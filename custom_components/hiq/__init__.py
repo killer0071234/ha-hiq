@@ -1,4 +1,5 @@
 """Support for HIQ-Home."""
+
 from __future__ import annotations
 
 from re import search

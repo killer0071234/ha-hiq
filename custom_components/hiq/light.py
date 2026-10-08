@@ -1,4 +1,5 @@
 """Support for HIQ-Home lights."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -294,7 +295,8 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         LOGGER.debug("Light '%s' -> %s", self._attr_unique_id, kwargs)
         if ATTR_BRIGHTNESS in kwargs:
             await self.coordinator.cybro.write_var(
-                self._dimming_out, str(max(1, round(int(kwargs[ATTR_BRIGHTNESS]) / 2.55)))
+                self._dimming_out,
+                str(max(1, round(int(kwargs[ATTR_BRIGHTNESS]) / 2.55))),
             )
         if ATTR_HS_COLOR in kwargs:
             hue, sat = kwargs[ATTR_HS_COLOR]

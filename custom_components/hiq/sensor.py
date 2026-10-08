@@ -1,4 +1,5 @@
 """Support for HIQ-Home sensors."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -146,7 +147,9 @@ async def async_setup_entry(
                     device_class=SensorDeviceClass(sensor_config[CONF_DEVICE_CLASS])
                     if sensor_config.get(CONF_DEVICE_CLASS) is not None
                     else None,
-                    native_unit_of_measurement=sensor_config.get(CONF_UNIT_OF_MEASUREMENT),
+                    native_unit_of_measurement=sensor_config.get(
+                        CONF_UNIT_OF_MEASUREMENT
+                    ),
                 ),
                 dev_info=dev_info,
                 value_template=value_template,
@@ -838,9 +841,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         """Return the state of the sensor."""
 
         if self._value_template is not None:
-            return self.coordinator.get_template_value(
-                self._var, self._value_template
-            )
+            return self.coordinator.get_template_value(self._var, self._value_template)
 
         return self.coordinator.get_value(
             self._var, self._val_fact, self.suggested_display_precision
