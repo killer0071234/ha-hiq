@@ -272,8 +272,8 @@ async def test_weather_state(
 
 
 MODULE_SENSORS = {
-    "sensor.weather_c1000_temperatures_temperature": ("20.0", "°C"),
-    "sensor.weather_c1000_temperatures_humidity": ("40", "%"),
+    "sensor.weather_c1000_temperatures_op00_temperature": ("20.0", "°C"),
+    "sensor.weather_c1000_temperatures_op00_humidity": ("40", "%"),
     "sensor.energy_c1000_power_meter_power": ("1200", "W"),
     "sensor.energy_c1000_power_meter_voltage": ("230.0", "V"),
     "sensor.energy_c1000_power_meter_current": ("52", "mA"),
@@ -342,3 +342,26 @@ async def test_power_meter_names(
         friendly_name = hass.states.get(entity_id).attributes["friendly_name"]
         names[tag] = friendly_name.removeprefix("c1000 power meter ")
     assert names == POWER_METER_NAMES
+
+
+TEMPERATURE_NAMES = {
+    "op00_temperature": "op00 temperature",
+    "op00_humidity": "op00 humidity",
+    "ts00_temperature_0": "ts00 internal temperature",
+    "ts00_temperature_1": "ts00 external temperature",
+}
+
+
+async def test_temperature_module_names(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test sensors of temperature modules are named after their module."""
+    entity_registry = er.async_get(hass)
+    names = {}
+    for tag in TEMPERATURE_NAMES:
+        entity_id = entity_registry.async_get_entity_id(
+            "sensor", DOMAIN, f"c1000.{tag}"
+        )
+        friendly_name = hass.states.get(entity_id).attributes["friendly_name"]
+        names[tag] = friendly_name.removeprefix("c1000 temperatures ")
+    assert names == TEMPERATURE_NAMES

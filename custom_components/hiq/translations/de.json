@@ -175,6 +175,18 @@
       },
       "power_meter_energy_watthours": {
         "name": "Energie (Wh)"
+      },
+      "module_temperature": {
+        "name": "{module} Temperatur"
+      },
+      "module_temperature_internal": {
+        "name": "{module} interne Temperatur"
+      },
+      "module_temperature_external": {
+        "name": "{module} externe Temperatur"
+      },
+      "module_humidity": {
+        "name": "{module} Luftfeuchtigkeit"
       }
     },
     "select": {

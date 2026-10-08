@@ -114,6 +114,10 @@ HIQ_TAGS: dict[str, str] = {
     "op00_general_error": "0",
     "op00_temperature": "200",
     "op00_humidity": "40",
+    # temperature sensor module with internal and external sensor
+    "ts00_general_error": "0",
+    "ts00_temperature_0": "247",
+    "ts00_temperature_1": "226",
 }
 
 
