@@ -147,7 +147,7 @@ def add_th_tags(
     # find different plc diagnostic vars
     for key in coordinator.data.plc_info.plc_vars:
         # get window contact input
-        if search(r"c\d+\.th\d+_ix00", key):
+        if search(r"c\d+\.th\d+_ix00$", key):
             if is_general_error_ok(coordinator, key):
                 unique_id = key
                 # identifier is cNAD.thNR
@@ -175,7 +175,7 @@ def add_th_tags(
                     )
                 )
         # get heating output
-        if search(r"c\d+\.th\d+_output", key):
+        if search(r"c\d+\.th\d+_output$", key):
             if is_general_error_ok(coordinator, key):
                 unique_id = key
                 # identifier is cNAD.thNR

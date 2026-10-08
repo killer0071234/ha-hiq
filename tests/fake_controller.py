@@ -43,6 +43,8 @@ HIQ_TAGS: dict[str, str] = {
     "th00_general_error": "0",
     "th00_ix00": "0",
     "th00_output": "1",
+    # leftover variable of a PLC program, must not become a second output
+    "th00_outputsdf": "0",
     "th00_active": "1",
     "th00_setpoint_lo": "160",
     "th00_setpoint_hi": "280",
