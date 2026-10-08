@@ -3,7 +3,7 @@
   "hacs": "1.32.1",
   "filename": "hiq.zip",
   "hide_default_branch": true,
-  "homeassistant": "2023.3.0",
+  "homeassistant": "2026.9.0",
   "render_readme": true,
   "zip_release": true
 }
