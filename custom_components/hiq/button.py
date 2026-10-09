@@ -16,15 +16,14 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import AREA_CLIMATE
 from .const import ATTR_DESCRIPTION
 from .const import ATTR_VARIABLE
 from .const import DOMAIN
 from .const import LOGGER
-from .const import MANUFACTURER
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
+from .models import thermostat_device_info
 
 
 async def async_setup_entry(
@@ -95,13 +94,7 @@ def add_hvac_tags(
     for thermostat in thermostats:
         if not is_general_error_ok(coordinator, f"{thermostat}_general_error"):
             continue
-        dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{thermostat} thermostat")},
-            manufacturer=MANUFACTURER,
-            name=f"{thermostat} thermostat",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
-        )
+        dev_info = thermostat_device_info(coordinator, thermostat)
         for suffix, translation_key in (
             ("config1_req", "config1_write_req"),
             ("options_back_req", "config1_read_req"),

@@ -7,7 +7,6 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.climate import (
     ClimateEntity,
@@ -27,17 +26,16 @@ from homeassistant.const import (
 )
 
 from .const import (
-    AREA_CLIMATE,
     DOMAIN,
     ATTR_FLOOR_TEMP,
     ATTR_SETPOINT_IDLE,
     ATTR_SETPOINT_ACTIVE,
     ATTR_FAN_OPTIONS,
     ATTR_SETPOINT_OFFSET,
-    MANUFACTURER,
 )
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
+from .models import thermostat_device_info
 from .light import is_general_error_ok
 from . import get_write_req_th
 
@@ -131,13 +129,7 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         var_names = self._prefix.split(".")
         self._nad = var_names[0]
 
-        self._attr_device_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{self._prefix} thermostat")},
-            manufacturer=MANUFACTURER,
-            name=f"{self._prefix} thermostat",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
-        )
+        self._attr_device_info = thermostat_device_info(coordinator, self._prefix)
         self._attr_name = f"{self._prefix} thermostat"
         self._attr_unique_id = f"{self._prefix}_thermostat"
 
