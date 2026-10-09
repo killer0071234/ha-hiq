@@ -71,10 +71,11 @@ async def get_sensor_setup(handler: SchemaCommonFlowHandler) -> vol.Schema:
     coordinator = hass.data.get(DOMAIN)[handler.parent_handler.config_entry.entry_id]
     var_prefix = f"c{handler.options.get(CONF_ADDRESS)}."
 
-    variables = list(coordinator.data.plc_info.plc_vars.keys())
     # remove foreign variables and the prefix
     variables = [
-        var.removeprefix(var_prefix) for var in variables if var.find(var_prefix) != -1
+        var.removeprefix(var_prefix)
+        for var in coordinator.data.plc_info.plc_vars
+        if var_prefix in var
     ]
 
     return vol.Schema(
@@ -133,12 +134,6 @@ SENSOR_SETUP = {
 DATA_SCHEMA_PLC = vol.Schema(PLC_SETUP)
 
 DATA_SCHEMA_EDIT_SENSOR = vol.Schema(SENSOR_SETUP)
-DATA_SCHEMA_SENSOR = vol.Schema(
-    {
-        # vol.Optional(CONF_NAME): TextSelector(),
-        **SENSOR_SETUP,
-    }
-)
 
 
 async def validate_plc_setup(
@@ -168,13 +163,6 @@ async def validate_plc_setup(
             plc_config[CONF_PORT],
             plc_config[CONF_ADDRESS],
         )
-
-        # scgi server 3.x reports a running controller as "ok", 2.x as "run"
-        if device.plc_info.plc_status not in ("ok", "run"):
-            raise SchemaFlowError("plc_not_existing")
-
-        return plc_config
-
     except CybroConnectionError:
         LOGGER.error(
             "Can not connect to cybro scgi server: %s:%s",
@@ -182,6 +170,12 @@ async def validate_plc_setup(
             plc_config[CONF_PORT],
         )
         raise SchemaFlowError("cannot_connect")
+
+    # scgi server 3.x reports a running controller as "ok", 2.x as "run"
+    if device.plc_info.plc_status not in ("ok", "run"):
+        raise SchemaFlowError("plc_not_existing")
+
+    return plc_config
 
 
 async def _async_get_device(hass, host: str, port: int, address: int) -> Device:
@@ -198,7 +192,6 @@ async def validate_sensor_setup(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
     """Validate sensor input."""
-    # user_input[CONF_INDEX] = int(user_input[CONF_INDEX])
     user_input[CONF_UNIQUE_ID] = str(uuid.uuid1())
 
     # Default name is tag name
@@ -220,18 +213,17 @@ async def validate_select_sensor(
     return {}
 
 
+def _sensor_names(handler: SchemaCommonFlowHandler) -> dict[str, str]:
+    """Return the configured sensor names by index."""
+    return {
+        str(index): config[CONF_NAME]
+        for index, config in enumerate(handler.options[SENSOR_DOMAIN])
+    }
+
+
 async def get_select_sensor_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
     """Return schema for selecting a sensor."""
-    return vol.Schema(
-        {
-            vol.Required(CONF_INDEX): vol.In(
-                {
-                    str(index): config[CONF_NAME]
-                    for index, config in enumerate(handler.options[SENSOR_DOMAIN])
-                },
-            )
-        }
-    )
+    return vol.Schema({vol.Required(CONF_INDEX): vol.In(_sensor_names(handler))})
 
 
 async def get_edit_sensor_suggested_values(
@@ -246,8 +238,6 @@ async def validate_sensor_edit(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
     """Update edited sensor."""
-    # user_input[CONF_INDEX] = int(user_input[CONF_INDEX])
-
     # Default name is tag name
     if user_input.get(CONF_NAME) is None:
         user_input[CONF_NAME] = user_input[CONF_TAG]
@@ -255,26 +245,19 @@ async def validate_sensor_edit(
     # Standard behavior is to merge the result with the options.
     # In this case, we want to add a sub-item so we update the options directly,
     # including popping omitted optional schema items.
-    idx: int = handler.flow_state["_idx"]
-    handler.options[SENSOR_DOMAIN][idx].update(user_input)
+    sensor: dict[str, Any] = handler.options[SENSOR_DOMAIN][handler.flow_state["_idx"]]
+    sensor.update(user_input)
     for key in DATA_SCHEMA_EDIT_SENSOR.schema:
         if isinstance(key, vol.Optional) and key not in user_input:
             # Key not present, delete keys old value (if present) too
-            handler.options[SENSOR_DOMAIN][idx].pop(key, None)
+            sensor.pop(key, None)
     return {}
 
 
 async def get_remove_sensor_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
     """Return schema for sensor removal."""
     return vol.Schema(
-        {
-            vol.Required(CONF_INDEX): cv.multi_select(
-                {
-                    str(index): config[CONF_NAME]
-                    for index, config in enumerate(handler.options[SENSOR_DOMAIN])
-                },
-            )
-        }
+        {vol.Required(CONF_INDEX): cv.multi_select(_sensor_names(handler))}
     )
 
 
