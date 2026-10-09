@@ -92,47 +92,45 @@ def add_system_tags(
 
     # find different plc diagnostic vars
     for key in coordinator.data.plc_info.plc_vars:
-        if key.find(var_prefix) != -1:
-            if key in (f"{var_prefix}scan_overrun", f"{var_prefix}retentive_fail"):
-                res.append(
-                    HiqBinarySensor(
-                        coordinator,
-                        entity_description=HiqBinarySensorEntityDescription(
-                            key=key,
-                            device_class=BinarySensorDeviceClass.PROBLEM,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                            entity_registry_enabled_default=False,
-                        ),
-                        dev_info=dev_info,
-                    )
-                )
-            if key.find("general_error") != -1:
-                module_name = key.removeprefix(var_prefix).split("_").pop(0)
-                translation_key = "general_error_iex"
-                translation_placeholders = {"module": module_name}
-                if module_name == "general":
-                    translation_key = "general_error"
-                    translation_placeholders = None
-                elif module_name == "eno":
-                    translation_placeholders = {"module": "EnOcean"}
-                res.append(
-                    HiqBinarySensor(
-                        coordinator,
-                        entity_description=HiqBinarySensorEntityDescription(
-                            key=key,
-                            translation_key=translation_key,
-                            translation_placeholders=translation_placeholders,
-                            device_class=BinarySensorDeviceClass.PROBLEM,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                            entity_registry_enabled_default=False,
-                        ),
-                        dev_info=dev_info,
-                    )
-                )
+        if var_prefix not in key:
+            continue
+        if key in (f"{var_prefix}scan_overrun", f"{var_prefix}retentive_fail"):
+            translation_key, translation_placeholders = None, None
+        elif "general_error" in key:
+            translation_key, translation_placeholders = general_error_translation(
+                key.removeprefix(var_prefix).split("_")[0]
+            )
+        else:
+            continue
+        res.append(
+            HiqBinarySensor(
+                coordinator,
+                entity_description=HiqBinarySensorEntityDescription(
+                    key=key,
+                    translation_key=translation_key,
+                    translation_placeholders=translation_placeholders,
+                    device_class=BinarySensorDeviceClass.PROBLEM,
+                    entity_category=EntityCategory.DIAGNOSTIC,
+                    entity_registry_enabled_default=False,
+                ),
+                dev_info=dev_info,
+            )
+        )
 
     if len(res) > 0:
         return res
     return None
+
+
+def general_error_translation(
+    module_name: str,
+) -> tuple[str, dict[str, str] | None]:
+    """Return translation key and placeholders of a module's general error."""
+    if module_name == "general":
+        return "general_error", None
+    if module_name == "eno":
+        return "general_error_iex", {"module": "EnOcean"}
+    return "general_error_iex", {"module": module_name}
 
 
 def add_th_tags(
@@ -144,69 +142,58 @@ def add_th_tags(
     """
     res: list[HiqBinarySensor] = []
 
-    # find different plc diagnostic vars
     for key in coordinator.data.plc_info.plc_vars:
+        # identifier is cNAD.thNR
+        match = search(r"(c\d+\.th\d+)_(ix00|output)$", key)
+        if not match or not is_general_error_ok(coordinator, key):
+            continue
+        th_prefix, tag = match.groups()
         # get window contact input
-        if search(r"c\d+\.th\d+_ix00$", key):
-            if is_general_error_ok(coordinator, key):
-                unique_id = key
-                # identifier is cNAD.thNR
-                grp = search(r"c\d+\.th\d+", key)
-                if grp:
-                    unique_id = grp.group()
-                res.append(
-                    HiqBinarySensor(
-                        coordinator,
-                        entity_description=HiqBinarySensorEntityDescription(
-                            key=key,
-                            device_class=BinarySensorDeviceClass.WINDOW,
-                            entity_registry_enabled_default=False,
-                        ),
-                        dev_info=DeviceInfo(
-                            identifiers={
-                                (coordinator.cybro.nad, f"{unique_id} thermostat")
-                            },
-                            manufacturer=MANUFACTURER,
-                            name=f"{unique_id} thermostat",
-                            suggested_area=AREA_CLIMATE,
-                            **coordinator.via_device_info,
-                        ),
-                        value_template=Template(TEMPLATE_INVERTED, hass),
-                    )
+        if tag == "ix00":
+            res.append(
+                HiqBinarySensor(
+                    coordinator,
+                    entity_description=HiqBinarySensorEntityDescription(
+                        key=key,
+                        device_class=BinarySensorDeviceClass.WINDOW,
+                        entity_registry_enabled_default=False,
+                    ),
+                    dev_info=thermostat_device_info(coordinator, th_prefix),
+                    value_template=Template(TEMPLATE_INVERTED, hass),
                 )
+            )
         # get heating output
-        if search(r"c\d+\.th\d+_output$", key):
-            if is_general_error_ok(coordinator, key):
-                unique_id = key
-                # identifier is cNAD.thNR
-                grp = search(r"c\d+\.th\d+", key)
-                if grp:
-                    unique_id = grp.group()
-                res.append(
-                    HiqBinarySensor(
-                        coordinator,
-                        entity_description=HiqBinarySensorEntityDescription(
-                            key=key,
-                            translation_key="output",
-                            entity_registry_enabled_default=False,
-                        ),
-                        # DeviceClass.HEAT as default, could also be cool but most of the devices are used for heating
-                        # attr_device_class=BinarySensorDeviceClass.HEAT,
-                        dev_info=DeviceInfo(
-                            identifiers={
-                                (coordinator.cybro.nad, f"{unique_id} thermostat")
-                            },
-                            manufacturer=MANUFACTURER,
-                            name=f"{unique_id} thermostat",
-                            suggested_area=AREA_CLIMATE,
-                            **coordinator.via_device_info,
-                        ),
-                    )
+        else:
+            res.append(
+                HiqBinarySensor(
+                    coordinator,
+                    entity_description=HiqBinarySensorEntityDescription(
+                        key=key,
+                        translation_key="output",
+                        entity_registry_enabled_default=False,
+                    ),
+                    # DeviceClass.HEAT as default, could also be cool but most of the devices are used for heating
+                    # attr_device_class=BinarySensorDeviceClass.HEAT,
+                    dev_info=thermostat_device_info(coordinator, th_prefix),
                 )
+            )
 
     if len(res) > 0:
         return res
     return None
+
+
+def thermostat_device_info(
+    coordinator: HiqDataUpdateCoordinator, th_prefix: str
+) -> DeviceInfo:
+    """Return the device info of a thermostat, eg: c1000.th00."""
+    return DeviceInfo(
+        identifiers={(coordinator.cybro.nad, f"{th_prefix} thermostat")},
+        manufacturer=MANUFACTURER,
+        name=f"{th_prefix} thermostat",
+        suggested_area=AREA_CLIMATE,
+        **coordinator.via_device_info,
+    )
 
 
 class HiqBinarySensor(HiqEntity, BinarySensorEntity):
