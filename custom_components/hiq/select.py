@@ -87,6 +87,21 @@ class HiqSelectEntityDescription[T](SelectEntityDescription):
         )
 
 
+# thermostat selects: name -> options
+TH_SELECT_OPTIONS = {
+    "temperature_source": HA_TO_CYBRO_TEMP_SOURCE_MAP,
+    "display_mode": HA_TO_CYBRO_DISPLAY_MODE_MAP,
+    "fan_limit": HA_TO_CYBRO_FAN_LIMIT_MAP,
+}
+
+# hvac selects: tag after cNAD -> (translation key, options)
+HVAC_SELECTS = {
+    ".hvac_mode": ("hvac_mode", HA_TO_CYBRO_HVAC_MODE_MAP),
+    "_temperature_source": ("temperature_source", HA_TO_CYBRO_TEMP_SOURCE_MAP),
+    ".hvac_display_mode": ("display_mode", HA_TO_CYBRO_DISPLAY_MODE_MAP),
+}
+
+
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
 ) -> list[HiqSelectEntity] | None:
@@ -97,72 +112,35 @@ def add_th_tags(
 
     # find different thermostat vars
     for key in coordinator.data.plc_info.plc_vars:
-        unique_id = key
         # identifier is cNAD.thNR
         grp = search(r"c\d+\.th\d+", key)
-        if grp:
-            unique_id = grp.group()
-        dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
-            manufacturer=MANUFACTURER,
-            name=f"{unique_id} thermostat",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
-        )
+        unique_id = grp.group() if grp else key
         # get if active
         ge_ok = is_general_error_ok(coordinator, key)
 
-        # temperature source
-        if key in (f"{unique_id}_temperature_source",):
-            if ge_ok:
-                res.append(
-                    HiqSelectEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSelectEntityDescription(
-                            key=key,
-                            translation_key="temperature_source",
-                            entity_category=EntityCategory.CONFIG,
-                            entity_registry_enabled_default=False,
-                        ),
-                        attr_options=HA_TO_CYBRO_TEMP_SOURCE_MAP,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
-        # display mode
-        elif key in (f"{unique_id}_display_mode",):
-            if ge_ok:
-                res.append(
-                    HiqSelectEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSelectEntityDescription(
-                            key=key,
-                            translation_key="display_mode",
-                            entity_category=EntityCategory.CONFIG,
-                            entity_registry_enabled_default=False,
-                        ),
-                        attr_options=HA_TO_CYBRO_DISPLAY_MODE_MAP,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
-        # fan limit
-        elif key in (f"{unique_id}_fan_limit",):
-            if ge_ok:
-                res.append(
-                    HiqSelectEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSelectEntityDescription(
-                            key=key,
-                            translation_key="fan_limit",
-                            entity_category=EntityCategory.CONFIG,
-                            entity_registry_enabled_default=False,
-                        ),
-                        attr_options=HA_TO_CYBRO_FAN_LIMIT_MAP,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
+        name = key.removeprefix(f"{unique_id}_")
+        if name == key or name not in TH_SELECT_OPTIONS or not ge_ok:
+            continue
+        res.append(
+            HiqSelectEntity(
+                coordinator=coordinator,
+                entity_description=HiqSelectEntityDescription(
+                    key=key,
+                    translation_key=name,
+                    entity_category=EntityCategory.CONFIG,
+                    entity_registry_enabled_default=False,
+                ),
+                attr_options=TH_SELECT_OPTIONS[name],
+                var_write_req=get_write_req_th(key, unique_id),
+                dev_info=DeviceInfo(
+                    identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
+                    manufacturer=MANUFACTURER,
+                    name=f"{unique_id} thermostat",
+                    suggested_area=AREA_CLIMATE,
+                    **coordinator.via_device_info,
+                ),
+            )
+        )
 
     if len(res) > 0:
         return res
@@ -179,67 +157,35 @@ def add_hvac_tags(
 
     # find different hvac related vars
     for key in coordinator.data.plc_info.plc_vars:
-        unique_id = key
         # identifier is cNAD
         grp = search(r"c\d+", key)
-        if grp:
-            unique_id = grp.group()
-        dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
-            manufacturer=MANUFACTURER,
-            name=f"{unique_id} HVAC",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
+        if not grp or not key.startswith(grp.group()):
+            continue
+        unique_id = grp.group()
+        tag = key.removeprefix(unique_id)
+        if tag not in HVAC_SELECTS:
+            continue
+        translation_key, options = HVAC_SELECTS[tag]
+        res.append(
+            HiqSelectEntity(
+                coordinator=coordinator,
+                entity_description=HiqSelectEntityDescription(
+                    key=key,
+                    translation_key=translation_key,
+                    entity_category=EntityCategory.CONFIG,
+                    entity_registry_enabled_default=False,
+                ),
+                attr_options=options,
+                var_write_req=None,
+                dev_info=DeviceInfo(
+                    identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
+                    manufacturer=MANUFACTURER,
+                    name=f"{unique_id} HVAC",
+                    suggested_area=AREA_CLIMATE,
+                    **coordinator.via_device_info,
+                ),
+            )
         )
-
-        # get hvac mode
-        if key in (f"{unique_id}.hvac_mode",):
-            res.append(
-                HiqSelectEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqSelectEntityDescription(
-                        key=key,
-                        translation_key="hvac_mode",
-                        entity_category=EntityCategory.CONFIG,
-                        entity_registry_enabled_default=False,
-                    ),
-                    var_write_req=None,
-                    attr_options=HA_TO_CYBRO_HVAC_MODE_MAP,
-                    dev_info=dev_info,
-                )
-            )
-        # temperature source
-        if key in (f"{unique_id}_temperature_source",):
-            res.append(
-                HiqSelectEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqSelectEntityDescription(
-                        key=key,
-                        translation_key="temperature_source",
-                        entity_category=EntityCategory.CONFIG,
-                        entity_registry_enabled_default=False,
-                    ),
-                    attr_options=HA_TO_CYBRO_TEMP_SOURCE_MAP,
-                    var_write_req=None,
-                    dev_info=dev_info,
-                )
-            )
-        # display mode
-        elif key in (f"{unique_id}.hvac_display_mode",):
-            res.append(
-                HiqSelectEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqSelectEntityDescription(
-                        key=key,
-                        translation_key="display_mode",
-                        entity_category=EntityCategory.CONFIG,
-                        entity_registry_enabled_default=False,
-                    ),
-                    attr_options=HA_TO_CYBRO_DISPLAY_MODE_MAP,
-                    var_write_req=None,
-                    dev_info=dev_info,
-                )
-            )
 
     if len(res) > 0:
         return res
@@ -247,7 +193,7 @@ def add_hvac_tags(
 
 
 class HiqSelectEntity(HiqEntity, SelectEntity):
-    """Defines a HIQ-Home number entity."""
+    """Defines a HIQ-Home select entity."""
 
     def __init__(
         self,
@@ -267,22 +213,16 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
 
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
-        self._var_type = VarType.INT
         self._attr_options = list(attr_options)
         self._var_map = attr_options
+        self._option_by_value = {value: key for key, value in attr_options.items()}
 
     @property
     def current_option(self) -> str | None:
         """Return the option."""
-        try:
-            val_map = {value: key for key, value in self._var_map.items()}
-            return val_map[
-                self.coordinator.get_value(
-                    self._attr_unique_id,
-                )
-            ]
-        except KeyError:
-            return None
+        return self._option_by_value.get(
+            self.coordinator.get_value(self._attr_unique_id)
+        )
 
     @property
     def extra_state_attributes(self):
@@ -298,28 +238,21 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Set new option."""
+        value = self._var_map[option]
         if self._var_write_req:
             LOGGER.debug(
                 "write value: %s -> %s (%s) (+%s)",
                 self._attr_unique_id,
-                self._var_map[option],
-                str(option),
+                value,
+                option,
                 self._var_write_req,
             )
             await self.coordinator.cybro.request(
-                {
-                    self._attr_unique_id: self._var_map[option],
-                    self._var_write_req: "1",
-                }
+                {self._attr_unique_id: value, self._var_write_req: "1"}
             )
         else:
             LOGGER.debug(
-                "write value: %s -> %s (%s)",
-                self._attr_unique_id,
-                self._var_map[option],
-                str(option),
+                "write value: %s -> %s (%s)", self._attr_unique_id, value, option
             )
-            await self.coordinator.cybro.write_var(
-                self._attr_unique_id, self._var_map[option]
-            )
+            await self.coordinator.cybro.write_var(self._attr_unique_id, value)
         await self.coordinator.async_refresh()
