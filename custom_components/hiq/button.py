@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from re import search
 from re import sub
@@ -62,99 +63,57 @@ def add_hvac_tags(
     """
     res: list[HiqButtonEntity] = []
 
-    # find all thermostats
-    thermostats = []
-    for key in coordinator.data.plc_info.plc_vars:
-        # identifier is cNAD.thNR
-        grp = search(r"c\d+\.th\d+", key)
-        if grp:
-            thermostats.append(grp.group())
-    thermostats = list(dict.fromkeys(thermostats))
+    # find all thermostats, identifier is cNAD.thNR
+    thermostats = unique_matches(r"c\d+\.th\d+", coordinator.data.plc_info.plc_vars)
     if len(thermostats) == 0:
         return None
 
     # find all hvac tags
-    hvacs = []
-    for key in coordinator.data.plc_info.plc_vars:
-        # identifier is cNAD.thNR
-        grp = search(r"c\d+\.hvac_.*", key)
-        if grp:
-            hvacs.append(grp.group())
-    hvacs = list(dict.fromkeys(hvacs))
+    hvacs = unique_matches(r"c\d+\.hvac_.*", coordinator.data.plc_info.plc_vars)
     if len(hvacs) == 0:
         return None
 
-    # generate device info
     unique_id = hvacs[0]
-    # identifier is cNAD
-    grp = search(r"c\d+", key)
+    # identifier is cNAD, taken from the last plc var
+    grp = search(r"c\d+", next(reversed(coordinator.data.plc_info.plc_vars)))
     if grp:
         unique_id = grp.group()
-    dev_info = DeviceInfo(
-        identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
-        manufacturer=MANUFACTURER,
-        name=f"{unique_id} HVAC",
-        suggested_area=AREA_CLIMATE,
-        **coordinator.via_device_info,
-    )
 
     # check for existing global parameter
-    has_para_for_thermostat: bool = False
-    for hvac in hvacs:
-        if hvac in (
-            f"{unique_id}.hvac_temperature_source",
-            f"{unique_id}.hvac_display_mode",
-            f"{unique_id}.hvac_fan_option_b01",
-            f"{unique_id}.hvac_fan_option_b02",
-            f"{unique_id}.hvac_fan_option_b03",
-            f"{unique_id}.hvac_fan_option_b04",
-        ):
-            has_para_for_thermostat = True
-            break
-    if has_para_for_thermostat is False:
+    global_params = (
+        f"{unique_id}.hvac_temperature_source",
+        f"{unique_id}.hvac_display_mode",
+        f"{unique_id}.hvac_fan_option_b01",
+        f"{unique_id}.hvac_fan_option_b02",
+        f"{unique_id}.hvac_fan_option_b03",
+        f"{unique_id}.hvac_fan_option_b04",
+    )
+    if not any(hvac in global_params for hvac in hvacs):
         return None
 
     # add config buttons for active thermostats
     for thermostat in thermostats:
-        unique_id = thermostat
-        # identifier is cNAD.thNR
-        grp = search(r"c\d+\.th\d+", thermostat)
-        if grp:
-            unique_id = grp.group()
+        if not is_general_error_ok(coordinator, f"{thermostat}_general_error"):
+            continue
         dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
+            identifiers={(coordinator.cybro.nad, f"{thermostat} thermostat")},
             manufacturer=MANUFACTURER,
-            name=f"{unique_id} thermostat",
+            name=f"{thermostat} thermostat",
             suggested_area=AREA_CLIMATE,
             **coordinator.via_device_info,
         )
-
-        if is_general_error_ok(coordinator, f"{thermostat}_general_error"):
-            # config 1 request
-            key = f"{thermostat}_config1_req"
+        for suffix, translation_key in (
+            ("config1_req", "config1_write_req"),
+            ("options_back_req", "config1_read_req"),
+        ):
+            key = f"{thermostat}_{suffix}"
             if key in coordinator.data.plc_info.plc_vars:
                 res.append(
                     HiqButtonEntity(
                         coordinator=coordinator,
                         entity_description=HiqButtonEntityDescription(
                             key=key,
-                            translation_key="config1_write_req",
-                            entity_category=EntityCategory.CONFIG,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_value=1,
-                        dev_info=dev_info,
-                    )
-                )
-            # read back options
-            key = f"{thermostat}_options_back_req"
-            if key in coordinator.data.plc_info.plc_vars:
-                res.append(
-                    HiqButtonEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqButtonEntityDescription(
-                            key=key,
-                            translation_key="config1_read_req",
+                            translation_key=translation_key,
                             entity_category=EntityCategory.CONFIG,
                             entity_registry_enabled_default=False,
                         ),
@@ -166,6 +125,13 @@ def add_hvac_tags(
     if len(res) > 0:
         return res
     return None
+
+
+def unique_matches(pattern: str, keys: Iterable[str]) -> list[str]:
+    """Return the distinct matches of pattern in keys, in order of appearance."""
+    return list(
+        dict.fromkeys(match.group() for key in keys if (match := search(pattern, key)))
+    )
 
 
 class HiqButtonEntity(HiqEntity, ButtonEntity):
@@ -183,13 +149,11 @@ class HiqButtonEntity(HiqEntity, ButtonEntity):
         super().__init__(coordinator=coordinator)
         self.entity_description = entity_description
         self._attr_unique_id = unique_id or entity_description.key
-        self._state = None
         self._attr_device_info = dev_info
         self._var_value = var_value
 
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
-        self._var_type = VarType.INT
 
     @property
     def extra_state_attributes(self):
