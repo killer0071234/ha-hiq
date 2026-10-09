@@ -50,20 +50,17 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         self.unsub: Callable | None = None
         self.device_id: str | None = None
 
-        update_interval = SCAN_INTERVAL
-        if entry.options[CONF_HOST] in (
+        is_local = entry.options[CONF_HOST] in (
             DEFAULT_HOST,
             "localhost",
             "127.0.0.1",
             "::1",
-        ):
-            update_interval = SCAN_INTERVAL_ADDON
-
+        )
         super().__init__(
             hass,
             LOGGER,
             name=DOMAIN,
-            update_interval=update_interval,
+            update_interval=SCAN_INTERVAL_ADDON if is_local else SCAN_INTERVAL,
         )
 
     async def _async_update_data(self) -> HiqDevice:
@@ -101,30 +98,26 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         def_val: str | int | float | None = None,
     ) -> str | int | float | None:
         """Return a single Tag Value and format it with a specific factor."""
-        res = self.data.vars.get(tag, None)
+        res = self.data.vars.get(tag)
         if res is None:
             return def_val
         if res.value == "?" or res.value is None:
-            LOGGER.debug("get_value: %s -> ? (%s)", str(tag), str(def_val))
+            LOGGER.debug("get_value: %s -> ? (%s)", tag, def_val)
             return def_val
+        if precision is None:
+            LOGGER.debug("get_value: %s -> %s", tag, res.value)
+            return res.value
         try:
-            if precision is None:
-                LOGGER.debug("get_value: %s -> %s", str(tag), str(res.value))
-                return res.value
             # try to parse float value, if fails, try to return int, else return as string
             if factor != 1.0 or precision != 0 or any(c in res.value for c in ",."):
                 converted_numerical_value = float(res.value.replace(",", "")) * factor
                 value = f"{converted_numerical_value:z.{precision}f}"
-                LOGGER.debug(
-                    "get_value: %s -> %s",
-                    str(tag),
-                    str(value),
-                )
+                LOGGER.debug("get_value: %s -> %s", tag, value)
                 return float(value)
-            LOGGER.debug("get_value: %s -> %s", str(tag), str(res.value))
+            LOGGER.debug("get_value: %s -> %s", tag, res.value)
             return int(res.value)
         except ValueError:
-            LOGGER.debug("get_value: %s -> %s", str(tag), str(res.value))
+            LOGGER.debug("get_value: %s -> %s", tag, res.value)
             return res.value
 
     def get_template_value(
@@ -134,14 +127,14 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         def_val: bool | str | int | float | None = None,
     ) -> bool | str | int | float | None:
         """Return a single Tag Value and format it with a given template."""
-        res = self.data.vars.get(tag, None)
+        res = self.data.vars.get(tag)
         if res is None:
             return def_val
         if res.value == "?" or res.value is None:
-            LOGGER.debug("get_template_value: %s -> ? (%s)", str(tag), str(def_val))
+            LOGGER.debug("get_template_value: %s -> ? (%s)", tag, def_val)
             return def_val
         value = res.value
-        if (template := value_template) is not None:
-            value = template.async_render_with_possible_json_value(value, None)
-        LOGGER.debug("get_template_value: %s -> %s", str(tag), str(value))
+        if value_template is not None:
+            value = value_template.async_render_with_possible_json_value(value, None)
+        LOGGER.debug("get_template_value: %s -> %s", tag, value)
         return value
