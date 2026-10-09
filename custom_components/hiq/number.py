@@ -67,6 +67,35 @@ class HiqNumberEntityDescription(NumberEntityDescription):
         )
 
 
+# thermostat temperature numbers: name -> (min, max, entity category)
+TH_TEMPERATURE_NUMBERS: dict[str, tuple[float, float, EntityCategory | None]] = {
+    "setpoint_idle": (0.0, 40.0, None),
+    "setpoint_offset": (-5.0, 5.0, EntityCategory.CONFIG),
+    "setpoint_lo": (0.0, 40.0, EntityCategory.CONFIG),
+    "setpoint_hi": (0.0, 40.0, EntityCategory.CONFIG),
+    "hysteresis": (0.1, 10.0, EntityCategory.CONFIG),
+    "max_temp": (0.0, 40.0, EntityCategory.CONFIG),
+}
+# names that also exist for cooling (_c) and heating (_h)
+TH_NUMBERS_WITH_MODES = (
+    "setpoint_idle",
+    "setpoint_offset",
+    "setpoint_lo",
+    "setpoint_hi",
+    "hysteresis",
+    "max_time",
+)
+
+
+def _th_number_name(name: str) -> str:
+    """Return the number name without the cooling / heating suffix."""
+    for suffix in ("_c", "_h"):
+        base = name.removesuffix(suffix)
+        if base != name and base in TH_NUMBERS_WITH_MODES:
+            return base
+    return name
+
+
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
 ) -> list[HiqNumberEntity] | None:
@@ -75,199 +104,62 @@ def add_th_tags(
     """
     res: list[HiqNumberEntity] = []
 
-    # find different thermostat vars
     for key in coordinator.data.plc_info.plc_vars:
-        unique_id = key
         # identifier is cNAD.thNR
         grp = search(r"c\d+\.th\d+", key)
-        if grp:
-            unique_id = grp.group()
-        dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
-            manufacturer=MANUFACTURER,
-            name=f"{unique_id} thermostat",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
-        )
+        if not grp or not key.startswith(f"{grp.group()}_"):
+            continue
+        unique_id = grp.group()
+        translation_key = key.removeprefix(f"{unique_id}_")
+        name = _th_number_name(translation_key)
 
-        # setpoint idle
-        if key in (
-            f"{unique_id}_setpoint_idle",
-            f"{unique_id}_setpoint_idle_c",
-            f"{unique_id}_setpoint_idle_h",
-        ):
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqNumberEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqNumberEntityDescription(
-                            key=key,
-                            translation_key=key.removeprefix(f"{unique_id}_"),
-                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                            device_class=NumberDeviceClass.TEMPERATURE,
-                            native_min_value=0.0,
-                            native_max_value=40.0,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.1,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
-        # setpoint offset
-        elif key in (
-            f"{unique_id}_setpoint_offset",
-            f"{unique_id}_setpoint_offset_c",
-            f"{unique_id}_setpoint_offset_h",
-        ):
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqNumberEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqNumberEntityDescription(
-                            key=key,
-                            translation_key=key.removeprefix(f"{unique_id}_"),
-                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                            device_class=NumberDeviceClass.TEMPERATURE,
-                            entity_category=EntityCategory.CONFIG,
-                            native_min_value=-5.0,
-                            native_max_value=5.0,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.1,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
-        # setpoint low
-        elif key in (
-            f"{unique_id}_setpoint_lo",
-            f"{unique_id}_setpoint_lo_c",
-            f"{unique_id}_setpoint_lo_h",
-        ):
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqNumberEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqNumberEntityDescription(
-                            key=key,
-                            translation_key=key.removeprefix(f"{unique_id}_"),
-                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                            device_class=NumberDeviceClass.TEMPERATURE,
-                            entity_category=EntityCategory.CONFIG,
-                            native_min_value=0.0,
-                            native_max_value=40.0,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.1,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
-        # setpoint high
-        elif key in (
-            f"{unique_id}_setpoint_hi",
-            f"{unique_id}_setpoint_hi_c",
-            f"{unique_id}_setpoint_hi_h",
-        ):
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqNumberEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqNumberEntityDescription(
-                            key=key,
-                            translation_key=key.removeprefix(f"{unique_id}_"),
-                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                            device_class=NumberDeviceClass.TEMPERATURE,
-                            entity_category=EntityCategory.CONFIG,
-                            native_min_value=0.0,
-                            native_max_value=40.0,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.1,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
-        # hysteresis
-        elif key in (
-            f"{unique_id}_hysteresis",
-            f"{unique_id}_hysteresis_c",
-            f"{unique_id}_hysteresis_h",
-        ):
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqNumberEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqNumberEntityDescription(
-                            key=key,
-                            translation_key=key.removeprefix(f"{unique_id}_"),
-                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                            device_class=NumberDeviceClass.TEMPERATURE,
-                            entity_category=EntityCategory.CONFIG,
-                            native_min_value=0.1,
-                            native_max_value=10.0,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.1,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
-        # max temp
-        elif key == f"{unique_id}_max_temp":
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqNumberEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqNumberEntityDescription(
-                            key=key,
-                            translation_key="max_temp",
-                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                            device_class=NumberDeviceClass.TEMPERATURE,
-                            entity_category=EntityCategory.CONFIG,
-                            native_min_value=0.0,
-                            native_max_value=40.0,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.1,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
-        # max time
-        elif key in (
-            f"{unique_id}_max_time",
-            f"{unique_id}_max_time_c",
-            f"{unique_id}_max_time_h",
-        ):
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqNumberEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqNumberEntityDescription(
-                            key=key,
-                            translation_key=key.removeprefix(f"{unique_id}_"),
-                            native_unit_of_measurement=UnitOfTime.SECONDS,
-                            device_class=NumberDeviceClass.DURATION,
-                            entity_category=EntityCategory.CONFIG,
-                            native_min_value=0,
-                            native_max_value=3600,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_type=VarType.INT,
-                        val_fact=1.0,
-                        display_precision=0,
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
+        if name in TH_TEMPERATURE_NUMBERS:
+            min_value, max_value, entity_category = TH_TEMPERATURE_NUMBERS[name]
+            description = HiqNumberEntityDescription(
+                key=key,
+                translation_key=translation_key,
+                native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                device_class=NumberDeviceClass.TEMPERATURE,
+                entity_category=entity_category,
+                native_min_value=min_value,
+                native_max_value=max_value,
+                entity_registry_enabled_default=False,
+            )
+            var_type, val_fact, display_precision = VarType.FLOAT, 0.1, 1
+        elif name == "max_time":
+            description = HiqNumberEntityDescription(
+                key=key,
+                translation_key=translation_key,
+                native_unit_of_measurement=UnitOfTime.SECONDS,
+                device_class=NumberDeviceClass.DURATION,
+                entity_category=EntityCategory.CONFIG,
+                native_min_value=0,
+                native_max_value=3600,
+                entity_registry_enabled_default=False,
+            )
+            var_type, val_fact, display_precision = VarType.INT, 1.0, 0
+        else:
+            continue
+
+        if not is_general_error_ok(coordinator, key):
+            continue
+        res.append(
+            HiqNumberEntity(
+                coordinator=coordinator,
+                entity_description=description,
+                var_type=var_type,
+                val_fact=val_fact,
+                display_precision=display_precision,
+                var_write_req=get_write_req_th(key, unique_id),
+                dev_info=DeviceInfo(
+                    identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
+                    manufacturer=MANUFACTURER,
+                    name=f"{unique_id} thermostat",
+                    suggested_area=AREA_CLIMATE,
+                    **coordinator.via_device_info,
+                ),
+            )
+        )
 
     if len(res) > 0:
         return res
@@ -284,46 +176,45 @@ def add_hvac_tags(
 
     # find different hvac related vars
     for key in coordinator.data.plc_info.plc_vars:
-        unique_id = key
         # identifier is cNAD
         grp = search(r"c\d+", key)
-        if grp:
-            unique_id = grp.group()
-        dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
-            manufacturer=MANUFACTURER,
-            name=f"{unique_id} HVAC",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
-        )
-
-        # get hvac settings
-        if key in (
-            f"{unique_id}.setpoint_idle_heating",
-            f"{unique_id}.setpoint_lo_heating",
-            f"{unique_id}.setpoint_hi_heating",
-            f"{unique_id}.setpoint_idle_cooling",
-            f"{unique_id}.setpoint_lo_cooling",
-            f"{unique_id}.setpoint_hi_cooling",
+        if not grp or not key.startswith(f"{grp.group()}."):
+            continue
+        unique_id = grp.group()
+        name = key.removeprefix(f"{unique_id}.")
+        if name not in (
+            "setpoint_idle_heating",
+            "setpoint_lo_heating",
+            "setpoint_hi_heating",
+            "setpoint_idle_cooling",
+            "setpoint_lo_cooling",
+            "setpoint_hi_cooling",
         ):
-            res.append(
-                HiqNumberEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqNumberEntityDescription(
-                        key=key,
-                        translation_key=key.removeprefix(f"{unique_id}."),
-                        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                        device_class=NumberDeviceClass.TEMPERATURE,
-                        entity_category=EntityCategory.CONFIG,
-                        native_min_value=0.0,
-                        native_max_value=40.0,
-                        entity_registry_enabled_default=False,
-                    ),
-                    var_type=VarType.FLOAT,
-                    val_fact=0.1,
-                    dev_info=dev_info,
-                )
+            continue
+        res.append(
+            HiqNumberEntity(
+                coordinator=coordinator,
+                entity_description=HiqNumberEntityDescription(
+                    key=key,
+                    translation_key=name,
+                    native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                    device_class=NumberDeviceClass.TEMPERATURE,
+                    entity_category=EntityCategory.CONFIG,
+                    native_min_value=0.0,
+                    native_max_value=40.0,
+                    entity_registry_enabled_default=False,
+                ),
+                var_type=VarType.FLOAT,
+                val_fact=0.1,
+                dev_info=DeviceInfo(
+                    identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
+                    manufacturer=MANUFACTURER,
+                    name=f"{unique_id} HVAC",
+                    suggested_area=AREA_CLIMATE,
+                    **coordinator.via_device_info,
+                ),
             )
+        )
 
     if len(res) > 0:
         return res
@@ -333,7 +224,6 @@ def add_hvac_tags(
 class HiqNumberEntity(HiqEntity, NumberEntity):
     """Defines a HIQ-Home number entity."""
 
-    _var_type: VarType = VarType.INT
     _val_fact: float = 1.0
 
     def __init__(
@@ -353,13 +243,11 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         self.entity_description = entity_description
         self._attr_unique_id = unique_id or entity_description.key
         self._var_write_req = var_write_req
-        self._state = None
         self._attr_device_info = dev_info
         self._attr_mode = mode
 
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=var_type)
-        self._var_type = var_type
         self._val_fact = val_fact
         self._attr_suggested_display_precision = display_precision
         self.entity_description.native_step = self._val_fact
@@ -393,7 +281,7 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
             LOGGER.debug(
                 "write value: %s -> %s (+%s)",
                 self._attr_unique_id,
-                str(new_val),
+                new_val,
                 self._var_write_req,
             )
             await self.coordinator.cybro.request(
@@ -403,6 +291,6 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
                 }
             )
         else:
-            LOGGER.debug("write value: %s -> %s", self._attr_unique_id, str(new_val))
+            LOGGER.debug("write value: %s -> %s", self._attr_unique_id, new_val)
             await self.coordinator.cybro.write_var(self._attr_unique_id, new_val)
         await self.coordinator.async_refresh()
