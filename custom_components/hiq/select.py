@@ -97,7 +97,7 @@ TH_SELECT_OPTIONS = {
 # hvac selects: tag after cNAD -> (translation key, options)
 HVAC_SELECTS = {
     ".hvac_mode": ("hvac_mode", HA_TO_CYBRO_HVAC_MODE_MAP),
-    "_temperature_source": ("temperature_source", HA_TO_CYBRO_TEMP_SOURCE_MAP),
+    ".hvac_temperature_source": ("temperature_source", HA_TO_CYBRO_TEMP_SOURCE_MAP),
     ".hvac_display_mode": ("display_mode", HA_TO_CYBRO_DISPLAY_MODE_MAP),
 }
 

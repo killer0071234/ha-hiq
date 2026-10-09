@@ -183,6 +183,25 @@ async def test_select_with_write_request(
     ]
 
 
+async def test_hvac_temperature_source_select(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test the global temperature source of the controller is a select."""
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "select", DOMAIN, "c1000.hvac_temperature_source"
+    )
+    assert entity_id is not None
+    assert hass.states.get(entity_id).state == "internal_sensor"
+
+    await call_service(
+        hass, "select", "select_option", entity_id, option="remote_sensor"
+    )
+
+    assert controller.written("c1000.hvac_temperature_source") == ["2"]
+
+
 async def test_select_unknown_value(
     hass: HomeAssistant,
     controller: FakeController,
