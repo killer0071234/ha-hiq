@@ -253,6 +253,21 @@ async def test_thermostat_unexpected_values(
     assert thermostat.attributes.get("preset_mode") == preset
 
 
+async def test_thermostat_non_numeric_humidity(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test a non-numeric humidity is unknown and does not block the state."""
+    await _set(
+        hass, controller, init_integration, th00_humidity="x", th00_temperature="230"
+    )
+
+    thermostat = hass.states.get(THERMOSTAT)
+    assert thermostat.attributes["current_temperature"] == 23.0
+    assert thermostat.attributes.get("current_humidity") is None
+
+
 @pytest.mark.parametrize(
     ("hvac_mode", "hvac_modes", "preset_modes"),
     [
