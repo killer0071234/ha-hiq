@@ -55,6 +55,25 @@ async def test_thermostat_heating(
     assert state.attributes[ATTR_SETPOINT_IDLE] == 18.0
 
 
+async def test_thermostat_limits_follow_controller(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test changed setpoint limits are shown after a single poll."""
+    await _set(
+        hass,
+        controller,
+        init_integration,
+        th00_setpoint_lo="100",
+        th00_setpoint_hi="300",
+    )
+
+    state = hass.states.get(THERMOSTAT)
+    assert state.attributes["min_temp"] == 10.0
+    assert state.attributes["max_temp"] == 30.0
+
+
 async def test_thermostat_cooling(
     hass: HomeAssistant,
     controller: FakeController,
