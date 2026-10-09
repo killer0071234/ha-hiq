@@ -67,10 +67,10 @@ def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool
     """Check if general error of own module is ok."""
     ge_name = f"{var.split('_')[0]}_general_error"
     coordinator.data.add_var(ge_name)
-    ge_val = coordinator.data.vars.get(ge_name, None)
+    ge_val = coordinator.data.vars.get(ge_name)
     if ge_val is None:
         return False
-    return bool(ge_val.value == "0")
+    return ge_val.value == "0"
 
 
 def find_on_off_lights(
@@ -81,35 +81,23 @@ def find_on_off_lights(
     """
     res: list[HiqUpdateLight] = []
     for key in coordinator.data.plc_info.plc_vars:
-        if (
-            key.find(".lc") != -1
-            and key.find("_qx") != -1
-            and _is_dimm_light(key) is False
+        if not (
+            ".lc" in key
+            and "_qx" in key
+            and not _is_dimm_light(key)
+            and is_general_error_ok(coordinator, key)
         ):
-            if is_general_error_ok(coordinator, key):
-                dev_info = DeviceInfo(
-                    identifiers={(DOMAIN, key)},
-                    manufacturer=MANUFACTURER,
-                    name=f"Light {key}",
-                    suggested_area=AREA_LIGHTS,
-                    model=DEVICE_DESCRIPTION,
-                    configuration_url=MANUFACTURER_URL,
-                    entry_type=None,
-                    sw_version=DEVICE_SW_VERSION,
-                    hw_version=DEVICE_HW_VERSION,
-                    **coordinator.via_device_info,
-                )
-
-                res.append(
-                    HiqUpdateLight(
-                        coordinator,
-                        entity_description=HiqLightEntityDescription(
-                            key=key,
-                            translation_key="light",
-                        ),
-                        dev_info=dev_info,
-                    )
-                )
+            continue
+        res.append(
+            HiqUpdateLight(
+                coordinator,
+                entity_description=HiqLightEntityDescription(
+                    key=key,
+                    translation_key="light",
+                ),
+                dev_info=_light_device_info(coordinator, key),
+            )
+        )
 
     if len(res) > 0:
         return res
@@ -124,69 +112,66 @@ def find_dimm_lights(
     """
     res: list[HiqUpdateLight] = []
     for key in coordinator.data.plc_info.plc_vars:
-        if key.find(".ld") != -1 and key.find("_qw") != -1:
-            if is_general_error_ok(coordinator, key):
-                is_rgb_light = _is_rgb_light(coordinator, key)
-                rgb_hue_out = None
-                rgb_sat_out = None
-                LOGGER.debug("%s is rgb light? -> %s", key, is_rgb_light)
-                if is_rgb_light:
-                    var_names = key.split("_")
-                    if var_names[1] in ("qw00"):
-                        rgb_hue_out = var_names[0] + "_qw01"
-                        rgb_sat_out = var_names[0] + "_qw02"
-                    elif var_names[1] in ("qw04"):
-                        rgb_hue_out = var_names[0] + "_qw05"
-                        rgb_sat_out = var_names[0] + "_qw06"
-                    elif var_names[1] in (
-                        "qw01",
-                        "qw02",
-                        "qw03",
-                        "qw05",
-                        "qw06",
-                        "qw07",
-                    ):
-                        continue
-                LOGGER.debug(
-                    "%s: rgb_hue_out -> %s, rgb_sat_out -> %s",
-                    key,
-                    rgb_hue_out,
-                    rgb_sat_out,
-                )
-                dev_info = DeviceInfo(
-                    identifiers={(DOMAIN, key)},
-                    manufacturer=MANUFACTURER,
-                    name=f"Light {key}",
-                    suggested_area=AREA_LIGHTS,
-                    model=DEVICE_DESCRIPTION,
-                    configuration_url=MANUFACTURER_URL,
-                    entry_type=None,
-                    sw_version=DEVICE_SW_VERSION,
-                    hw_version=DEVICE_HW_VERSION,
-                    **coordinator.via_device_info,
-                )
-                res.append(
-                    HiqUpdateLight(
-                        coordinator,
-                        entity_description=HiqLightEntityDescription(
-                            key=key,
-                            translation_key="light",
-                        ),
-                        dev_info=dev_info,
-                        dimming_out=key,
-                        rgb_hue_out=rgb_hue_out,
-                        rgb_sat_out=rgb_sat_out,
-                    )
-                )
+        if not (
+            ".ld" in key and "_qw" in key and is_general_error_ok(coordinator, key)
+        ):
+            continue
+        is_rgb_light = _is_rgb_light(coordinator, key)
+        rgb_hue_out = None
+        rgb_sat_out = None
+        LOGGER.debug("%s is rgb light? -> %s", key, is_rgb_light)
+        if is_rgb_light:
+            var_names = key.split("_")
+            if var_names[1] in ("qw00"):
+                rgb_hue_out = var_names[0] + "_qw01"
+                rgb_sat_out = var_names[0] + "_qw02"
+            elif var_names[1] in ("qw04"):
+                rgb_hue_out = var_names[0] + "_qw05"
+                rgb_sat_out = var_names[0] + "_qw06"
+            elif var_names[1] in ("qw01", "qw02", "qw03", "qw05", "qw06", "qw07"):
+                # hue / saturation channels are part of the rgb light
+                continue
+        LOGGER.debug(
+            "%s: rgb_hue_out -> %s, rgb_sat_out -> %s", key, rgb_hue_out, rgb_sat_out
+        )
+        res.append(
+            HiqUpdateLight(
+                coordinator,
+                entity_description=HiqLightEntityDescription(
+                    key=key,
+                    translation_key="light",
+                ),
+                dev_info=_light_device_info(coordinator, key),
+                dimming_out=key,
+                rgb_hue_out=rgb_hue_out,
+                rgb_sat_out=rgb_sat_out,
+            )
+        )
 
     if len(res) > 0:
         return res
     return None
 
 
+def _light_device_info(coordinator: HiqDataUpdateCoordinator, key: str) -> DeviceInfo:
+    """Return the device info of a light output."""
+    return DeviceInfo(
+        identifiers={(DOMAIN, key)},
+        manufacturer=MANUFACTURER,
+        name=f"Light {key}",
+        suggested_area=AREA_LIGHTS,
+        model=DEVICE_DESCRIPTION,
+        configuration_url=MANUFACTURER_URL,
+        entry_type=None,
+        sw_version=DEVICE_SW_VERSION,
+        hw_version=DEVICE_HW_VERSION,
+        **coordinator.via_device_info,
+    )
+
+
 def _is_dimm_light(var: str) -> bool:
     """Check if tag is a dimmer output."""
-    return var.find("_qw") != -1
+    return "_qw" in var
 
 
 def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
@@ -200,7 +185,7 @@ def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
         return False
 
     coordinator.data.add_var(rgb_mode_var)
-    rgb_val = coordinator.data.vars.get(rgb_mode_var, None)
+    rgb_val = coordinator.data.vars.get(rgb_mode_var)
     if rgb_val is None:
         return False
     LOGGER.debug(
@@ -208,7 +193,7 @@ def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
         rgb_mode_var,
         rgb_val.value,
     )
-    return bool(rgb_val.value == "1")
+    return rgb_val.value == "1"
 
 
 class HiqUpdateLight(HiqEntity, LightEntity):
@@ -232,7 +217,6 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         self._dimming_out = dimming_out
         self._rgb_hue_out = rgb_hue_out
         self._rgb_sat_out = rgb_sat_out
-        # self._attr_name = f"Light {var_name}"
         self._attr_icon = attr_icon
         self._attr_device_info = dev_info
         LOGGER.debug(self._attr_unique_id)
@@ -263,8 +247,8 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         """Return the hue and saturation color value [float, float]."""
         if self._rgb_hue_out is None or self._rgb_sat_out is None:
             return None
-        hue = self.coordinator.data.vars.get(self._rgb_hue_out, None)
-        sat = self.coordinator.data.vars.get(self._rgb_sat_out, None)
+        hue = self.coordinator.data.vars.get(self._rgb_hue_out)
+        sat = self.coordinator.data.vars.get(self._rgb_sat_out)
         if sat is None or sat.value == "?" or hue is None or hue.value == "?":
             return None
         return [int(int(hue.value) * 3.6), int(sat.value)]
@@ -274,7 +258,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         """Return the brightness of this light between 1..255."""
         if self._dimming_out is None:
             return None
-        res = self.coordinator.data.vars.get(self._dimming_out, None)
+        res = self.coordinator.data.vars.get(self._dimming_out)
         if res is None or res.value == "?":
             LOGGER.debug("%s -> unknown brightness", self._attr_unique_id)
             return None
