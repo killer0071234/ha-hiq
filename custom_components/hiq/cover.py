@@ -167,10 +167,10 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
     @property
     def is_closed(self) -> bool | None:
         """Return true if the cover is closed or None if the status is unknown."""
-        res = self.coordinator.data.vars.get(self._attr_unique_id, None)
-        if res is None or res == "?":
+        res = self.coordinator.data.vars.get(self._attr_unique_id)
+        if res is None or res.value in (None, "?"):
             return None
-        return bool(res.value == "100")
+        return res.value == "100"
 
     def _is_output_on(self, var: str) -> bool:
         """Return true if the given motor output is on."""
