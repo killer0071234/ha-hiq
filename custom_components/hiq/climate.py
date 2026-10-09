@@ -64,20 +64,12 @@ CYBRO_TO_HA_HVAC_MODE_MAP = {
 }
 
 CYBRO_TO_HA_HVAC_ACTION_COOL_MAP = {
-    HVACAction.IDLE: 0,
-    HVACAction.COOLING: 1,
-}
-CYBRO_TO_HA_HVAC_ACTION_COOL_MAP = {
-    value: key for key, value in CYBRO_TO_HA_HVAC_ACTION_COOL_MAP.items()
-}
-
-
-CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP = {
-    HVACAction.IDLE: 0,
-    HVACAction.HEATING: 1,
+    0: HVACAction.IDLE,
+    1: HVACAction.COOLING,
 }
 CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP = {
-    value: key for key, value in CYBRO_TO_HA_HVAC_ACTION_HEAT_MAP.items()
+    0: HVACAction.IDLE,
+    1: HVACAction.HEATING,
 }
 
 
@@ -107,20 +99,11 @@ def find_thermostats(
 
     # find thermostats (general_error)
     for key in coordinator.data.plc_info.plc_vars:
-        if search(r"c\d+\.th\d+_general_error$", key):
-            if is_general_error_ok(coordinator, key):
-                unique_id = key
-                # identifier is cNAD.thNR
-                grp = search(r"c\d+\.th\d+", key)
-                if grp:
-                    unique_id = grp.group()
-
-                res.append(
-                    HiqThermostat(
-                        coordinator,
-                        unique_id,
-                    )
-                )
+        # identifier is cNAD.thNR
+        if (match := search(r"(c\d+\.th\d+)_general_error$", key)) and (
+            is_general_error_ok(coordinator, key)
+        ):
+            res.append(HiqThermostat(coordinator, match.group(1)))
 
     if len(res) > 0:
         return res
@@ -159,19 +142,22 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         self._attr_unique_id = f"{self._prefix}_thermostat"
 
         # add tags for thermostat to coordinator
-        coordinator.data.add_var(f"{self._prefix}_active")
-        coordinator.data.add_var(f"{self._prefix}_output")
-        coordinator.data.add_var(f"{self._prefix}_setpoint_lo")
-        coordinator.data.add_var(f"{self._prefix}_setpoint_hi")
-        coordinator.data.add_var(f"{self._prefix}_temperature")
-        coordinator.data.add_var(f"{self._prefix}_floor_tmp")
-        coordinator.data.add_var(f"{self._prefix}_humidity")
-        coordinator.data.add_var(f"{self._prefix}_setpoint")
-        coordinator.data.add_var(f"{self._prefix}_setpoint_idle")
-        coordinator.data.add_var(f"{self._prefix}_setpoint_offset")
-        coordinator.data.add_var(f"{self._prefix}_setpoint_active")
-        coordinator.data.add_var(f"{self._prefix}_fan_limit")
-        coordinator.data.add_var(f"{self._prefix}_fan_options")
+        for suffix in (
+            "active",
+            "output",
+            "setpoint_lo",
+            "setpoint_hi",
+            "temperature",
+            "floor_tmp",
+            "humidity",
+            "setpoint",
+            "setpoint_idle",
+            "setpoint_offset",
+            "setpoint_active",
+            "fan_limit",
+            "fan_options",
+        ):
+            coordinator.data.add_var(f"{self._prefix}_{suffix}")
         coordinator.data.add_var(f"{self._nad}.hvac_mode")
 
     @property
@@ -189,11 +175,8 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     @property
     def current_humidity(self) -> float | None:
         """Return the current humidity."""
-        if (
-            humidity := self.coordinator.get_value(f"{self._prefix}_humidity", 1.0, 0)
-        ) is None:
-            return None
-        if humidity > 0:
+        humidity = self.coordinator.get_value(f"{self._prefix}_humidity", 1.0, 0)
+        if humidity is not None and humidity > 0:
             return humidity
         return None
 
@@ -273,39 +256,18 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         data = {}
-        if (
-            floor_tmp := self.coordinator.get_value(f"{self._prefix}_floor_tmp", 0.1, 1)
-            or None
+        # attributes with a zero / missing value are left out
+        for attr, suffix, factor, precision in (
+            (ATTR_FLOOR_TEMP, "floor_tmp", 0.1, 1),
+            (ATTR_SETPOINT_IDLE, "setpoint_idle", 0.1, 1),
+            (ATTR_SETPOINT_ACTIVE, "setpoint_active", 0.1, 1),
+            (ATTR_SETPOINT_OFFSET, "setpoint_offset", 0.1, 1),
+            (ATTR_FAN_OPTIONS, "fan_options", 1.0, 0),
         ):
-            data[ATTR_FLOOR_TEMP] = floor_tmp
-        if (
-            setp_idle := self.coordinator.get_value(
-                f"{self._prefix}_setpoint_idle", 0.1, 1
-            )
-            or None
-        ):
-            data[ATTR_SETPOINT_IDLE] = setp_idle
-        if (
-            setp_act := self.coordinator.get_value(
-                f"{self._prefix}_setpoint_active", 0.1, 1
-            )
-            or None
-        ):
-            data[ATTR_SETPOINT_ACTIVE] = setp_act
-        if (
-            setp_off := self.coordinator.get_value(
-                f"{self._prefix}_setpoint_offset", 0.1, 1
-            )
-            or None
-        ):
-            data[ATTR_SETPOINT_OFFSET] = setp_off
-        if (
-            fan_opts := self.coordinator.get_value(
-                f"{self._prefix}_fan_options", 1.0, 0, 0
-            )
-            or None
-        ):
-            data[ATTR_FAN_OPTIONS] = fan_opts
+            if value := self.coordinator.get_value(
+                f"{self._prefix}_{suffix}", factor, precision
+            ):
+                data[attr] = value
         return data
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
@@ -326,21 +288,17 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         if (temperature := kwargs.get(ATTR_TEMPERATURE)) is None:
             return
 
-        tags = {}
         if self.preset_mode == PRESET_BOOST and self.hvac_mode == HVACMode.HEAT:
-            tags[f"{self._prefix}_setpoint_hi"] = int(temperature * 10.0)
-            if req := get_write_req_th(f"{self._prefix}_setpoint_hi", self._prefix):
-                tags[req] = "1"
+            setpoint = f"{self._prefix}_setpoint_hi"
         elif self.preset_mode == PRESET_BOOST and self.hvac_mode == HVACMode.COOL:
-            tags[f"{self._prefix}_setpoint_lo"] = int(temperature * 10.0)
-            if req := get_write_req_th(f"{self._prefix}_setpoint_lo", self._prefix):
-                tags[req] = "1"
+            setpoint = f"{self._prefix}_setpoint_lo"
         elif self.preset_mode == PRESET_ECO:
-            tags[f"{self._prefix}_setpoint_idle"] = int(temperature * 10.0)
-            if req := get_write_req_th(f"{self._prefix}_setpoint_idle", self._prefix):
-                tags[req] = "1"
+            setpoint = f"{self._prefix}_setpoint_idle"
         else:
-            tags[f"{self._prefix}_setpoint"] = int(temperature * 10.0)
+            setpoint = f"{self._prefix}_setpoint"
 
+        tags: dict[str, int | str] = {setpoint: int(temperature * 10.0)}
+        if req := get_write_req_th(setpoint, self._prefix):
+            tags[req] = "1"
         await self.coordinator.cybro.request(tags)
         await self.coordinator.async_refresh()
