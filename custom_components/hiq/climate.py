@@ -187,15 +187,18 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         return None
 
     @property
+    def min_temp(self) -> float:
+        """Return the minimum temperature, the actual value from the thermostat."""
+        return self.coordinator.get_value(f"{self._prefix}_setpoint_lo", 0.1, 1, 0.0)
+
+    @property
+    def max_temp(self) -> float:
+        """Return the maximum temperature, the actual value from the thermostat."""
+        return self.coordinator.get_value(f"{self._prefix}_setpoint_hi", 0.1, 1, 40.0)
+
+    @property
     def target_temperature(self) -> float | None:
         """Return the target temperature for the device."""
-        # update min / max to actual values from thermostat
-        self._attr_min_temp = self.coordinator.get_value(
-            f"{self._prefix}_setpoint_lo", 0.1, 1, 0.0
-        )
-        self._attr_max_temp = self.coordinator.get_value(
-            f"{self._prefix}_setpoint_hi", 0.1, 1, 40.0
-        )
         if sp := self.coordinator.get_value(
             f"{self._prefix}_setpoint_active", 0.1, 1, None
         ):

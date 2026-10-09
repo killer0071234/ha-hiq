@@ -91,3 +91,18 @@ async def test_get_template_value(
 
     await _value(coordinator, controller, "?")
     assert coordinator.get_template_value(VAR, def_val="x") == "x"
+
+
+async def test_listeners_updated_once_with_new_data(
+    coordinator: HiqDataUpdateCoordinator, controller: FakeController
+) -> None:
+    """Test a poll notifies the entities once, with the new values."""
+    seen: list[object] = []
+    unsub = coordinator.async_add_listener(
+        lambda: seen.append(coordinator.get_value(VAR))
+    )
+
+    await _value(coordinator, controller, "42")
+    unsub()
+
+    assert seen == [42]
