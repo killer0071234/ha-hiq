@@ -67,67 +67,74 @@ def find_blinds(
     """
     res: list[HiqUpdateCover] = []
     for key in coordinator.data.plc_info.plc_vars:
-        if key.find(".bc") != -1 and key.find("_blinds_position") != -1:
-            if is_general_error_ok(coordinator, key):
-                dev_info = DeviceInfo(
-                    identifiers={(DOMAIN, key)},
-                    manufacturer=MANUFACTURER,
-                    name=f"Blind {key}",
-                    suggested_area=AREA_BLINDS,
-                    model=DEVICE_DESCRIPTION,
-                    configuration_url=MANUFACTURER_URL,
-                    entry_type=None,
-                    sw_version=DEVICE_SW_VERSION,
-                    hw_version=DEVICE_HW_VERSION,
-                    **coordinator.via_device_info,
-                )
-                var_sp = _get_blind_var(coordinator, key, 0)
-                var_up = _get_blind_var(coordinator, key, 1)
-                var_dn = _get_blind_var(coordinator, key, 2)
-                res.append(
-                    HiqUpdateCover(
-                        coordinator,
-                        entity_description=HiqCoverEntityDescription(
-                            key=key,
-                            translation_key="blind",
-                        ),
-                        var_setpoint_name=var_sp,
-                        var_up_name=var_up,
-                        var_down_name=var_dn,
-                        dev_info=dev_info,
-                    )
-                )
+        if not (
+            ".bc" in key
+            and "_blinds_position" in key
+            and is_general_error_ok(coordinator, key)
+        ):
+            continue
+        dev_info = DeviceInfo(
+            identifiers={(DOMAIN, key)},
+            manufacturer=MANUFACTURER,
+            name=f"Blind {key}",
+            suggested_area=AREA_BLINDS,
+            model=DEVICE_DESCRIPTION,
+            configuration_url=MANUFACTURER_URL,
+            entry_type=None,
+            sw_version=DEVICE_SW_VERSION,
+            hw_version=DEVICE_HW_VERSION,
+            **coordinator.via_device_info,
+        )
+        var_sp, var_up, var_dn = _get_blind_vars(coordinator, key)
+        res.append(
+            HiqUpdateCover(
+                coordinator,
+                entity_description=HiqCoverEntityDescription(
+                    key=key,
+                    translation_key="blind",
+                ),
+                var_setpoint_name=var_sp,
+                var_up_name=var_up,
+                var_down_name=var_dn,
+                dev_info=dev_info,
+            )
+        )
     if len(res) > 0:
         return res
     return None
 
 
-def _get_blind_var(
-    coordinator: HiqDataUpdateCoordinator, var: str, type: int = 0
-) -> str:
-    """Find and return blind helper variables.
+def _get_blind_vars(
+    coordinator: HiqDataUpdateCoordinator, var: str
+) -> tuple[str, str, str]:
+    """Find and return blind helper variables, "" if not existing.
     Input is the position var (eg: bc01_blinds_position_00)
-    type = 0: blind setpoint (bc01_blinds_setpoint_00)
-    type = 1: blind up output (bc01_qxs00_up)
-    type = 2: blind down output (bc01_qxs00_dn).
+    Returns the blind setpoint (bc01_blinds_setpoint_00),
+    up output (bc01_qxs00_up) and down output (bc01_qxs00_dn).
     """
     blind_name = var.split("_")
-    if blind_name is None:
-        return ""
-    if type == 0:
-        name_var = f"{blind_name[0]}_blinds_setpoint_{blind_name[3]}"
-    elif type == 1:
-        name_var = f"{blind_name[0]}_qxs{blind_name[3]}_up"
-    elif type == 2:
-        name_var = f"{blind_name[0]}_qxs{blind_name[3]}_dn"
-    if name_var in coordinator.data.plc_info.plc_vars:
-        return name_var
-    return ""
+    module, index = blind_name[0], blind_name[3]
+
+    def existing(name: str) -> str:
+        return name if name in coordinator.data.plc_info.plc_vars else ""
+
+    return (
+        existing(f"{module}_blinds_setpoint_{index}"),
+        existing(f"{module}_qxs{index}_up"),
+        existing(f"{module}_qxs{index}_dn"),
+    )
 
 
 class HiqUpdateCover(HiqEntity, CoverEntity):
     """Defines a Single HIQ-Home Blind."""
 
+    _attr_device_class = CoverDeviceClass.BLIND
+    _attr_supported_features = (
+        CoverEntityFeature.OPEN
+        | CoverEntityFeature.CLOSE
+        | CoverEntityFeature.STOP
+        | CoverEntityFeature.SET_POSITION
+    )
     _setpoint_var: str = ""
     _moving_up_var: str = ""
     _moving_dn_var: str = ""
@@ -165,25 +172,20 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
             return None
         return bool(res.value == "100")
 
+    def _is_output_on(self, var: str) -> bool:
+        """Return true if the given motor output is on."""
+        res = self.coordinator.data.vars.get(var)
+        return res is not None and res.value == "1"
+
     @property
     def is_opening(self) -> bool:
         """Return true if the cover is actively opening."""
-        if self._moving_up_var != "":
-            res = self.coordinator.data.vars.get(self._moving_up_var, None)
-            if res is None or res == "?":
-                return False
-            return bool(res.value == "1")
-        return False
+        return self._is_output_on(self._moving_up_var)
 
     @property
     def is_closing(self) -> bool:
         """Return true if the cover is actively closing."""
-        if self._moving_dn_var != "":
-            res = self.coordinator.data.vars.get(self._moving_dn_var, None)
-            if res is None or res == "?":
-                return False
-            return bool(res.value == "1")
-        return False
+        return self._is_output_on(self._moving_dn_var)
 
     @property
     def current_cover_position(self) -> int | None:
@@ -196,47 +198,26 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
             return None
         return int(100 - int(res))
 
-    @property
-    def current_cover_tilt_position(self) -> int | None:
-        """Return current position of cover tilt."""
-        return None
-
-    @property
-    def device_class(self) -> CoverDeviceClass | None:
-        """Return the class of this sensor."""
-        return CoverDeviceClass.BLIND
-
-    @property
-    def supported_features(self) -> int:
-        """Flag supported features."""
-        return (
-            CoverEntityFeature.OPEN
-            | CoverEntityFeature.CLOSE
-            | CoverEntityFeature.STOP
-            | CoverEntityFeature.SET_POSITION
-        )
+    async def _write_setpoint(self, value: str) -> None:
+        """Write the blind setpoint (closed percentage, -1 stops), if it exists."""
+        if self._setpoint_var != "":
+            await self.coordinator.cybro.write_var(self._setpoint_var, value)
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Move the cover up."""
-        if self._setpoint_var != "":
-            await self.coordinator.cybro.write_var(self._setpoint_var, "0")
+        await self._write_setpoint("0")
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Move the cover down."""
-        if self._setpoint_var != "":
-            await self.coordinator.cybro.write_var(self._setpoint_var, "100")
+        await self._write_setpoint("100")
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
-        if self._setpoint_var != "":
-            await self.coordinator.cybro.write_var(self._setpoint_var, "-1")
+        await self._write_setpoint("-1")
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Move the cover to a specific position."""
-        position = kwargs[ATTR_POSITION]
-        if self._setpoint_var != "":
-            pos = 100 - int(position)
-            await self.coordinator.cybro.write_var(self._setpoint_var, str(pos))
+        await self._write_setpoint(str(100 - int(kwargs[ATTR_POSITION])))
 
     @property
     def extra_state_attributes(self):
