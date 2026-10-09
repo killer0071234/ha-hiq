@@ -71,35 +71,15 @@ async def async_setup_entry(
     """Set up HIQ-Home sensor based on a config entry."""
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    sys_tags = add_system_tags(
-        coordinator,
-    )
-    if sys_tags is not None:
-        async_add_entities(sys_tags)
-
-    temps = find_temperatures(
-        coordinator,
-    )
-    if temps is not None:
-        async_add_entities(temps)
-
-    power_meter = find_power_meter(
-        coordinator,
-    )
-    if power_meter is not None:
-        async_add_entities(power_meter)
-
-    th_tags = add_th_tags(
-        coordinator,
-    )
-    if th_tags is not None:
-        async_add_entities(th_tags)
-
-    hvac_tags = add_hvac_tags(
-        coordinator,
-    )
-    if hvac_tags is not None:
-        async_add_entities(hvac_tags)
+    for find_sensors in (
+        add_system_tags,
+        find_temperatures,
+        find_power_meter,
+        add_th_tags,
+        add_hvac_tags,
+    ):
+        if (sensors := find_sensors(coordinator)) is not None:
+            async_add_entities(sensors)
 
     # add custom defined sensors
     custom_entities: list = []
@@ -235,87 +215,61 @@ def add_system_tags(
     )
     # find different plc diagnostic vars
     for key in coordinator.data.plc_info.plc_vars:
-        if key.find(var_prefix) != -1:
-            if key in (f"{var_prefix}scan_time", f"{var_prefix}scan_time_max"):
-                res.append(
-                    HiqSensorEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSensorEntityDescription(
-                            key=key,
-                            native_unit_of_measurement=UnitOfTime.MILLISECONDS,
-                            state_class=SensorStateClass.MEASUREMENT,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                            entity_registry_enabled_default=False,
-                            suggested_display_precision=0,
-                        ),
-                        var_type=VarType.INT,
-                        val_fact=1.0,
-                        dev_info=dev_info,
-                    )
-                )
-            elif key in (f"{var_prefix}cybro_uptime", f"{var_prefix}operating_hours"):
-                res.append(
-                    HiqSensorEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSensorEntityDescription(
-                            key=key,
-                            native_unit_of_measurement=UnitOfTime.HOURS,
-                            device_class=SensorDeviceClass.DURATION,
-                            state_class=SensorStateClass.MEASUREMENT,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                            suggested_display_precision=0,
-                        ),
-                        var_type=VarType.INT,
-                        val_fact=1.0,
-                        dev_info=dev_info,
-                    )
-                )
-            elif key in (f"{var_prefix}scan_frequency"):
-                res.append(
-                    HiqSensorEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSensorEntityDescription(
-                            key=key,
-                            native_unit_of_measurement=UnitOfFrequency.HERTZ,
-                            state_class=SensorStateClass.MEASUREMENT,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                            entity_registry_enabled_default=False,
-                            suggested_display_precision=0,
-                        ),
-                        var_type=VarType.INT,
-                        val_fact=1.0,
-                        dev_info=dev_info,
-                    )
-                )
-            elif (
-                key.find("iex_power_supply") != -1
-                or key.find("cybro_power_supply") != -1
-            ):
-                module_name = key.removeprefix(var_prefix).split("_").pop(0)
-                translation_key = "iex_power_supply_iex"
-                translation_placeholders = {"module": module_name}
-                if module_name in ("iex", "cybro"):
-                    translation_key = f"{module_name}_power_supply"
-                    translation_placeholders = None
-                res.append(
-                    HiqSensorEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSensorEntityDescription(
-                            key=key,
-                            translation_key=translation_key,
-                            translation_placeholders=translation_placeholders,
-                            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-                            device_class=SensorDeviceClass.VOLTAGE,
-                            state_class=SensorStateClass.MEASUREMENT,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                            entity_registry_enabled_default=False,
-                            suggested_display_precision=1,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.1,
-                        dev_info=dev_info,
-                    )
-                )
+        if var_prefix not in key:
+            continue
+        val_fact = 1.0
+        var_type = VarType.INT
+        if key in (f"{var_prefix}scan_time", f"{var_prefix}scan_time_max"):
+            description = {
+                "native_unit_of_measurement": UnitOfTime.MILLISECONDS,
+                "entity_registry_enabled_default": False,
+                "suggested_display_precision": 0,
+            }
+        elif key in (f"{var_prefix}cybro_uptime", f"{var_prefix}operating_hours"):
+            description = {
+                "native_unit_of_measurement": UnitOfTime.HOURS,
+                "device_class": SensorDeviceClass.DURATION,
+                "suggested_display_precision": 0,
+            }
+        elif key in (f"{var_prefix}scan_frequency"):
+            description = {
+                "native_unit_of_measurement": UnitOfFrequency.HERTZ,
+                "entity_registry_enabled_default": False,
+                "suggested_display_precision": 0,
+            }
+        elif "iex_power_supply" in key or "cybro_power_supply" in key:
+            module_name = key.removeprefix(var_prefix).split("_")[0]
+            translation_key = "iex_power_supply_iex"
+            translation_placeholders = {"module": module_name}
+            if module_name in ("iex", "cybro"):
+                translation_key = f"{module_name}_power_supply"
+                translation_placeholders = None
+            description = {
+                "translation_key": translation_key,
+                "translation_placeholders": translation_placeholders,
+                "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+                "device_class": SensorDeviceClass.VOLTAGE,
+                "entity_registry_enabled_default": False,
+                "suggested_display_precision": 1,
+            }
+            var_type = VarType.FLOAT
+            val_fact = 0.1
+        else:
+            continue
+        res.append(
+            HiqSensorEntity(
+                coordinator=coordinator,
+                entity_description=HiqSensorEntityDescription(
+                    key=key,
+                    state_class=SensorStateClass.MEASUREMENT,
+                    entity_category=EntityCategory.DIAGNOSTIC,
+                    **description,
+                ),
+                var_type=var_type,
+                val_fact=val_fact,
+                dev_info=dev_info,
+            )
+        )
 
     if len(res) > 0:
         return res
@@ -344,42 +298,40 @@ def find_temperatures(
     )
 
     for key in coordinator.data.plc_info.plc_vars:
-        if key.find(".op") != -1 or key.find(".ts") != -1 or key.find(".fc") != -1:
-            if is_general_error_ok(coordinator, key):
-                if key.find("_temperature") != -1:
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                **_module_sensor_name(coordinator, key),
-                                native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                                device_class=SensorDeviceClass.TEMPERATURE,
-                                state_class=SensorStateClass.MEASUREMENT,
-                                suggested_display_precision=1,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=0.1,
-                            dev_info=dev_info,
-                        )
-                    )
-                elif key.find("_humidity") != -1:
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                **_module_sensor_name(coordinator, key),
-                                native_unit_of_measurement=PERCENTAGE,
-                                device_class=SensorDeviceClass.HUMIDITY,
-                                state_class=SensorStateClass.MEASUREMENT,
-                                suggested_display_precision=0,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=1.0,
-                            dev_info=dev_info,
-                        )
-                    )
+        if not (".op" in key or ".ts" in key or ".fc" in key):
+            continue
+        if not is_general_error_ok(coordinator, key):
+            continue
+        if "_temperature" in key:
+            description = {
+                "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
+                "device_class": SensorDeviceClass.TEMPERATURE,
+                "suggested_display_precision": 1,
+            }
+            val_fact = 0.1
+        elif "_humidity" in key:
+            description = {
+                "native_unit_of_measurement": PERCENTAGE,
+                "device_class": SensorDeviceClass.HUMIDITY,
+                "suggested_display_precision": 0,
+            }
+            val_fact = 1.0
+        else:
+            continue
+        res.append(
+            HiqSensorEntity(
+                coordinator=coordinator,
+                entity_description=HiqSensorEntityDescription(
+                    key=key,
+                    **_module_sensor_name(coordinator, key),
+                    state_class=SensorStateClass.MEASUREMENT,
+                    **description,
+                ),
+                var_type=VarType.FLOAT,
+                val_fact=val_fact,
+                dev_info=dev_info,
+            )
+        )
 
     if len(res) > 0:
         return res
@@ -425,124 +377,76 @@ def find_power_meter(
         **coordinator.via_device_info,
     )
     for key in coordinator.data.plc_info.plc_vars:
-        if key.find(var_prefix) != -1:
-            if key.find("_power") != -1:
-                if _is_power_meter_ok(coordinator, key):
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                **_power_meter_phase_name(key),
-                                native_unit_of_measurement=UnitOfPower.WATT,
-                                device_class=SensorDeviceClass.POWER,
-                                state_class=SensorStateClass.MEASUREMENT,
-                                suggested_display_precision=0,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=1.0,
-                            dev_info=dev_info,
-                        )
-                    )
-            elif key.find("_voltage") != -1:
-                if _is_power_meter_ok(coordinator, key):
-                    fact = 1.0
-                    val = coordinator.data.vars.get(key, None)
-                    if (
-                        val is not None
-                        and val.value not in (None, "?")
-                        and float(val.value.replace(",", "")) > 300
-                    ):
-                        fact = 0.1
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                **_power_meter_phase_name(key),
-                                native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-                                device_class=SensorDeviceClass.VOLTAGE,
-                                state_class=SensorStateClass.MEASUREMENT,
-                                entity_registry_enabled_default=False,
-                                suggested_display_precision=0,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=fact,
-                            dev_info=dev_info,
-                        )
-                    )
-            elif key.find("_current") != -1:
-                if _is_power_meter_ok(coordinator, key):
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                **_power_meter_phase_name(key),
-                                native_unit_of_measurement=UnitOfElectricCurrent.MILLIAMPERE,
-                                device_class=SensorDeviceClass.CURRENT,
-                                state_class=SensorStateClass.MEASUREMENT,
-                                entity_registry_enabled_default=False,
-                                suggested_display_precision=0,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=1.0,
-                            dev_info=dev_info,
-                        )
-                    )
-            elif key == f"{var_prefix}_energy":
-                if _is_power_meter_ok(coordinator, key):
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-                                device_class=SensorDeviceClass.ENERGY,
-                                state_class=SensorStateClass.TOTAL_INCREASING,
-                                suggested_display_precision=0,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=1.0,
-                            dev_info=dev_info,
-                        )
-                    )
-            elif key == f"{var_prefix}_energy_real":
-                if _is_power_meter_ok(coordinator, key):
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-                                device_class=SensorDeviceClass.ENERGY,
-                                state_class=SensorStateClass.TOTAL_INCREASING,
-                                entity_registry_enabled_default=False,
-                                suggested_display_precision=3,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=1.0,
-                            dev_info=dev_info,
-                        )
-                    )
-            elif key.find(f"{var_prefix}_energy_watthours") != -1:
-                if _is_power_meter_ok(coordinator, key):
-                    res.append(
-                        HiqSensorEntity(
-                            coordinator=coordinator,
-                            entity_description=HiqSensorEntityDescription(
-                                key=key,
-                                native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-                                device_class=SensorDeviceClass.ENERGY,
-                                state_class=SensorStateClass.TOTAL_INCREASING,
-                                entity_registry_enabled_default=False,
-                                suggested_display_precision=0,
-                            ),
-                            var_type=VarType.FLOAT,
-                            val_fact=1.0,
-                            dev_info=dev_info,
-                        )
-                    )
+        if var_prefix not in key:
+            continue
+        if "_power" in key:
+            description = {
+                **_power_meter_phase_name(key),
+                "native_unit_of_measurement": UnitOfPower.WATT,
+                "device_class": SensorDeviceClass.POWER,
+                "state_class": SensorStateClass.MEASUREMENT,
+                "suggested_display_precision": 0,
+            }
+        elif "_voltage" in key:
+            description = {
+                **_power_meter_phase_name(key),
+                "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+                "device_class": SensorDeviceClass.VOLTAGE,
+                "state_class": SensorStateClass.MEASUREMENT,
+                "entity_registry_enabled_default": False,
+                "suggested_display_precision": 0,
+            }
+        elif "_current" in key:
+            description = {
+                **_power_meter_phase_name(key),
+                "native_unit_of_measurement": UnitOfElectricCurrent.MILLIAMPERE,
+                "device_class": SensorDeviceClass.CURRENT,
+                "state_class": SensorStateClass.MEASUREMENT,
+                "entity_registry_enabled_default": False,
+                "suggested_display_precision": 0,
+            }
+        elif key == f"{var_prefix}_energy":
+            description = {
+                "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+                "device_class": SensorDeviceClass.ENERGY,
+                "state_class": SensorStateClass.TOTAL_INCREASING,
+                "suggested_display_precision": 0,
+            }
+        elif key == f"{var_prefix}_energy_real":
+            description = {
+                "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+                "device_class": SensorDeviceClass.ENERGY,
+                "state_class": SensorStateClass.TOTAL_INCREASING,
+                "entity_registry_enabled_default": False,
+                "suggested_display_precision": 3,
+            }
+        elif f"{var_prefix}_energy_watthours" in key:
+            description = {
+                "native_unit_of_measurement": UnitOfEnergy.WATT_HOUR,
+                "device_class": SensorDeviceClass.ENERGY,
+                "state_class": SensorStateClass.TOTAL_INCREASING,
+                "entity_registry_enabled_default": False,
+                "suggested_display_precision": 0,
+            }
+        else:
+            continue
+        if not _is_power_meter_ok(coordinator, key):
+            continue
+        val_fact = 1.0
+        if description["device_class"] == SensorDeviceClass.VOLTAGE:
+            val_fact = _power_meter_voltage_factor(coordinator, key)
+        res.append(
+            HiqSensorEntity(
+                coordinator=coordinator,
+                entity_description=HiqSensorEntityDescription(
+                    key=key,
+                    **description,
+                ),
+                var_type=VarType.FLOAT,
+                val_fact=val_fact,
+                dev_info=dev_info,
+            )
+        )
 
     if len(res) > 0:
         return res
@@ -560,14 +464,87 @@ def _power_meter_phase_name(var: str) -> dict[str, Any]:
     }
 
 
+def _power_meter_voltage_factor(
+    coordinator: HiqDataUpdateCoordinator, var: str
+) -> float:
+    """Return the factor of a voltage, some meters report it in 0.1 V."""
+    val = coordinator.data.vars.get(var)
+    if (
+        val is not None
+        and val.value not in (None, "?")
+        and float(val.value.replace(",", "")) > 300
+    ):
+        return 0.1
+    return 1.0
+
+
 def _is_power_meter_ok(coordinator: HiqDataUpdateCoordinator, var: str):
     ge_name = f"{var.split('_')[0]}_meter_error"
     coordinator.data.add_var(ge_name)
-    ge_val = coordinator.data.vars.get(ge_name, None)
+    ge_val = coordinator.data.vars.get(ge_name)
     if ge_val is None:
         return False
     LOGGER.debug("%s -> %s", ge_name, ge_val.value)
-    return bool(ge_val.value == "0")
+    return ge_val.value == "0"
+
+
+# thermostat sensors: name -> (description fields, var type, value factor)
+TH_SENSORS: dict[str, tuple[dict[str, Any], VarType, float]] = {
+    "temperature": (
+        {
+            "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
+            "device_class": SensorDeviceClass.TEMPERATURE,
+            "state_class": SensorStateClass.MEASUREMENT,
+            "suggested_display_precision": 1,
+        },
+        VarType.FLOAT,
+        0.1,
+    ),
+    "temperature_1": (
+        {
+            "translation_key": "temperature_1",
+            "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
+            "device_class": SensorDeviceClass.TEMPERATURE,
+            "state_class": SensorStateClass.MEASUREMENT,
+            "suggested_display_precision": 1,
+        },
+        VarType.FLOAT,
+        0.1,
+    ),
+    "humidity": (
+        {
+            "native_unit_of_measurement": PERCENTAGE,
+            "device_class": SensorDeviceClass.HUMIDITY,
+            "state_class": SensorStateClass.MEASUREMENT,
+            "suggested_display_precision": 0,
+        },
+        VarType.FLOAT,
+        1.0,
+    ),
+    "light_sensor": (
+        {
+            "translation_key": "light_sensor",
+            "native_unit_of_measurement": PERCENTAGE,
+            "state_class": SensorStateClass.MEASUREMENT,
+            "entity_registry_enabled_default": False,
+            "suggested_display_precision": 1,
+        },
+        VarType.FLOAT,
+        0.097751711,  # sensor is returning 0..1023 = 0..100%
+    ),
+    "max_timer": (
+        {
+            "translation_key": "max_timer_remain",
+            "native_unit_of_measurement": UnitOfTime.SECONDS,
+            "device_class": SensorDeviceClass.DURATION,
+            "state_class": SensorStateClass.MEASUREMENT,
+            "entity_registry_enabled_default": False,
+            "suggested_display_precision": 0,
+        },
+        VarType.INT,
+        1.0,
+    ),
+}
 
 
 def add_th_tags(
@@ -580,117 +557,42 @@ def add_th_tags(
 
     # find different thermostat vars
     for key in coordinator.data.plc_info.plc_vars:
-        unique_id = key
         # identifier is cNAD.thNR
         grp = search(r"c\d+\.th\d+", key)
-        if grp:
-            unique_id = grp.group()
-        dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
-            manufacturer=MANUFACTURER,
-            name=f"{unique_id} thermostat",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
+        if not grp or not key.startswith(f"{grp.group()}_"):
+            continue
+        unique_id = grp.group()
+        name = key.removeprefix(f"{unique_id}_")
+        if name not in TH_SENSORS or not is_general_error_ok(coordinator, key):
+            continue
+        description, var_type, val_fact = TH_SENSORS[name]
+        res.append(
+            HiqSensorEntity(
+                coordinator=coordinator,
+                entity_description=HiqSensorEntityDescription(key=key, **description),
+                var_type=var_type,
+                val_fact=val_fact,
+                dev_info=DeviceInfo(
+                    identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
+                    manufacturer=MANUFACTURER,
+                    name=f"{unique_id} thermostat",
+                    suggested_area=AREA_CLIMATE,
+                    **coordinator.via_device_info,
+                ),
+            )
         )
-
-        # get temperature
-        if key == f"{unique_id}_temperature":
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqSensorEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSensorEntityDescription(
-                            key=key,
-                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                            device_class=SensorDeviceClass.TEMPERATURE,
-                            state_class=SensorStateClass.MEASUREMENT,
-                            suggested_display_precision=1,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.1,
-                        dev_info=dev_info,
-                    )
-                )
-        elif key == f"{unique_id}_temperature_1":
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqSensorEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSensorEntityDescription(
-                            key=key,
-                            translation_key="temperature_1",
-                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                            device_class=SensorDeviceClass.TEMPERATURE,
-                            state_class=SensorStateClass.MEASUREMENT,
-                            suggested_display_precision=1,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.1,
-                        dev_info=dev_info,
-                    )
-                )
-        # get humidity of thermostat
-        elif key == f"{unique_id}_humidity":
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqSensorEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSensorEntityDescription(
-                            key=key,
-                            native_unit_of_measurement=PERCENTAGE,
-                            device_class=SensorDeviceClass.HUMIDITY,
-                            state_class=SensorStateClass.MEASUREMENT,
-                            suggested_display_precision=0,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=1.0,
-                        dev_info=dev_info,
-                    )
-                )
-        # get light sensor of thermostat
-        elif key == f"{unique_id}_light_sensor":
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqSensorEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSensorEntityDescription(
-                            key=key,
-                            translation_key="light_sensor",
-                            native_unit_of_measurement=PERCENTAGE,
-                            # device_class=SensorDeviceClass.HUMIDITY,
-                            state_class=SensorStateClass.MEASUREMENT,
-                            entity_registry_enabled_default=False,
-                            suggested_display_precision=1,
-                        ),
-                        var_type=VarType.FLOAT,
-                        val_fact=0.097751711,  # sensor is returning 0..1023 = 0..100%
-                        dev_info=dev_info,
-                    )
-                )
-        # get remaining max time
-        elif key == f"{unique_id}_max_timer":
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqSensorEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSensorEntityDescription(
-                            key=key,
-                            translation_key="max_timer_remain",
-                            native_unit_of_measurement=UnitOfTime.SECONDS,
-                            device_class=SensorDeviceClass.DURATION,
-                            state_class=SensorStateClass.MEASUREMENT,
-                            entity_registry_enabled_default=False,
-                            suggested_display_precision=0,
-                        ),
-                        var_type=VarType.INT,
-                        val_fact=1.0,
-                        dev_info=dev_info,
-                    )
-                )
 
     if len(res) > 0:
         return res
     return None
+
+
+HVAC_TEMPERATURES = (
+    "outdoor_temperature",
+    "wall_temperature",
+    "water_temperature",
+    "auxilary_temperature",
+)
 
 
 def add_hvac_tags(
@@ -703,104 +605,46 @@ def add_hvac_tags(
 
     def _is_enabled(tag: str) -> bool:
         """Get enable state of variable."""
-        value = coordinator.data.vars.get(tag, None)
+        value = coordinator.data.vars.get(tag)
         if value is None:
             return False
         LOGGER.debug("%s -> %s", tag, value.value)
-        return bool(value.value == "1")
+        return value.value == "1"
 
     # find different hvac related vars
     for key in coordinator.data.plc_info.plc_vars:
-        unique_id = key
         # identifier is cNAD
         grp = search(r"c\d+", key)
-        if grp:
-            unique_id = grp.group()
-        dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
-            manufacturer=MANUFACTURER,
-            name=f"{unique_id} HVAC",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
+        if not grp or not key.startswith(f"{grp.group()}."):
+            continue
+        unique_id = grp.group()
+        name = key.removeprefix(f"{unique_id}.")
+        if name not in HVAC_TEMPERATURES:
+            continue
+        res.append(
+            HiqSensorEntity(
+                coordinator=coordinator,
+                entity_description=HiqSensorEntityDescription(
+                    key=key,
+                    native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                    device_class=SensorDeviceClass.TEMPERATURE,
+                    state_class=SensorStateClass.MEASUREMENT,
+                    entity_registry_enabled_default=_is_enabled(
+                        f"c{coordinator.cybro.nad}.{name}_enable"
+                    ),
+                    suggested_display_precision=1,
+                ),
+                var_type=VarType.FLOAT,
+                val_fact=0.1,
+                dev_info=DeviceInfo(
+                    identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
+                    manufacturer=MANUFACTURER,
+                    name=f"{unique_id} HVAC",
+                    suggested_area=AREA_CLIMATE,
+                    **coordinator.via_device_info,
+                ),
+            )
         )
-
-        # get temperature(s)
-        if key == f"{unique_id}.outdoor_temperature":
-            res.append(
-                HiqSensorEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqSensorEntityDescription(
-                        key=key,
-                        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                        device_class=SensorDeviceClass.TEMPERATURE,
-                        state_class=SensorStateClass.MEASUREMENT,
-                        entity_registry_enabled_default=_is_enabled(
-                            f"c{coordinator.cybro.nad}.outdoor_temperature_enable"
-                        ),
-                        suggested_display_precision=1,
-                    ),
-                    var_type=VarType.FLOAT,
-                    val_fact=0.1,
-                    dev_info=dev_info,
-                )
-            )
-        if key == f"{unique_id}.wall_temperature":
-            res.append(
-                HiqSensorEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqSensorEntityDescription(
-                        key=key,
-                        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                        device_class=SensorDeviceClass.TEMPERATURE,
-                        state_class=SensorStateClass.MEASUREMENT,
-                        entity_registry_enabled_default=_is_enabled(
-                            f"c{coordinator.cybro.nad}.wall_temperature_enable"
-                        ),
-                        suggested_display_precision=1,
-                    ),
-                    var_type=VarType.FLOAT,
-                    val_fact=0.1,
-                    dev_info=dev_info,
-                )
-            )
-        if key == f"{unique_id}.water_temperature":
-            res.append(
-                HiqSensorEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqSensorEntityDescription(
-                        key=key,
-                        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                        device_class=SensorDeviceClass.TEMPERATURE,
-                        state_class=SensorStateClass.MEASUREMENT,
-                        entity_registry_enabled_default=_is_enabled(
-                            f"c{coordinator.cybro.nad}.water_temperature_enable"
-                        ),
-                        suggested_display_precision=1,
-                    ),
-                    var_type=VarType.FLOAT,
-                    val_fact=0.1,
-                    dev_info=dev_info,
-                )
-            )
-        if key == f"{unique_id}.auxilary_temperature":
-            res.append(
-                HiqSensorEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqSensorEntityDescription(
-                        key=key,
-                        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                        device_class=SensorDeviceClass.TEMPERATURE,
-                        state_class=SensorStateClass.MEASUREMENT,
-                        entity_registry_enabled_default=_is_enabled(
-                            f"c{coordinator.cybro.nad}.auxilary_temperature_enable"
-                        ),
-                        suggested_display_precision=1,
-                    ),
-                    var_type=VarType.FLOAT,
-                    val_fact=0.1,
-                    dev_info=dev_info,
-                )
-            )
 
     if len(res) > 0:
         return res
