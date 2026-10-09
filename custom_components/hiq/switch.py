@@ -61,6 +61,21 @@ class HiqSwitchEntityDescription[T](SwitchEntityDescription):
         )
 
 
+TH_SWITCHES = ("window_enable", "demand_enable")
+
+HVAC_SWITCHES = (
+    "outdoor_temperature_enable",
+    "wall_temperature_enable",
+    "water_temperature_enable",
+    "auxilary_temperature_enable",
+    "auto_limits_enable",
+    "hvac_fan_option_b01",
+    "hvac_fan_option_b02",
+    "hvac_fan_option_b03",
+    "hvac_fan_option_b04",
+)
+
+
 def add_th_tags(
     coordinator: HiqDataUpdateCoordinator,
 ) -> list[HiqSwitchEntity] | None:
@@ -71,51 +86,33 @@ def add_th_tags(
 
     # find different thermostat vars
     for key in coordinator.data.plc_info.plc_vars:
-        unique_id = key
         # identifier is cNAD.thNR
         grp = search(r"c\d+\.th\d+", key)
-        if grp:
-            unique_id = grp.group()
-        dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
-            manufacturer=MANUFACTURER,
-            name=f"{unique_id} thermostat",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
+        if not grp or not key.startswith(f"{grp.group()}_"):
+            continue
+        unique_id = grp.group()
+        name = key.removeprefix(f"{unique_id}_")
+        if name not in TH_SWITCHES or not is_general_error_ok(coordinator, key):
+            continue
+        res.append(
+            HiqSwitchEntity(
+                coordinator=coordinator,
+                entity_description=HiqSwitchEntityDescription(
+                    key=key,
+                    translation_key=name,
+                    entity_category=EntityCategory.CONFIG,
+                    entity_registry_enabled_default=False,
+                ),
+                var_write_req=get_write_req_th(key, unique_id),
+                dev_info=DeviceInfo(
+                    identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
+                    manufacturer=MANUFACTURER,
+                    name=f"{unique_id} thermostat",
+                    suggested_area=AREA_CLIMATE,
+                    **coordinator.via_device_info,
+                ),
+            )
         )
-
-        # window enable
-        if key in (f"{unique_id}_window_enable",):
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqSwitchEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSwitchEntityDescription(
-                            key=key,
-                            translation_key=key.removeprefix(f"{unique_id}_"),
-                            entity_category=EntityCategory.CONFIG,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
-        # demand enable
-        elif key in (f"{unique_id}_demand_enable",):
-            if is_general_error_ok(coordinator, key):
-                res.append(
-                    HiqSwitchEntity(
-                        coordinator=coordinator,
-                        entity_description=HiqSwitchEntityDescription(
-                            key=key,
-                            translation_key=key.removeprefix(f"{unique_id}_"),
-                            entity_category=EntityCategory.CONFIG,
-                            entity_registry_enabled_default=False,
-                        ),
-                        var_write_req=get_write_req_th(key, unique_id),
-                        dev_info=dev_info,
-                    )
-                )
 
     if len(res) > 0:
         return res
@@ -132,60 +129,34 @@ def add_hvac_tags(
 
     # find different hvac related vars
     for key in coordinator.data.plc_info.plc_vars:
-        unique_id = key
         # identifier is cNAD
         grp = search(r"c\d+", key)
-        if grp:
-            unique_id = grp.group()
-        dev_info = DeviceInfo(
-            identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
-            manufacturer=MANUFACTURER,
-            name=f"{unique_id} HVAC",
-            suggested_area=AREA_CLIMATE,
-            **coordinator.via_device_info,
+        if not grp or not key.startswith(f"{grp.group()}."):
+            continue
+        unique_id = grp.group()
+        name = key.removeprefix(f"{unique_id}.")
+        if name not in HVAC_SWITCHES:
+            continue
+        res.append(
+            HiqSwitchEntity(
+                coordinator=coordinator,
+                entity_description=HiqSwitchEntityDescription(
+                    key=key,
+                    translation_key=name,
+                    entity_category=EntityCategory.CONFIG,
+                    entity_registry_enabled_default=False,
+                ),
+                # global hvac parameters are written without a request tag
+                var_write_req=None,
+                dev_info=DeviceInfo(
+                    identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
+                    manufacturer=MANUFACTURER,
+                    name=f"{unique_id} HVAC",
+                    suggested_area=AREA_CLIMATE,
+                    **coordinator.via_device_info,
+                ),
+            )
         )
-
-        # get temperature enables(s)
-        if key in (
-            f"{unique_id}.outdoor_temperature_enable",
-            f"{unique_id}.wall_temperature_enable",
-            f"{unique_id}.water_temperature_enable",
-            f"{unique_id}.auxilary_temperature_enable",
-            f"{unique_id}.auto_limits_enable",
-        ):
-            res.append(
-                HiqSwitchEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqSwitchEntityDescription(
-                        key=key,
-                        translation_key=key.removeprefix(f"{unique_id}."),
-                        entity_category=EntityCategory.CONFIG,
-                        entity_registry_enabled_default=False,
-                    ),
-                    var_write_req=None,
-                    dev_info=dev_info,
-                )
-            )
-        # fan option
-        elif key in (
-            f"{unique_id}.hvac_fan_option_b01",
-            f"{unique_id}.hvac_fan_option_b02",
-            f"{unique_id}.hvac_fan_option_b03",
-            f"{unique_id}.hvac_fan_option_b04",
-        ):
-            res.append(
-                HiqSwitchEntity(
-                    coordinator=coordinator,
-                    entity_description=HiqSwitchEntityDescription(
-                        key=key,
-                        translation_key=key.removeprefix(f"{unique_id}."),
-                        entity_category=EntityCategory.CONFIG,
-                        entity_registry_enabled_default=False,
-                    ),
-                    var_write_req=get_write_req_th(key, unique_id),
-                    dev_info=dev_info,
-                )
-            )
 
     if len(res) > 0:
         return res
@@ -193,7 +164,7 @@ def add_hvac_tags(
 
 
 class HiqSwitchEntity(HiqEntity, SwitchEntity):
-    """Defines a HIQ-Home buton entity."""
+    """Defines a HIQ-Home switch entity."""
 
     def __init__(
         self,
@@ -201,71 +172,45 @@ class HiqSwitchEntity(HiqEntity, SwitchEntity):
         entity_description: HiqSwitchEntityDescription | None = None,
         unique_id: str | None = None,
         var_write_req: str | None = None,
-        var_invert: bool = False,
         dev_info: DeviceInfo = None,
     ) -> None:
-        """Initialize a HIQ-Home button entity."""
+        """Initialize a HIQ-Home switch entity."""
         super().__init__(coordinator=coordinator)
         self.entity_description = entity_description
         self._attr_unique_id = unique_id or entity_description.key
         self._var_write_req = var_write_req
-        self._state = None
         self._attr_device_info = dev_info
 
         LOGGER.debug(self._attr_unique_id)
         coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
-        self._var_type = VarType.INT
-        self._var_invert = var_invert
 
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
-        val = self.coordinator.get_value(self._attr_unique_id, 1.0, 0, None)
-        if val is None:
-            return None
-        if self._var_invert:
-            return int(val) == 0
-        return val
+        return self.coordinator.get_value(self._attr_unique_id, 1.0, 0, None)
 
     async def async_turn_off(self, **kwargs):
         """Turn the entity off."""
-        new_val = 1 if self._var_invert else 0
-        if self._var_write_req:
-            LOGGER.debug(
-                "write value: %s -> %s (+%s)",
-                self._attr_unique_id,
-                str(new_val),
-                self._var_write_req,
-            )
-            await self.coordinator.cybro.request(
-                {
-                    self._attr_unique_id: str(new_val),
-                    self._var_write_req: "1",
-                }
-            )
-        else:
-            LOGGER.debug("write value: %s -> %s", self._attr_unique_id, str(new_val))
-            await self.coordinator.cybro.write_var(self._attr_unique_id, new_val)
-        await self.coordinator.async_refresh()
+        await self._write(0)
 
     async def async_turn_on(self, **kwargs):
         """Turn the entity on."""
-        new_val = 0 if self._var_invert else 1
+        await self._write(1)
+
+    async def _write(self, new_val: int) -> None:
+        """Write the new value, together with the write request if needed."""
         if self._var_write_req:
             LOGGER.debug(
                 "write value: %s -> %s (+%s)",
                 self._attr_unique_id,
-                str(new_val),
+                new_val,
                 self._var_write_req,
             )
             await self.coordinator.cybro.request(
-                {
-                    self._attr_unique_id: str(new_val),
-                    self._var_write_req: "1",
-                }
+                {self._attr_unique_id: str(new_val), self._var_write_req: "1"}
             )
         else:
-            LOGGER.debug("write value: %s -> %s", self._attr_unique_id, str(new_val))
+            LOGGER.debug("write value: %s -> %s", self._attr_unique_id, new_val)
             await self.coordinator.cybro.write_var(self._attr_unique_id, new_val)
         await self.coordinator.async_refresh()
 
