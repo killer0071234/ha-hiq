@@ -17,7 +17,6 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.template import Template
 
-from .const import AREA_CLIMATE
 from .const import AREA_SYSTEM
 from .const import ATTR_DESCRIPTION
 from .const import ATTR_VARIABLE
@@ -30,6 +29,7 @@ from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
+from .models import thermostat_device_info
 
 TEMPLATE_INVERTED = "{{value | string() == '0'}}"
 
@@ -181,19 +181,6 @@ def add_th_tags(
     if len(res) > 0:
         return res
     return None
-
-
-def thermostat_device_info(
-    coordinator: HiqDataUpdateCoordinator, th_prefix: str
-) -> DeviceInfo:
-    """Return the device info of a thermostat, eg: c1000.th00."""
-    return DeviceInfo(
-        identifiers={(coordinator.cybro.nad, f"{th_prefix} thermostat")},
-        manufacturer=MANUFACTURER,
-        name=f"{th_prefix} thermostat",
-        suggested_area=AREA_CLIMATE,
-        **coordinator.via_device_info,
-    )
 
 
 class HiqBinarySensor(HiqEntity, BinarySensorEntity):

@@ -44,7 +44,6 @@ from homeassistant.helpers.trigger_template_entity import (
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.typing import StateType
 
-from .const import AREA_CLIMATE
 from .const import AREA_ENERGY
 from .const import AREA_SYSTEM
 from .const import AREA_WEATHER
@@ -61,6 +60,8 @@ from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
+from .models import thermostat_device_info
+from .models import hvac_device_info
 
 
 async def async_setup_entry(
@@ -572,13 +573,7 @@ def add_th_tags(
                 entity_description=HiqSensorEntityDescription(key=key, **description),
                 var_type=var_type,
                 val_fact=val_fact,
-                dev_info=DeviceInfo(
-                    identifiers={(coordinator.cybro.nad, f"{unique_id} thermostat")},
-                    manufacturer=MANUFACTURER,
-                    name=f"{unique_id} thermostat",
-                    suggested_area=AREA_CLIMATE,
-                    **coordinator.via_device_info,
-                ),
+                dev_info=thermostat_device_info(coordinator, unique_id),
             )
         )
 
@@ -636,13 +631,7 @@ def add_hvac_tags(
                 ),
                 var_type=VarType.FLOAT,
                 val_fact=0.1,
-                dev_info=DeviceInfo(
-                    identifiers={(coordinator.cybro.nad, f"{unique_id} HVAC")},
-                    manufacturer=MANUFACTURER,
-                    name=f"{unique_id} HVAC",
-                    suggested_area=AREA_CLIMATE,
-                    **coordinator.via_device_info,
-                ),
+                dev_info=hvac_device_info(coordinator, unique_id),
             )
         )
 
