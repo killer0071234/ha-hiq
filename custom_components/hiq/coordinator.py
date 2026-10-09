@@ -78,8 +78,6 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
                 f"Invalid response from Cybro scgi server: {error}"
             ) from error
 
-        self.async_update_listeners()
-
         return device
 
     @property
