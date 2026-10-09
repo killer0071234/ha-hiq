@@ -115,11 +115,11 @@ def add_th_tags(
         # identifier is cNAD.thNR
         grp = search(r"c\d+\.th\d+", key)
         unique_id = grp.group() if grp else key
-        # get if active
-        ge_ok = is_general_error_ok(coordinator, key)
-
         name = key.removeprefix(f"{unique_id}_")
-        if name == key or name not in TH_SELECT_OPTIONS or not ge_ok:
+        if name == key or name not in TH_SELECT_OPTIONS:
+            continue
+        # get if active
+        if not is_general_error_ok(coordinator, key):
             continue
         res.append(
             HiqSelectEntity(
