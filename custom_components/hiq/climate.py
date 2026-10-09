@@ -168,7 +168,8 @@ class HiqThermostat(HiqEntity, ClimateEntity):
     def current_humidity(self) -> float | None:
         """Return the current humidity."""
         humidity = self.coordinator.get_value(f"{self._prefix}_humidity", 1.0, 0)
-        if humidity is not None and humidity > 0:
+        # get_value returns the raw string if the value is not numeric
+        if isinstance(humidity, (int, float)) and humidity > 0:
             return humidity
         return None
 
