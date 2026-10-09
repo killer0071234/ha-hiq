@@ -30,6 +30,20 @@ async def test_blind_state(
     assert hass.states.get(BLIND).attributes["current_position"] == 0
 
 
+async def test_blind_unknown_position(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test an unknown position from the controller results in an unknown state."""
+    controller.values["c1000.bc00_blinds_position_00"] = "?"
+    await refresh(hass, init_integration)
+
+    state = hass.states.get(BLIND)
+    assert state.state == "unknown"
+    assert state.attributes.get("current_position") is None
+
+
 @pytest.mark.parametrize(
     ("moving", "expected"),
     [("bc00_qxs00_up", "opening"), ("bc00_qxs00_dn", "closing")],
