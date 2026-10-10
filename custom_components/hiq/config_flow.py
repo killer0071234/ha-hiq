@@ -336,14 +336,14 @@ async def validate_sensor_edit(
 ) -> dict[str, Any]:
     """Update edited sensor."""
     handler.options.pop(EDIT_PLATFORM, None)
-    # Default name is tag name
+    sensor: dict[str, Any] = handler.options[SENSOR_DOMAIN][handler.flow_state["_idx"]]
+    # Default name is tag name, the tag is not part of the edit form
     if user_input.get(CONF_NAME) is None:
-        user_input[CONF_NAME] = user_input[CONF_TAG]
+        user_input[CONF_NAME] = sensor[CONF_TAG]
 
     # Standard behavior is to merge the result with the options.
     # In this case, we want to add a sub-item so we update the options directly,
     # including popping omitted optional schema items.
-    sensor: dict[str, Any] = handler.options[SENSOR_DOMAIN][handler.flow_state["_idx"]]
     sensor.update(user_input)
     for key in DATA_SCHEMA_EDIT_SENSOR.schema:
         if isinstance(key, vol.Optional) and key not in user_input:

@@ -532,3 +532,20 @@ async def test_options_flow_remove_sensor_and_select(
     assert [select["name"] for select in entry.options["select"]] == ["Second"]
     assert [registry.async_get(entity_id) for entity_id in removed] == [None, None]
     assert _custom_entities(hass, entry) == [kept]
+
+
+async def test_options_flow_edit_sensor_default_name(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test an edited custom sensor without name is named after its tag."""
+    entry = init_integration
+    await _add_sensor(hass, entry, {"tag": "th00_max_time", "name": "Max time"})
+
+    result = await _options_step(hass, entry, "select_edit_entity")
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"index": "sensor:0"}
+    )
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["sensor"][0]["name"] == "th00_max_time"
