@@ -280,9 +280,8 @@ class HiqThermostat(HiqEntity, ClimateEntity):
         await self.coordinator.async_refresh()
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
-        """Set new target temperature."""
-        if (temperature := kwargs.get(ATTR_TEMPERATURE)) is None:
-            return
+        """Set new target temperature (Home Assistant always passes one)."""
+        temperature = kwargs[ATTR_TEMPERATURE]
 
         if self.preset_mode == PRESET_BOOST and self.hvac_mode == HVACMode.HEAT:
             setpoint = f"{self._prefix}_setpoint_hi"

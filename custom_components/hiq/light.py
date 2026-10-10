@@ -184,7 +184,7 @@ def _is_rgb_light(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
     else:
         return False
 
-    coordinator.data.add_var(rgb_mode_var)
+    # read during setup, before the platforms (missing if the module has none)
     rgb_val = coordinator.data.vars.get(rgb_mode_var)
     if rgb_val is None:
         return False

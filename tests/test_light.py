@@ -234,6 +234,37 @@ async def test_dimmable_light_without_rgb(
     assert state.attributes["brightness"] == 102
 
 
+@pytest.mark.parametrize(
+    ("tags", "color_mode"),
+    [
+        ({"ld10_qw00": "40", "ld10_rgb_mode": "1"}, ColorMode.HS),
+        ({"ld10_qw00": "40", "ld10_rgb_mode": "0"}, ColorMode.BRIGHTNESS),
+        ({"ld10_qw00": "40"}, ColorMode.BRIGHTNESS),
+    ],
+    ids=["rgb", "not_rgb", "no_rgb_mode"],
+)
+async def test_light_on_module_not_polled_by_default(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    tags: dict[str, str],
+    color_mode: ColorMode,
+) -> None:
+    """Test the rgb mode is read for modules beyond ld09.
+
+    The cybro library polls the rgb mode of modules ld00 .. ld09 only.
+    """
+    await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {"ld10_general_error": "0", "ld10_qw01": "0", "ld10_qw02": "0"} | tags,
+    )
+
+    state = hass.states.get("light.lights_light_c1000_ld10_qw00_light")
+    assert state.attributes["supported_color_modes"] == [color_mode]
+
+
 async def test_no_lights(
     hass: HomeAssistant,
     aioclient_mock: AiohttpClientMocker,
