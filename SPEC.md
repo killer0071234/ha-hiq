@@ -34,7 +34,7 @@ types when editing or removing.
 2. A stored select looks like:
    ```python
    {
-       "tag": "th00_mode",            # without the "cNAD." prefix, like sensors
+       "tag": "th00_mode",  # without the "cNAD." prefix, like sensors
        "name": "Mode",
        "unique_id": "<uuid1>",
        "options": {"off": 0, "eco": 1, "comfort": 5},

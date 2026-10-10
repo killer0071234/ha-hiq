@@ -133,11 +133,11 @@ the registry using that platform's domain.
 including the new menu and the `label=value` format.
 
 **Acceptance criteria:**
-- [ ] The README describes adding, editing and removing custom selects, with an example.
-- [ ] All SPEC success criteria are checked off.
+- [x] The README describes adding, editing and removing custom selects, with an example.
+- [x] All SPEC success criteria are checked off.
 
 **Verification:**
-- [ ] `scripts/test`, `scripts/lint`, `ruff format --check .`
+- [x] `scripts/test`, `scripts/lint`, `ruff format --check .`
 
 **Dependencies:** T5
 
@@ -146,5 +146,5 @@ including the new menu and the `label=value` format.
 **Estimated scope:** XS
 
 ## Checkpoint: Complete
-- [ ] All acceptance criteria are met. Coverage of `config_flow.py` and `select.py` has not dropped.
-- [ ] Ready for review
+- [x] All acceptance criteria are met. Coverage of `config_flow.py` and `select.py` has not dropped.
+- [x] Ready for review

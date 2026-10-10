@@ -61,10 +61,10 @@ T1 and T2 are independent of each other. T3 needs both.
 - [ ] Manual check in dev HA (`scripts/develop`)
 
 ### Phase 3: Polish
-- [ ] T6: README section and final pass
+- [x] T6: README section and final pass
 
 ### Checkpoint: Complete
-- [ ] All SPEC success criteria met. Coverage of touched modules has not dropped.
+- [x] All SPEC success criteria met. Coverage of touched modules has not dropped.
 
 ## Risks and Mitigations
 
