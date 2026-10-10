@@ -139,7 +139,10 @@ XXXX is the NAD of the controller, and YYYY is the IEX module prefix
 To have a basic diagnostic, there are some `sensor` Entities exposed.
 
 It is also possible to add custom sensors from variables in the HIQ controller.
-To add custom sensors, navigate to HIQ integration and click on `configure`.
+To add custom sensors, navigate to HIQ integration, click on `configure`, choose
+`Add custom entity` and then `Sensor`.
+Custom sensors are changed with `Configure custom entity` and deleted with
+`Remove custom entities`.
 
 [![Open your Home Assistant instance and show an integration.][integration-badge]][integration]
 
@@ -250,6 +253,31 @@ To set some parameters in the controller, there are some `select` Entities expos
 | `cXXXX HVAC thermostat config temperature source` | Select temperature source: 0-internal, 1-external, 2-remote from controller. | `cXXXX.hvac_temperature_source` |
 
 By default all of the `select` entities are disabled.
+
+#### Custom selects:
+
+Any integer variable of the HIQ controller can be exposed as a custom `select`.
+Navigate to HIQ integration, click on `configure`, choose `Add custom entity`
+and then `Select`, and pick the variable, a name and the options.
+
+Each option is entered as `label=value`. The value is a whole number, negative
+values are allowed. Choosing an option writes its value to the variable, and the
+select shows the option of the current value of the variable (`unknown` if no
+option has this value). Labels and values must be unique.
+
+Example for a variable `cXXXX.heating_mode`:
+
+| Option       | Written value |
+| ------------ | ------------- |
+| `off=0`      | `0`           |
+| `eco=1`      | `1`           |
+| `comfort=2`  | `2`           |
+| `frost=-1`   | `-1`          |
+
+Custom selects belong to the `cXXXX custom` device (together with custom
+sensors) and are enabled by default. They are changed with
+`Configure custom entity` (name and options, the variable is fixed) and deleted
+with `Remove custom entities`.
 
 Note: Not all entities are supported by stock HIQ firmware!
 Some of them are additions to HIQ functionality.

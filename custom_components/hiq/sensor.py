@@ -60,6 +60,7 @@ from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
+from .models import custom_device_info
 from .models import thermostat_device_info
 from .models import hvac_device_info
 
@@ -88,17 +89,7 @@ async def async_setup_entry(
     if config.get("sensor") is None:
         return
     var_prefix = f"c{coordinator.cybro.nad}."
-    dev_info = DeviceInfo(
-        identifiers={(DOMAIN, f"{coordinator.data.plc_info.nad} custom")},
-        manufacturer=MANUFACTURER,
-        name=f"c{coordinator.cybro.nad} custom",
-        # suggested_area=AREA_SYSTEM,
-        model=DEVICE_DESCRIPTION,
-        configuration_url=MANUFACTURER_URL,
-        entry_type=None,
-        sw_version=DEVICE_SW_VERSION,
-        hw_version=DEVICE_HW_VERSION,
-    )
+    dev_info = custom_device_info(coordinator)
     for sensor in config["sensor"]:
         sensor_config: ConfigType = vol.Schema(
             TEMPLATE_SENSOR_BASE_SCHEMA.schema, extra=vol.ALLOW_EXTRA

@@ -2,7 +2,11 @@
   "config": {
     "error": {
       "cannot_connect": "Fehler beim verbinden zum SCGI Server (Läuft der Server?, Ist der Server installiert?, Ist das cybroscgiserver Addon installiert?)",
-      "plc_not_existing": "HIQ Steuerung existiert im SCGI Server nicht (Ist die Adresse (NAD) richtig?)"
+      "plc_not_existing": "HIQ Steuerung existiert im SCGI Server nicht (Ist die Adresse (NAD) richtig?)",
+      "select_options_empty": "Füge mindestens eine Option hinzu",
+      "select_option_invalid": "Optionen müssen als Bezeichnung=Wert mit einer ganzen Zahl als Wert eingegeben werden, zB: eco=1",
+      "select_option_duplicate_label": "Jede Bezeichnung darf nur einmal verwendet werden",
+      "select_option_duplicate_value": "Jeder Wert darf nur einmal verwendet werden"
     },
     "flow_title": "{name}",
     "step": {
@@ -28,9 +32,15 @@
     "step": {
       "init": {
         "menu_options": {
-          "add_sensor": "Benutzerdefinierten Sensor hinzufügen",
-          "select_edit_sensor": "Benutzerdefinierten Sensor konfigurieren",
-          "remove_sensor": "Benutzerdefinierten Sensor löschen"
+          "add_entity": "Benutzerdefinierte Entität hinzufügen",
+          "select_edit_entity": "Benutzerdefinierte Entität konfigurieren",
+          "remove_entity": "Benutzerdefinierte Entitäten löschen"
+        }
+      },
+      "add_entity": {
+        "menu_options": {
+          "add_sensor": "Sensor",
+          "add_select": "Auswahl"
         }
       },
       "add_sensor": {
@@ -52,6 +62,19 @@
           "value_template": "Definiert eine Vorlage, um den Status des Sensors abzurufen."
         }
       },
+      "add_select": {
+        "description": "Füge eine benutzerdefinierte Auswahl hinzu, um einen Wert einer Variable der HIQ Steuerung zu wählen.",
+        "data": {
+          "name": "Name",
+          "tag": "Variable in HIQ Steuerung",
+          "options": "Optionen"
+        },
+        "data_description": {
+          "name": "Name der benutzerdefinierten Auswahl",
+          "tag": "Definiert welche Variable der HIQ Steuerung gelesen und geschrieben werden soll. zB: th00_mode",
+          "options": "Eine Option pro Eintrag als Bezeichnung=Wert, der Wert wird in die Variable geschrieben. zB: eco=1"
+        }
+      },
       "edit_sensor": {
         "description": "Bearbeite den benutzerdefinierten Sensor.",
         "data": {
@@ -70,7 +93,36 @@
           "unit_of_measurement": "Wähle eine Maßeinheit oder erstelle eine eigene.",
           "value_template": "Definiert eine Vorlage, um den Status des Sensors abzurufen."
         }
+      },
+      "edit_select": {
+        "description": "Bearbeite die benutzerdefinierte Auswahl.",
+        "data": {
+          "name": "Name",
+          "options": "Optionen"
+        },
+        "data_description": {
+          "name": "Name der benutzerdefinierten Auswahl",
+          "options": "Eine Option pro Eintrag als Bezeichnung=Wert, der Wert wird in die Variable geschrieben. zB: eco=1"
+        }
+      },
+      "select_edit_entity": {
+        "title": "Benutzerdefinierte Entität konfigurieren",
+        "data": {
+          "index": "Entität"
+        }
+      },
+      "remove_entity": {
+        "title": "Benutzerdefinierte Entitäten löschen",
+        "data": {
+          "index": "Entitäten"
+        }
       }
+    },
+    "error": {
+      "select_options_empty": "Füge mindestens eine Option hinzu",
+      "select_option_invalid": "Optionen müssen als Bezeichnung=Wert mit einer ganzen Zahl als Wert eingegeben werden, zB: eco=1",
+      "select_option_duplicate_label": "Jede Bezeichnung darf nur einmal verwendet werden",
+      "select_option_duplicate_value": "Jeder Wert darf nur einmal verwendet werden"
     }
   },
   "entity": {

@@ -2,7 +2,11 @@
   "config": {
     "error": {
       "cannot_connect": "Failed to connect to scgi server (Is the server running?, Is the server installed?, Is the cybroscgiserver addon installed?)",
-      "plc_not_existing": "HIQ controller does not exist in scgi server (Is the address / NAD correct?)"
+      "plc_not_existing": "HIQ controller does not exist in scgi server (Is the address / NAD correct?)",
+      "select_options_empty": "Add at least one option",
+      "select_option_invalid": "Options must be entered as label=value with a whole number value, eg: eco=1",
+      "select_option_duplicate_label": "Each option label may only be used once",
+      "select_option_duplicate_value": "Each option value may only be used once"
     },
     "flow_title": "{name}",
     "step": {
@@ -28,9 +32,15 @@
     "step": {
       "init": {
         "menu_options": {
-          "add_sensor": "Add custom sensor",
-          "select_edit_sensor": "Configure custom sensor",
-          "remove_sensor": "Remove custom sensor"
+          "add_entity": "Add custom entity",
+          "select_edit_entity": "Configure custom entity",
+          "remove_entity": "Remove custom entities"
+        }
+      },
+      "add_entity": {
+        "menu_options": {
+          "add_sensor": "Sensor",
+          "add_select": "Select"
         }
       },
       "add_sensor": {
@@ -52,6 +62,19 @@
           "value_template": "Defines a template to get the state of the sensor"
         }
       },
+      "add_select": {
+        "description": "Add a custom select to choose a value of a HIQ controller variable.",
+        "data": {
+          "name": "Name",
+          "tag": "PLC tag / variable",
+          "options": "Options"
+        },
+        "data_description": {
+          "name": "Select name",
+          "tag": "Defines what tag / variable to read from and write to the plc. eg: th00_mode",
+          "options": "One option per entry as label=value, the value is written to the variable. eg: eco=1"
+        }
+      },
       "edit_sensor": {
         "description": "Add a custom sensor to read from HIQ controller.",
         "data": {
@@ -70,7 +93,36 @@
           "unit_of_measurement": "Choose unit of measurement for the sensor (shall match device / state class)",
           "value_template": "Defines a template to get the state of the sensor"
         }
+      },
+      "edit_select": {
+        "description": "Edit the custom select.",
+        "data": {
+          "name": "Name",
+          "options": "Options"
+        },
+        "data_description": {
+          "name": "Select name",
+          "options": "One option per entry as label=value, the value is written to the variable. eg: eco=1"
+        }
+      },
+      "select_edit_entity": {
+        "title": "Configure custom entity",
+        "data": {
+          "index": "Entity"
+        }
+      },
+      "remove_entity": {
+        "title": "Remove custom entities",
+        "data": {
+          "index": "Entities"
+        }
       }
+    },
+    "error": {
+      "select_options_empty": "Add at least one option",
+      "select_option_invalid": "Options must be entered as label=value with a whole number value, eg: eco=1",
+      "select_option_duplicate_label": "Each option label may only be used once",
+      "select_option_duplicate_value": "Each option value may only be used once"
     }
   },
   "selector": {

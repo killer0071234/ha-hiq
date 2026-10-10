@@ -18,7 +18,11 @@
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "plc_not_existing": "[%key:common::config_flow::error::plc_not_existing%]"
+      "plc_not_existing": "[%key:common::config_flow::error::plc_not_existing%]",
+      "select_options_empty": "Add at least one option",
+      "select_option_invalid": "Options must be entered as label=value with a whole number value, eg: eco=1",
+      "select_option_duplicate_label": "Each option label may only be used once",
+      "select_option_duplicate_value": "Each option value may only be used once"
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
@@ -28,9 +32,15 @@
     "step": {
       "init": {
         "menu_options": {
-          "add_sensor": "[%key:component::hiq::options::step::init::menu_options::add_sensor%]",
-          "select_edit_sensor": "[%key:component::hiq::options::step::init::menu_options::select_edit_sensor%]",
-          "remove_sensor": "[%key:component::hiq::options::step::init::menu_options::remove_sensor%]"
+          "add_entity": "Add custom entity",
+          "select_edit_entity": "Configure custom entity",
+          "remove_entity": "Remove custom entities"
+        }
+      },
+      "add_entity": {
+        "menu_options": {
+          "add_sensor": "Sensor",
+          "add_select": "Select"
         }
       },
       "add_sensor": {
@@ -52,6 +62,19 @@
         },
         "description": "Add a custom sensor to read from HIQ controller."
       },
+      "add_select": {
+        "description": "Add a custom select to choose a value of a HIQ controller variable.",
+        "data": {
+          "name": "Name",
+          "tag": "PLC tag / variable",
+          "options": "Options"
+        },
+        "data_description": {
+          "name": "Select name",
+          "tag": "Defines what tag / variable to read from and write to the plc. eg: th00_mode",
+          "options": "One option per entry as label=value, the value is written to the variable. eg: eco=1"
+        }
+      },
       "edit_sensor": {
         "data": {
           "name": "[%key:common::config_flow::data::name%]",
@@ -70,7 +93,36 @@
           "name": "Sensor name"
         },
         "description": "Add a custom sensor to read from HIQ controller."
+      },
+      "edit_select": {
+        "description": "Edit the custom select.",
+        "data": {
+          "name": "Name",
+          "options": "Options"
+        },
+        "data_description": {
+          "name": "Select name",
+          "options": "One option per entry as label=value, the value is written to the variable. eg: eco=1"
+        }
+      },
+      "select_edit_entity": {
+        "title": "Configure custom entity",
+        "data": {
+          "index": "Entity"
+        }
+      },
+      "remove_entity": {
+        "title": "Remove custom entities",
+        "data": {
+          "index": "Entities"
+        }
       }
+    },
+    "error": {
+      "select_options_empty": "Add at least one option",
+      "select_option_invalid": "Options must be entered as label=value with a whole number value, eg: eco=1",
+      "select_option_duplicate_label": "Each option label may only be used once",
+      "select_option_duplicate_value": "Each option value may only be used once"
     }
   },
   "selector": {
