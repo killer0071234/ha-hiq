@@ -7,9 +7,13 @@ from re import search
 from re import sub
 
 from cybro import VarType
+from homeassistant.components.select import DOMAIN as SELECT_DOMAIN
 from homeassistant.components.select import SelectEntity
 from homeassistant.components.select import SelectEntityDescription
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_OPTIONS
+from homeassistant.const import CONF_UNIQUE_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
@@ -18,11 +22,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import get_write_req_th
 from .const import ATTR_DESCRIPTION
 from .const import ATTR_VARIABLE
+from .const import CONF_TAG
 from .const import DOMAIN
 from .const import LOGGER
 from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
+from .models import custom_device_info
 from .models import thermostat_device_info
 from .models import hvac_device_info
 
@@ -72,6 +78,31 @@ async def async_setup_entry(
     )
     if hvac_tags is not None:
         async_add_entities(hvac_tags)
+
+    async_add_entities(add_custom_selects(coordinator, entry))
+
+
+def add_custom_selects(
+    coordinator: HiqDataUpdateCoordinator, entry: ConfigEntry
+) -> list[HiqSelectEntity]:
+    """Return the user defined selects of the config entry options."""
+    var_prefix = f"c{coordinator.cybro.nad}."
+    dev_info = custom_device_info(coordinator)
+    return [
+        HiqSelectEntity(
+            coordinator=coordinator,
+            # no translation key, the name is user defined
+            entity_description=SelectEntityDescription(
+                key=f"{var_prefix}{select[CONF_TAG]}",
+                name=select[CONF_NAME],
+                has_entity_name=True,
+            ),
+            attr_options=select[CONF_OPTIONS],
+            unique_id=select[CONF_UNIQUE_ID],
+            dev_info=dev_info,
+        )
+        for select in entry.options.get(SELECT_DOMAIN, [])
+    ]
 
 
 @dataclass
@@ -187,7 +218,7 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
         self,
         coordinator: HiqDataUpdateCoordinator,
         attr_options: dict[str, int],
-        entity_description: HiqSelectEntityDescription | None = None,
+        entity_description: SelectEntityDescription | None = None,
         unique_id: str | None = None,
         var_write_req: str | None = None,
         dev_info: DeviceInfo = None,
@@ -195,12 +226,13 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
         """Initialize a HIQ-Home select entity."""
         super().__init__(coordinator=coordinator)
         self.entity_description = entity_description
-        self._attr_unique_id = unique_id or entity_description.key
+        self._var = entity_description.key
+        self._attr_unique_id = unique_id or self._var
         self._var_write_req = var_write_req
         self._attr_device_info = dev_info
 
         LOGGER.debug(self._attr_unique_id)
-        coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
+        coordinator.data.add_var(self._var, var_type=VarType.INT)
         self._attr_options = list(attr_options)
         self._var_map = attr_options
         self._option_by_value = {value: key for key, value in attr_options.items()}
@@ -208,20 +240,18 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
     @property
     def current_option(self) -> str | None:
         """Return the option."""
-        return self._option_by_value.get(
-            self.coordinator.get_value(self._attr_unique_id)
-        )
+        return self._option_by_value.get(self.coordinator.get_value(self._var))
 
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
         try:
-            desc = self.coordinator.data.vars[self._attr_unique_id].description
+            desc = self.coordinator.data.vars[self._var].description
         except KeyError:
             desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
-            ATTR_VARIABLE: self._attr_unique_id,
+            ATTR_VARIABLE: self._var,
         }
 
     async def async_select_option(self, option: str) -> None:
@@ -230,17 +260,15 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
         if self._var_write_req:
             LOGGER.debug(
                 "write value: %s -> %s (%s) (+%s)",
-                self._attr_unique_id,
+                self._var,
                 value,
                 option,
                 self._var_write_req,
             )
             await self.coordinator.cybro.request(
-                {self._attr_unique_id: value, self._var_write_req: "1"}
+                {self._var: value, self._var_write_req: "1"}
             )
         else:
-            LOGGER.debug(
-                "write value: %s -> %s (%s)", self._attr_unique_id, value, option
-            )
-            await self.coordinator.cybro.write_var(self._attr_unique_id, value)
+            LOGGER.debug("write value: %s -> %s (%s)", self._var, value, option)
+            await self.coordinator.cybro.write_var(self._var, value)
         await self.coordinator.async_refresh()

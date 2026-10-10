@@ -46,10 +46,10 @@ T1 and T2 are independent of each other. T3 needs both.
 
 ### Phase 1: Foundation
 - [x] T1: Unified options menu (sensors only, behaviour unchanged)
-- [ ] T2: Custom select entities from `entry.options["select"]`
+- [x] T2: Custom select entities from `entry.options["select"]`
 
 ### Checkpoint: Foundation
-- [ ] `scripts/test` and `scripts/lint` pass. Existing sensor tests pass with only their step ids changed.
+- [x] `scripts/test` and `scripts/lint` pass. Existing sensor tests pass with only their step ids changed.
 
 ### Phase 2: Flow
 - [ ] T3: Add custom select via options flow, with validation

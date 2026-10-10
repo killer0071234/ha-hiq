@@ -36,13 +36,13 @@ with the stored `unique_id`, uses `name` as its entity name, is enabled by
 default and has no entity category.
 
 **Acceptance criteria:**
-- [ ] State equals the label of the current PLC value, and `options` keeps the stored order. A value that matches no option gives `unknown`.
-- [ ] `select.select_option` writes the mapped integer (negatives included) to `c{nad}.<tag>`.
-- [ ] An entry without a `"select"` key sets up without errors and creates no custom selects.
+- [x] State equals the label of the current PLC value, and `options` keeps the stored order. A value that matches no option gives `unknown`.
+- [x] `select.select_option` writes the mapped integer (negatives included) to `c{nad}.<tag>`.
+- [x] An entry without a `"select"` key sets up without errors and creates no custom selects.
 
 **Verification:**
-- [ ] `scripts/test tests/test_select.py` (new)
-- [ ] `scripts/lint`
+- [x] `scripts/test tests/test_select.py` (new)
+- [x] `scripts/lint`
 
 **Dependencies:** None (parallel to T1)
 
@@ -52,7 +52,7 @@ default and has no entity category.
 **Estimated scope:** S
 
 ## Checkpoint: Foundation
-- [ ] `scripts/test` and `scripts/lint` are green
+- [x] `scripts/test` and `scripts/lint` are green
 - [ ] Review with the user before continuing
 
 ## Task 3: Add custom select via options flow
