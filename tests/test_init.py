@@ -13,11 +13,15 @@ from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import (
+    AiohttpClientMocker,
+)
 
 from custom_components.hiq import get_write_req_th
 from custom_components.hiq.const import DOMAIN
 from custom_components.hiq.coordinator import HiqDataUpdateCoordinator
 
+from .common import setup_with_tags
 from .const import HOST, NAD, OPTIONS, PORT, TITLE
 from .fake_controller import HIQ_TAGS, FakeController
 
@@ -120,6 +124,50 @@ def test_thermostat_write_request(tag: str, request_tag: str | None) -> None:
     """Test thermostat config tags are written together with their request."""
     expected = request_tag and f"c1000.th00_{request_tag}"
     assert get_write_req_th(f"c1000.th00_{tag}", "c1000.th00") == expected
+
+
+async def test_module_info_read_before_platforms(
+    hass: HomeAssistant,
+    controller: FakeController,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test module card id and firmware are polled before the platforms are set up."""
+    polled_at_platform_setup: list[str] = []
+    forward = hass.config_entries.async_forward_entry_setups
+
+    async def _forward(entry, platforms) -> None:
+        coordinator = hass.data[DOMAIN][entry.entry_id]
+        polled_at_platform_setup.extend(
+            name
+            for name in ("c1000.th00_iex_card_id", "c1000.th00_firmware_version")
+            if name in coordinator.data.vars
+        )
+        await forward(entry, platforms)
+
+    mock_config_entry.add_to_hass(hass)
+    with patch.object(hass.config_entries, "async_forward_entry_setups", _forward):
+        assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert polled_at_platform_setup == [
+        "c1000.th00_iex_card_id",
+        "c1000.th00_firmware_version",
+    ]
+
+
+async def test_module_info_not_requested_if_not_listed(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test older controllers are not asked for module card id and firmware."""
+    await setup_with_tags(
+        hass, aioclient_mock, mock_config_entry, {"th00_general_error": "0"}
+    )
+
+    requested = " ".join(str(call[1]) for call in aioclient_mock.mock_calls)
+    assert "_iex_card_id" not in requested
+    assert "_firmware_version" not in requested
 
 
 async def test_entities_unavailable_while_offline(

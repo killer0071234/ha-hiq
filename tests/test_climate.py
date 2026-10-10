@@ -9,12 +9,22 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import (
+    AiohttpClientMocker,
+)
 
-from custom_components.hiq.const import ATTR_FLOOR_TEMP, ATTR_SETPOINT_IDLE
+from custom_components.hiq.const import (
+    ATTR_FLOOR_TEMP,
+    ATTR_SETPOINT_IDLE,
+    DEVICE_SW_VERSION,
+    MANUFACTURER_URL,
+)
 
-from .common import call_service, refresh
+from .common import call_service, refresh, setup_with_tags
 from .fake_controller import FakeController
 
 THERMOSTAT = "climate.climate_c1000_th00_thermostat"
@@ -387,3 +397,40 @@ async def test_set_temperature_boost_cooling(
         (f"{TH}_setpoint_lo", "180"),
         (f"{TH}_config2_req", "1"),
     ]
+
+
+def _device(hass: HomeAssistant, entity_id: str) -> dr.DeviceEntry:
+    """Return the device of an entity."""
+    entry = er.async_get(hass).async_get(entity_id)
+    return dr.async_get(hass).async_get(entry.device_id)
+
+
+async def test_thermostat_device_shows_module(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test the thermostat device shows the model and firmware of its module."""
+    device = _device(hass, THERMOSTAT)
+
+    assert device.name == "c1000.th00 thermostat"
+    assert (device.model, device.sw_version) == ("TH-2-IQ", "1.0.0.0")
+    assert device.hw_version == "2/3"
+
+
+async def test_thermostat_device_defaults(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test a thermostat without module info shows the defaults of all devices."""
+    await setup_with_tags(
+        hass, aioclient_mock, mock_config_entry, {"th00_general_error": "0"}
+    )
+
+    device = _device(hass, THERMOSTAT)
+    assert device.name == "c1000.th00 thermostat"
+    assert (device.model, device.sw_version, device.hw_version) == (
+        "HIQ controller",
+        DEVICE_SW_VERSION,
+        "2/3",
+    )
+    assert device.configuration_url == MANUFACTURER_URL

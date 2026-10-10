@@ -1,223 +1,217 @@
-# Spec: Custom select entities
+# Spec: Module card id and firmware in device info
+
+Issue: [#298](https://github.com/killer0071234/ha-hiq/issues/298)
 
 ## Objective
 
-Let users expose any integer PLC tag of their HIQ controller as a Home Assistant
-`select` entity, configured in the integration's options flow — the same way
-custom sensors work today.
+Newer HIQ controllers report two variables for every expansion module
+(`mmNN`, e.g. `lc00`, `ld01`, `bc00`, `th00`):
 
-A custom select has a fixed list of options, each mapping a user-defined label
-to an integer PLC value (e.g. `off=0`, `eco=1`, `comfort=5`). Choosing an
-option writes its value to the tag; the current option is the label whose value
-matches the tag's current value.
+- `cNAD.mmNN_iex_card_id`: hardware code of the connected module
+  (e.g. `60` = LC-10-IQ), `0` = none
+- `cNAD.mmNN_firmware_version`: firmware as a 4-digit decimal number
+  (major, minor, build, release)
 
-The options flow is reorganised around a **unified per-type menu**: one
-"Add entity", "Edit entity" and "Remove entity" entry, where the user picks the
-entity type (sensor / select) when adding, and sees all custom entities of both
-types when editing or removing.
+Today every device shows the same static info: model `HIQ controller`,
+`sw_version` = the integration version (`0.4.1`) and `hw_version` = `2/3`.
+Thermostat devices show no model or version at all; they get the same defaults
+as the other devices.
+
+Read both variables at startup and use them in the device info of the module's
+devices, so users can see in Home Assistant which module type and firmware is
+installed.
 
 ### User stories
 
-- As a user, I can add a custom select by picking a tag, a name and a list of
-  `label=value` options.
-- As a user, I can change the name and options of a custom select later.
-- As a user, I can remove custom selects (and sensors) in one step; removed
-  entities disappear from the entity registry.
-- As an existing user, my configured custom sensors keep working unchanged after
-  the update (same storage, same unique ids, same entity ids).
+- As a user, I can see on a light, blind or thermostat device which module it
+  belongs to (e.g. `LC-10-IQ`, `TH-1-IQ`) and which firmware that module runs.
+- As a user with an older controller (no such variables) or a slot with no
+  module, my devices look exactly as they do today.
 
 ## Assumptions
 
-1. Storage stays per platform in `entry.options`: sensors in
-   `entry.options["sensor"]` (unchanged), selects in `entry.options["select"]`.
-   No config-entry `VERSION` bump, no migration needed.
-2. A stored select looks like:
-   ```python
-   {
-       "tag": "th00_mode",  # without the "cNAD." prefix, like sensors
-       "name": "Mode",
-       "unique_id": "<uuid1>",
-       "options": {"off": 0, "eco": 1, "comfort": 5},
-   }
-   ```
-3. Option labels are shown verbatim (no translation), in the order entered.
-4. The tag is read and written as `VarType.INT`, like the existing selects.
-5. A PLC value that matches no option gives `current_option = None` (state
-   `unknown`), no error.
-6. Writing is direct only: `cybro.write_var(tag, value)` followed by
-   `coordinator.async_refresh()` — no write-request tag.
-7. Custom selects live on the existing `c{nad} custom` device shared with
-   custom sensors.
-8. Custom selects are enabled by default (unlike the built-in config selects).
-   They get no entity category.
-9. Option values may be any integer, negative values included (`int()` parse).
+1. **Existing devices only.** No new devices, the device tree stays the same.
+   Every device that belongs to a module gets that module's info:
 
-## Behaviour
+   | Module | Devices (unchanged identifiers) | Built in |
+   |---|---|---|
+   | `lcNN`, `ldNN` | one device per light output (`Light cNAD.lcNN_qxMM`) | `light._light_device_info` |
+   | `bcNN` | one device per blind (`Blind cNAD.bcNN_blinds_position_MM`) | `cover.py` |
+   | `thNN` | one device per thermostat (`cNAD.thNN thermostat`) | `models.thermostat_device_info` |
 
-### Options flow
+   `scNN` and `fcNN` modules have no device of their own (their sensors live on
+   shared devices such as `cNAD temperatures`) and are out of scope.
+2. **Model** comes from a fixed table in `const.py`:
 
-```
-init (menu)
-├── add_entity            menu: sensor | select
-│   ├── add_sensor        existing sensor form (unchanged fields)
-│   └── add_select        tag, name, options
-├── select_edit_entity    form: pick one entity across both types
-│   ├── edit_sensor       existing sensor edit form
-│   └── edit_select       name, options
-└── remove_entity         form: multi-select across both types
-```
+   `IEX_CARD_MODELS` holds the full list provided by the maintainer (card ids
+   1 .. 208 and 9999, e.g. `60` LC-10-IQ, `63` BC-5-IQ, `64` SC-4-IQ,
+   `65` TH-1-IQ, `66` TH-2-IQ, `67` FC-1-IQ, `72` LD-D10-IQ), the ids only
+   found in the CyPro 2.8.0c hardware list (`4`, `8`, `9`, `17`, `32`, `34`,
+   `37`, `47`, `49`, `53`, `54`, `137`) and `69` TH-3-IQ, plus `70` TH-1T and
+   `71` SC-4T from the controller's variable descriptions.
+   Card id `0` (listed as `BCM`) means no module and is never looked up.
 
-- Adding branches through the `add_entity` sub-menu. Editing branches with
-  `SchemaFlowFormStep(next_step=<async callable>)`. The callable only receives
-  the options, so the platform being edited is kept in a transient
-  `_edit_platform` options key, which the edit step removes again.
-- Entities in edit/remove lists are keyed `"<platform>:<index>"`
-  (e.g. `"sensor:0"`, `"select:2"`) and labelled `"<name> (<Sensor|Select>)"`.
-- The options field is a multi-value `SelectSelector` with `custom_value=True`;
-  each entry is a `label=value` string. On edit, the stored mapping is shown back
-  as `label=value` strings.
-- Tag dropdown in `add_select` offers only the controller's own variables
-  (same filtering as `get_sensor_setup`). The tag cannot be changed on edit.
-- Name defaults to the tag when left empty (same as sensors).
+   An unknown, non-zero card id is shown as `card <id>` (e.g. `card 99`).
+3. **Firmware** is a 16 bit integer (`1..32767`). The last three digits are
+   minor, build and release (one digit each), everything before them is the
+   major version: `major.minor.build.release` =
+   `v // 1000`, `v // 100 % 10`, `v // 10 % 10`, `v % 10`.
+   `32767` → `32.7.6.7`, `1203` → `1.2.0.3`, `1000` → `1.0.0.0`,
+   `1` → `0.0.0.1`. A negative value counts as missing.
+4. **Missing values.** A variable is *missing* if the controller does not list
+   it (older controller), or its value is `0` (no module), `?` (not readable)
+   or not an integer (for firmware also a negative value).
 
-### Validation (errors shown on the form, nothing stored)
-
-| Input | Error key |
-|---|---|
-| no options | `select_options_empty` |
-| entry not of form `label=value` / value not an integer | `select_option_invalid` |
-| empty label after stripping | `select_option_invalid` |
-| duplicate label | `select_option_duplicate_label` |
-| duplicate value | `select_option_duplicate_value` |
-
-Whitespace around label and value is stripped.
-
-### Entity
-
-- Unique id: the stored `unique_id` (uuid1), set when the select is added.
-- `options` = labels in stored order; `current_option` from value → label map.
-- `extra_state_attributes` = `description` and `variable`, like
-  `HiqSelectEntity`.
-- Reuse `HiqSelectEntity` (it already takes a label → value mapping and writes
-  with `write_var` when `var_write_req` is `None`); only add a name/unique id
-  path. No new entity class unless reuse proves impossible.
-
-### Removal
-
-Removing a select also removes its entity from the entity registry
-(`SELECT_DOMAIN`), mirroring `validate_remove_sensor`.
+   | Card id | Firmware | model | sw_version |
+   |---|---|---|---|
+   | missing | missing | `HIQ controller` | integration version |
+   | present | missing | from card id | `unknown` |
+   | missing | present | `unknown` | from firmware |
+   | present | present | from card id | from firmware |
+5. Thermostat devices get the same defaults as light and blind devices:
+   model `HIQ controller`, `sw_version` = integration version,
+   `hw_version` = `2/3` and `configuration_url`. Identifiers, name and
+   suggested area stay unchanged. `hw_version` is never taken from the module.
+6. **Read once at startup**, together with the module error tags in
+   `async_setup_entry`, before the platforms are set up (same mechanism as the
+   `_general_error` and `_rgb_mode` tags). A module firmware update shows after
+   the entry is reloaded. The variables are not polled afterwards beyond what
+   that pre-read registers.
+7. Only the variables that exist in the controller's variable list are read
+   (no requests for tags of older controllers).
 
 ## Tech Stack
 
 - Python 3.13+, Home Assistant 2026.9.4, `cybro` 0.4.1
-- Tests: `pytest` + `pytest-homeassistant-custom-component` 0.13.367
-- Lint/format: `ruff` 0.16.10
+- Tests: `pytest` + `pytest-homeassistant-custom-component`
+- Lint/format: `ruff`
 
 ## Commands
 
 ```
 Test:      scripts/test                      # pytest --cov --cov-report=term
-Single:    scripts/test tests/test_config_flow.py -k select
+Single:    scripts/test tests/test_models.py
+Live:      HIQ_LIVE_HOST=192.168.10.48 HIQ_LIVE_NAD=10000 scripts/test tests/live
 Lint:      scripts/lint                      # ruff check . --fix
 Format:    ruff format .
-Dev HA:    scripts/develop
 ```
 
 ## Project Structure
 
 ```
 custom_components/hiq/
-  config_flow.py        → unified menu, add/edit/remove select steps, validation
-  select.py             → set up custom selects from entry.options["select"]
-  const.py              → new CONF_* keys if needed (e.g. CONF_ENTITY_TYPE)
-  strings.json          → options-flow steps, errors, entity type selector
-  translations/en.json  → same as strings.json
-  translations/de.json  → German translations
-README.md               → "custom select" section next to custom sensors
+  __init__.py      → pre-read *_iex_card_id / *_firmware_version at startup
+  const.py         → card id → model table
+  models.py        → helper returning model / sw_version of a module;
+                     thermostat_device_info uses it
+  light.py         → _light_device_info uses it
+  cover.py         → blind device info uses it
 tests/
-  test_config_flow.py   → flow tests (sensor tests adapted to new menu)
-  test_select.py        → new: custom select entity state & writes
+  fake_controller.py → card id / firmware tags for the test modules
+  test_models.py     → new: helper (table, unknown id, fallbacks, firmware format)
+  test_init.py / test_light.py / test_cover.py / test_climate.py
+                     → device registry shows model / sw_version per module
+README.md          → mention module model / firmware in device info
 ```
 
 ## Code Style
 
-Follow the existing modules: one function per flow step, `handler.options`
-mutated directly for sub-items, small helpers instead of duplicated logic.
-Example of the expected shape:
+Follow the existing helpers in `models.py`: small functions taking the
+coordinator, docstring on every function, values read with
+`coordinator.data.vars`. Expected shape:
 
 ```python
-async def validate_select_setup(
-    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
-) -> dict[str, Any]:
-    """Validate select input."""
-    user_input[CONF_OPTIONS] = _parse_select_options(user_input[CONF_OPTIONS])
-    user_input[CONF_UNIQUE_ID] = str(uuid.uuid1())
-
-    # Default name is tag name
-    if user_input.get(CONF_NAME) is None:
-        user_input[CONF_NAME] = user_input[CONF_TAG]
-
-    selects: list[dict[str, Any]] = handler.options.setdefault(SELECT_DOMAIN, [])
-    selects.append(user_input)
-    return {}
+def module_device_info(
+    coordinator: HiqDataUpdateCoordinator, module: str
+) -> dict[str, str]:
+    """Return model and sw_version of a module (eg: c1000.lc00), if reported."""
+    card_id = _int_value(coordinator, f"{module}_iex_card_id")
+    firmware = _int_value(coordinator, f"{module}_firmware_version")
+    if card_id is None and firmware is None:
+        return {}  # older controller, keep the defaults
+    return {
+        "model": _card_model(card_id),  # None -> "unknown"
+        "sw_version": _firmware(firmware),  # None -> "unknown"
+    }
 ```
 
-- One import per line (existing ruff isort style), docstring on every function.
-- Raise `SchemaFlowError("<error_key>")` for validation errors.
-- Use HA constants (`CONF_NAME`, `CONF_OPTIONS`, `CONF_UNIQUE_ID`,
-  `SELECT_DOMAIN`, `SENSOR_DOMAIN`) instead of string literals.
+Callers merge it over today's defaults (a dict merge, as passing `model=`
+and `**info` together raises a duplicate keyword error):
+
+```python
+versions = {"model": DEVICE_DESCRIPTION, "sw_version": DEVICE_SW_VERSION}
+DeviceInfo(..., **(versions | module_device_info(coordinator, module)))
+```
 
 ## Testing Strategy
 
-Tests use the existing `init_integration` fixture and `fake_controller`.
-Write the tests first (TDD), and keep coverage of `config_flow.py` and `select.py`
-at its current level or higher.
+Write the tests first. Unit tests for the helper, integration tests through the
+device registry using `setup_with_tags` / the fake controller.
 
-`tests/test_config_flow.py`:
-- add select → entity exists on custom device, options/labels correct
-- edit select → name and options change, entity id unchanged after reload
-- remove select (and mixed sensor+select removal) → gone from states and registry
-- each validation error from the table above
-- add-entity type step routes to `add_sensor` / `add_select`
-- existing sensor tests adapted to the new menu step ids, same assertions
+- Helper (`test_models.py`): every table entry, unknown id → `card <id>`,
+  every row of the missing-values table (missing = not listed / `0` / `?` /
+  non-numeric, each kind tested), firmware `1203` → `1.2.0.3`,
+  `1000` → `1.0.0.0`, `1` → `0.0.0.1`, `10000` → `10.0.0.0`,
+  `32767` → `32.7.6.7`, negative → missing.
+- Device registry: a light output, a blind and a thermostat with card id and
+  firmware show the module model and firmware. All outputs of one module show
+  the same values.
+- Regression: a controller without these variables gives light and blind
+  devices identical to today (model, sw_version, hw_version, identifiers,
+  names); thermostat devices keep identifiers and names and get the defaults.
+- No extra request for variables missing from the controller's variable list.
+- Live (read-only, existing `tests/live`): setup stays free of warnings; on
+  c10000 the `th01` thermostat device shows `TH-2-IQ` / `1.0.0.0` and the `th00`
+  device (both `0`) shows `HIQ controller` / integration version.
 
-`tests/test_select.py`:
-- `current_option` reflects the PLC value; unmapped value → `unknown`
-- `select.select_option` calls `write_var(tag, value)` with the mapped integer
-- options-entry without `"select"` key → no custom selects, no error
-
-Regression: an entry created with the old options format (only `"sensor"`)
-loads with unchanged sensor unique ids and entity ids.
+Coverage of the touched modules must not drop.
 
 ## Boundaries
 
-- **Always:** run `scripts/test` and `scripts/lint` before committing; keep
-  `strings.json`, `en.json` and `de.json` in sync; update README.
-- **Ask first:** bumping the config-entry `VERSION` or changing the stored
-  sensor format; adding dependencies; changing behaviour of the built-in
-  (auto-discovered) selects; a dedicated new entity class instead of reusing
-  `HiqSelectEntity`.
-- **Never:** change unique ids or entity ids of existing custom sensors; drop or
-  weaken existing tests to make the menu refactor pass; write to the PLC during
-  the options flow.
+- **Always:** write tests first; run `scripts/test` and `scripts/lint`; keep
+  device identifiers and names unchanged.
+- **Ask first:** creating new devices or changing the device tree; taking
+  `hw_version` from the module; polling these variables continuously; adding models for card
+  ids not in the table above.
+- **Never:** change unique ids, entity ids or device identifiers; write to the
+  controller; fail setup because these variables are missing or invalid.
 
 ## Success Criteria
 
-1. A custom select can be added, edited and removed through the options flow,
-   and changes take effect after the entry reloads.
-2. Selecting an option writes the mapped integer to `cNAD.<tag>`. The state
-   follows the PLC value on the next poll.
-3. All validation errors in the table appear and nothing is stored when they do.
-4. Existing custom sensors survive the update untouched (regression test passes).
-5. The options menu shows exactly three entries: add, edit and remove entity.
-   Edit and remove list both sensors and selects.
-6. `scripts/test` and `scripts/lint` pass, and coverage of the touched modules
-   does not drop.
+1. With card id `60` and firmware `1203` on `lc00`, every light device of
+   `lc00` shows model `LC-10-IQ` and software `1.2.0.3`.
+2. The same works for `ld` lights (`LD-D10-IQ`), blinds (`BC-5-IQ`) and thermostats
+   (`TH-1-IQ`, `TH-2-IQ`, `TH-3-IQ`, `TH-1T`).
+3. An unknown card id shows `card <id>`. If only one of card id and firmware
+   is missing (incl. `0`), it shows `unknown` and the other one is shown.
+4. With both variables missing (incl. `0`), light and blind devices are identical to today, and thermostat devices show the same defaults as them
+   (`HIQ controller`, integration version, `2/3`).
+5. The variables are read once at startup, before the platforms are set up,
+   and only if the controller lists them.
+6. `scripts/test`, `scripts/lint` and `ruff format --check .` pass, and
+   coverage of the touched modules does not drop.
+
+## Open Questions
+
+None.
 
 ## Resolved Decisions
 
-1. Menu step ids are renamed (`add_sensor` → `add_entity` etc.); nothing stored
-   depends on them.
-2. Custom selects are always enabled by default and have no entity category
-   (not diagnostic, not config).
-3. Option values may be any whole number, negative included.
+1. Existing devices get the module info; no new devices.
+2. Model from a fixed card id table; firmware as dotted digits; per-field
+   fallback to the defaults.
+3. Thermostat devices get the same defaults as light / blind devices.
+4. Card id 69 found in the tag description on c8372 (named TH-3-IQ, see 10).
+5. Firmware format (one digit each for minor, build, release) seen on c10000:
+   `th01` (card 66, TH-2-IQ) reports `1000` → `1.0.0.0`, `fc00` (card 67, FC-1-IQ)
+   reports `1` → `0.0.0.1`.
+6. A value of `0` counts as missing.
+7. Both variables missing → defaults (`HIQ controller` / integration version);
+   only one missing → the other is shown and the missing one is `unknown`.
+8. Firmware may be up to `32767`: the major version takes all digits before
+   the last three (`32767` → `32.7.6.7`).
+9. Card id table replaced by the maintainer's full list (names with `-IQ`
+   suffix win over the controller descriptions); 70, 71 kept from the
+   descriptions; `0` stays missing although the list names it `BCM`.
+10. Ids only in the CyPro 2.8.0c hardware list are added; on conflicts the
+    maintainer's list wins (2, 7, 26, 50, 72 unchanged). Card 69 is `TH-3-IQ`.

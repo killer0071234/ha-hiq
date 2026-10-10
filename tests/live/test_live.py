@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import socket
 from collections import Counter
 from collections.abc import Generator
@@ -25,10 +26,13 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.hiq.const import DEVICE_SW_VERSION
 from custom_components.hiq.const import DOMAIN
+from custom_components.hiq.const import IEX_CARD_MODELS
 
 HOST = os.environ.get("HIQ_LIVE_HOST", "")
 PORT = int(os.environ.get("HIQ_LIVE_PORT", "4000"))
@@ -124,3 +128,85 @@ async def test_setup(
         )
     ]
     assert problems == []
+
+
+async def test_thermostat_device_info(
+    hass: HomeAssistant, enable_all_entities: None
+) -> None:
+    """Test thermostat devices show the card id and firmware of their module."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=2,
+        title=f"c{NAD}@{HOST}:{PORT}",
+        unique_id=f"c{NAD}@{HOST}:{PORT}",
+        data={},
+        options=OPTIONS,
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = hass.data[DOMAIN][entry.entry_id]
+    thermostats = sorted(
+        {
+            name.removesuffix("_general_error")
+            for name in coordinator.data.plc_info.plc_vars
+            if re.fullmatch(rf"c{NAD}\.th\d+_general_error", name)
+        }
+    )
+    if not thermostats:
+        pytest.skip("controller has no thermostats")
+
+    def _raw(name: str) -> int:
+        """Return a module value read directly from the controller, 0 if missing."""
+        try:
+            return int(raw[name])
+        except KeyError, ValueError:
+            return 0
+
+    names = [
+        f"{th}_{suffix}"
+        for th in thermostats
+        for suffix in ("iex_card_id", "firmware_version")
+        if f"{th}_{suffix}" in coordinator.data.plc_info.plc_vars
+    ]
+    raw: dict[str, str] = {}
+    if names:
+        data = await coordinator.cybro.request(dict.fromkeys(names, ""))
+        variables = data["var"] if isinstance(data["var"], list) else [data["var"]]
+        raw = {var["name"]: var["value"] for var in variables}
+
+    entity_registry = er.async_get(hass)
+    device_registry = dr.async_get(hass)
+    checked = []
+    for th in thermostats:
+        entity_id = entity_registry.async_get_entity_id(
+            "climate", DOMAIN, f"{th}_thermostat"
+        )
+        if entity_id is None:  # thermostat with a general error
+            continue
+        checked.append(th)
+        entity = entity_registry.async_get(entity_id)
+        device = device_registry.async_get(entity.device_id)
+        card_id = max(_raw(f"{th}_iex_card_id"), 0)
+        firmware = max(_raw(f"{th}_firmware_version"), 0)
+        if not card_id and not firmware:
+            expected = ("HIQ controller", DEVICE_SW_VERSION)
+        else:
+            expected = (
+                IEX_CARD_MODELS.get(card_id, f"card {card_id}")
+                if card_id
+                else "unknown",
+                ".".join(
+                    str(part)
+                    for part in (
+                        firmware // 1000,
+                        firmware // 100 % 10,
+                        firmware // 10 % 10,
+                        firmware % 10,
+                    )
+                )
+                if firmware
+                else "unknown",
+            )
+        assert (device.model, device.sw_version) == expected, th
+    assert checked

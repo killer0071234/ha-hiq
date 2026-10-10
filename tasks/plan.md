@@ -1,81 +1,79 @@
-# Implementation Plan: Custom select entities
+# Implementation Plan: Module card id and firmware in device info
 
-Spec: [SPEC.md](../SPEC.md) · Tasks: [todo.md](todo.md)
+Spec: [SPEC.md](../SPEC.md) · Tasks: [todo.md](todo.md) · Issue: #298
 
 ## Overview
 
-Add user-configured `select` entities (integer PLC tag + `label=value` options)
-to the options flow. The flow moves to a unified add / edit / remove entity
-menu that covers both custom sensors and custom selects. Selects are stored in
-`entry.options["select"]` and live on the shared `c{nad} custom` device.
+Read `mmNN_iex_card_id` and `mmNN_firmware_version` once at startup and show
+them as `model` / `sw_version` on the existing light, blind and thermostat
+devices. One helper in `models.py` turns the two values into device info
+fields. Each device builder merges that over the shared defaults
+(`HIQ controller`, integration version). If both values are missing (incl.
+`0`), the defaults stay as they are.
 
 ## Architecture Decisions
 
-- **Menu refactor first, with no change in behaviour.** It touches the existing
-  sensor tests, so it lands alone and stays green before any select code exists.
-  That isolates the riskiest change.
-- **Entity before flow.** Custom selects are first built from
-  `entry.options["select"]` that tests seed directly. The flow then only has to
-  produce that stored shape, which keeps each slice small and testable on its own.
-- **Reuse `HiqSelectEntity`.** It already maps labels to integers and writes with
-  `write_var` when `var_write_req is None`. Its existing `unique_id` parameter
-  covers the uuid.
-- **Add branches through an `add_entity` sub-menu. Edit branches through a
-  callable `next_step`.** The callable only receives the options, so the edited
-  platform is kept in a transient `_edit_platform` key there. The edit step
-  removes it again.
-- **Edit/remove keys `"<platform>:<index>"`**, parsed by one helper, used by both
-  steps.
-- **Options stored as `{label: int}`.** The form takes a multi-value
-  `SelectSelector(custom_value=True)` of `label=value` strings. One parse helper
-  validates and converts them, and one format helper turns the mapping back into
-  strings for edit.
-- **Device info for `c{nad} custom`** is extracted into `models.py`, so sensor
-  and select build the identical device.
+- **One helper, three callers.** `module_device_info(coordinator, module)` in
+  `models.py` returns `{}` (both missing) or `{"model": …, "sw_version": …}`.
+  The callers are `light._light_device_info`, the blind `DeviceInfo` in
+  `cover.py` and `models.thermostat_device_info`. All entities of one
+  thermostat (climate, sensors, numbers, selects, switches, buttons) already
+  share `thermostat_device_info`, so they stay consistent without extra work.
+- **Module prefix from the tag.** The module is the tag up to the first `_`
+  (`c1000.lc00_qx03` → `c1000.lc00`, `c1000.th00` → itself), the same split the
+  code already uses for `_general_error`.
+- **Read in the existing startup pre-read.** Extend the regex in
+  `async_setup_entry` with `_iex_card_id|_firmware_version`. Only listed
+  variables are added (iterates `plc_info.plc_vars`), so older controllers get
+  no extra requests. No separate poll.
+- **Card id table in `const.py`** (`IEX_CARD_MODELS: dict[int, str]`), next to
+  the other device constants.
+- **Firmware format** as a small pure function:
+  `f"{v // 1000}.{v // 100 % 10}.{v // 10 % 10}.{v % 10}"`.
+- **Thermostat defaults** are added to `thermostat_device_info` itself
+  (`model`, `sw_version`, `hw_version`, `configuration_url`), so all thermostat
+  entities change together.
 
 ## Dependency Graph
 
 ```
-T1 menu refactor ─────────────┐
-T2 select entity from options ┼─→ T3 add_select ─→ T4 edit_select ─→ T5 remove/mixed ─→ T6 docs
+T1 helper + table (models.py, const.py)
+ ├── T2 startup pre-read + thermostat devices   (first caller, proves the read)
+ │    ├── T3 light devices
+ │    └── T4 blind devices
+ └──────────── T5 live check + README
 ```
 
-T1 and T2 are independent of each other. T3 needs both.
+T3 and T4 are independent of each other once T2 is done.
 
 ## Task List
 
 ### Phase 1: Foundation
-- [x] T1: Unified options menu (sensors only, behaviour unchanged)
-- [x] T2: Custom select entities from `entry.options["select"]`
+- [x] Task 1: Module device info helper and card id table
 
-### Checkpoint: Foundation
-- [x] `scripts/test` and `scripts/lint` pass. Existing sensor tests pass with only their step ids changed.
+### Phase 2: Devices
+- [x] Task 2: Read module info at startup, show it on thermostat devices
+- [x] Task 3: Show module info on light devices
+- [x] Task 4: Show module info on blind devices
 
-### Phase 2: Flow
-- [x] T3: Add custom select via options flow, with validation
-- [x] T4: Edit custom select
-- [x] T5: Remove custom selects (incl. mixed sensor + select removal)
+### Checkpoint: Devices
+- [x] `scripts/test`, `scripts/lint` green; review with the user
 
-### Checkpoint: Flow
-- [x] Full add → edit → remove cycle works for both types. Registry cleanup is verified.
-- [x] Manual check against a live controller (c10000)
-
-### Phase 3: Polish
-- [x] T6: README section and final pass
+### Phase 3: Finish
+- [x] Task 5: Live check and README
 
 ### Checkpoint: Complete
-- [x] All SPEC success criteria met. Coverage of touched modules has not dropped.
+- [x] All SPEC success criteria met, ready for review
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
-|------|--------|------------|
-| Menu refactor breaks existing sensor flow/tests | High | Do it in T1 alone. Change only step ids in the tests, keep the assertions. |
-| `SelectSelector(multiple, custom_value)` round-trip on edit doesn't prefill as expected | Med | Cover the edit prefill (suggested values) with a test in T4. |
-| `test_consistency.py` fails when strings.json / en.json / de.json drift | Med | Update all three in the same task as each new step or error. |
-| Entity id of custom sensors changes because of device-info extraction | High | Regression test in T1: entry with only `"sensor"` keeps unique id and entity id. |
-| Stored `{label: int}` keys come back in a different order after JSON round-trip | Low | Dicts keep insertion order through JSON. The T2 test asserts option order. |
+|---|---|---|
+| Adding card id / firmware tags to the default fake controller changes devices in unrelated tests | Med | Add them only to the modules under test (th00, lc00, ld01, bc00). Run the full suite after T2. |
+| Thermostat devices now get `hw_version` / `configuration_url`, so existing thermostat device assertions change | Low | Intended (spec decision 3). Update the assertions and say so in the commit. |
+| Device registry keeps old values until reload | Low | Expected: read once at startup (spec assumption 6). |
+| Firmware format only seen on two test values | Low | Format fixed in spec decision 8 (up to `32767`), unit-tested at the edges. |
 
 ## Open Questions
 
-None. All were resolved in SPEC.md.
+None.
