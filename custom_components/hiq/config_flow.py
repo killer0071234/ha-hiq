@@ -10,6 +10,7 @@ import voluptuous as vol
 from cybro import Cybro
 from cybro import CybroConnectionError
 from cybro import Device
+from homeassistant.components.select import DOMAIN as SELECT_DOMAIN
 from homeassistant.components.sensor import CONF_STATE_CLASS
 from homeassistant.components.sensor import DEVICE_CLASS_UNITS
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
@@ -19,6 +20,7 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.const import CONF_DEVICE_CLASS
 from homeassistant.const import CONF_HOST
 from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_OPTIONS
 from homeassistant.const import CONF_PORT
 from homeassistant.const import CONF_UNIQUE_ID
 from homeassistant.const import CONF_UNIT_OF_MEASUREMENT
@@ -64,8 +66,8 @@ PLC_SETUP = {
 }
 
 
-async def get_sensor_setup(handler: SchemaCommonFlowHandler) -> vol.Schema:
-    """Return sensor setup schema."""
+def _tag_selector(handler: SchemaCommonFlowHandler) -> SelectSelector:
+    """Return a selector of the controller variables, without the prefix."""
     hass = async_get_hass()
 
     coordinator = hass.data.get(DOMAIN)[handler.parent_handler.config_entry.entry_id]
@@ -78,16 +80,31 @@ async def get_sensor_setup(handler: SchemaCommonFlowHandler) -> vol.Schema:
         if var_prefix in var
     ]
 
+    return SelectSelector(
+        SelectSelectorConfig(
+            options=variables,
+            mode=SelectSelectorMode.DROPDOWN,
+            sort=True,
+        )
+    )
+
+
+async def get_sensor_setup(handler: SchemaCommonFlowHandler) -> vol.Schema:
+    """Return sensor setup schema."""
     return vol.Schema(
         {
-            vol.Required(CONF_TAG): SelectSelector(
-                SelectSelectorConfig(
-                    options=variables,
-                    mode=SelectSelectorMode.DROPDOWN,
-                    sort=True,
-                )
-            ),
+            vol.Required(CONF_TAG): _tag_selector(handler),
             **SENSOR_SETUP,
+        }
+    )
+
+
+async def get_select_setup(handler: SchemaCommonFlowHandler) -> vol.Schema:
+    """Return select setup schema."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_TAG): _tag_selector(handler),
+            **SELECT_SETUP,
         }
     )
 
@@ -127,6 +144,19 @@ SENSOR_SETUP = {
             mode=SelectSelectorMode.DROPDOWN,
             translation_key="sensor_unit_of_measurement",
             sort=True,
+        )
+    ),
+}
+
+SELECT_SETUP = {
+    vol.Optional(CONF_NAME): TextSelector(),
+    # options are entered as label=value, eg: eco=1
+    vol.Required(CONF_OPTIONS): SelectSelector(
+        SelectSelectorConfig(
+            options=[],
+            multiple=True,
+            custom_value=True,
+            mode=SelectSelectorMode.DROPDOWN,
         )
     ),
 }
@@ -209,7 +239,7 @@ async def validate_sensor_setup(
 EDIT_PLATFORM = "_edit_platform"
 
 # platforms of the custom entities, in the order they are listed
-CUSTOM_PLATFORMS = (SENSOR_DOMAIN,)
+CUSTOM_PLATFORMS = (SENSOR_DOMAIN, SELECT_DOMAIN)
 
 
 def _entity_key(platform: str, index: int) -> str:
@@ -235,6 +265,44 @@ def _entity_names(handler: SchemaCommonFlowHandler) -> dict[str, str]:
 async def get_select_entity_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
     """Return schema for selecting a custom entity."""
     return vol.Schema({vol.Required(CONF_INDEX): vol.In(_entity_names(handler))})
+
+
+def _parse_select_options(options: list[str]) -> dict[str, int]:
+    """Return the select options entered as label=value by label."""
+    if not options:
+        raise SchemaFlowError("select_options_empty")
+    result: dict[str, int] = {}
+    for option in options:
+        label, _, value = option.rpartition("=")
+        label = label.strip()
+        if not label:
+            raise SchemaFlowError("select_option_invalid")
+        try:
+            number = int(value)
+        except ValueError:
+            raise SchemaFlowError("select_option_invalid") from None
+        if label in result:
+            raise SchemaFlowError("select_option_duplicate_label")
+        if number in result.values():
+            raise SchemaFlowError("select_option_duplicate_value")
+        result[label] = number
+    return result
+
+
+async def validate_select_setup(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Validate select input."""
+    user_input[CONF_OPTIONS] = _parse_select_options(user_input[CONF_OPTIONS])
+    user_input[CONF_UNIQUE_ID] = str(uuid.uuid1())
+
+    # Default name is tag name
+    if user_input.get(CONF_NAME) is None:
+        user_input[CONF_NAME] = user_input[CONF_TAG]
+
+    selects: list[dict[str, Any]] = handler.options.setdefault(SELECT_DOMAIN, [])
+    selects.append(user_input)
+    return {}
 
 
 async def validate_select_entity(
@@ -330,6 +398,11 @@ OPTIONS_FLOW = {
         get_sensor_setup,
         suggested_values=None,
         validate_user_input=validate_sensor_setup,
+    ),
+    "add_select": SchemaFlowFormStep(
+        get_select_setup,
+        suggested_values=None,
+        validate_user_input=validate_select_setup,
     ),
     "select_edit_entity": SchemaFlowFormStep(
         get_select_entity_schema,

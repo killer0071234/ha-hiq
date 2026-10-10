@@ -63,13 +63,13 @@ an optional name and a multi-value `label=value` options field. Parse the option
 into `{label: int}` and assign a uuid1 unique id.
 
 **Acceptance criteria:**
-- [ ] A valid input is stored in `entry.options["select"]`, and after reload the entity exists on the custom device with the right options.
-- [ ] Each validation error shows on the form and nothing is stored: `select_options_empty`, `select_option_invalid` (no `=`, non-integer value, empty label), `select_option_duplicate_label` and `select_option_duplicate_value`.
-- [ ] The name defaults to the tag. strings.json, en.json and de.json are updated and the consistency test passes.
+- [x] A valid input is stored in `entry.options["select"]`, and after reload the entity exists on the custom device with the right options.
+- [x] Each validation error shows on the form and nothing is stored: `select_options_empty`, `select_option_invalid` (no `=`, non-integer value, empty label), `select_option_duplicate_label` and `select_option_duplicate_value`.
+- [x] The name defaults to the tag. strings.json, en.json and de.json are updated and the consistency test passes.
 
 **Verification:**
-- [ ] `scripts/test tests/test_config_flow.py tests/test_consistency.py`
-- [ ] `scripts/lint`
+- [x] `scripts/test tests/test_config_flow.py tests/test_consistency.py`
+- [x] `scripts/lint`
 
 **Dependencies:** T1, T2
 

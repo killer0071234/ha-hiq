@@ -310,3 +310,92 @@ async def test_options_flow_only_lists_own_variables(
     options = result["data_schema"].schema["tag"].config["options"]
     assert "scan_time" in options
     assert not [option for option in options if option.startswith(f"c{NAD}.")]
+
+
+async def _add_select(
+    hass: HomeAssistant, entry: MockConfigEntry, user_input: dict
+) -> None:
+    result = await _add_entity_step(hass, entry, "select")
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await _reload_data(hass, entry)
+
+
+async def test_options_flow_add_select(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test adding a custom select with label=value options."""
+    entry = init_integration
+
+    await _add_select(
+        hass,
+        entry,
+        {
+            "tag": "th00_max_time",
+            "name": "Activation",
+            "options": ["short=30", " normal = 60 ", "never=-1", "a=b=2"],
+        },
+    )
+
+    [select] = entry.options["select"]
+    assert select["tag"] == "th00_max_time"
+    assert select["options"] == {"short": 30, "normal": 60, "never": -1, "a=b": 2}
+    assert select["unique_id"]
+    [entity_id] = _custom_entities(hass, entry)
+    state = hass.states.get(entity_id)
+    assert state.state == "normal"
+    assert state.name.endswith("Activation")
+    assert state.attributes["options"] == ["short", "normal", "never", "a=b"]
+
+
+async def test_options_flow_add_select_default_name(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test the tag is the name of a custom select without name."""
+    await _add_select(
+        hass, init_integration, {"tag": "th00_max_time", "options": ["on=1"]}
+    )
+
+    assert init_integration.options["select"][0]["name"] == "th00_max_time"
+
+
+async def test_options_flow_add_select_lists_own_variables(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test the select variable list contains the variables without prefix."""
+    result = await _add_entity_step(hass, init_integration, "select")
+
+    options = result["data_schema"].schema["tag"].config["options"]
+    assert "th00_max_time" in options
+    assert not [option for option in options if option.startswith(f"c{NAD}.")]
+
+
+@pytest.mark.parametrize(
+    ("options", "error"),
+    [
+        ([], "select_options_empty"),
+        (["on"], "select_option_invalid"),
+        (["on=one"], "select_option_invalid"),
+        (["=1"], "select_option_invalid"),
+        (["on=1", " on =2"], "select_option_duplicate_label"),
+        (["on=1", "off=1"], "select_option_duplicate_value"),
+    ],
+)
+async def test_options_flow_add_select_invalid_options(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    options: list[str],
+    error: str,
+) -> None:
+    """Test invalid options show an error and store nothing."""
+    result = await _add_entity_step(hass, init_integration, "select")
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"tag": "th00_max_time", "options": options}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": error}
+    assert "select" not in init_integration.options
