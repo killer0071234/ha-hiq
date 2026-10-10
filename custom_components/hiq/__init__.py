@@ -146,18 +146,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Entities are only created for working modules (and the power meter voltage
     # scale, rgb lights and device info depend on their values), so read these
     # before the platforms are set up
-    for var in coordinator.data.plc_info.plc_vars:
+    startup_vars = [
+        var
+        for var in coordinator.data.plc_info.plc_vars
         if search(
             r"(_general_error|_meter_error|power_meter_voltage\d*|_rgb_mode(_2)?"
             r"|_iex_card_id|_firmware_version)$",
             var,
-        ):
-            coordinator.data.add_var(var)
+        )
+    ]
+    for var in startup_vars:
+        coordinator.data.add_var(var)
     await coordinator.async_refresh()
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady(
             f"Could not read module states from {coordinator.unique_id}"
         )
+    # Stop polling them, their values stay readable during the platform setup.
+    # Entities which need one of them later add it again.
+    for var in startup_vars:
+        coordinator.data.remove_var(var)
 
     # Register the controller first, so other devices can reference it
     controller = dr.async_get(hass).async_get_or_create(
