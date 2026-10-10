@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMocker,
@@ -21,7 +22,7 @@ from custom_components.hiq import get_write_req_th
 from custom_components.hiq.const import DOMAIN
 from custom_components.hiq.coordinator import HiqDataUpdateCoordinator
 
-from .common import setup_with_tags
+from .common import refresh, setup_with_tags
 from .const import HOST, NAD, OPTIONS, PORT, TITLE
 from .fake_controller import HIQ_TAGS, FakeController
 
@@ -168,6 +169,86 @@ async def test_module_info_not_requested_if_not_listed(
     requested = " ".join(str(call[1]) for call in aioclient_mock.mock_calls)
     assert "_iex_card_id" not in requested
     assert "_firmware_version" not in requested
+
+
+STARTUP_TAGS = {
+    "th00_general_error": "0",
+    "th00_iex_card_id": "66",
+    "th00_firmware_version": "1000",
+    "ld10_general_error": "0",
+    "ld10_qw00": "40",
+    "ld10_rgb_mode": "1",
+}
+
+
+async def _polled_after_setup(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    entry: MockConfigEntry,
+) -> str:
+    """Return the variables requested by a poll after setup."""
+    calls = len(aioclient_mock.mock_calls)
+    await hass.data[DOMAIN][entry.entry_id].async_refresh()
+    await hass.async_block_till_done()
+    return " ".join(str(call[1]) for call in aioclient_mock.mock_calls[calls:])
+
+
+async def test_startup_tags_not_polled_after_setup(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test tags only needed to set up the entities are not polled afterwards."""
+    await setup_with_tags(hass, aioclient_mock, mock_config_entry, STARTUP_TAGS)
+
+    polled = await _polled_after_setup(hass, aioclient_mock, mock_config_entry)
+
+    assert "c1000.th00_general_error" in polled  # used by its binary sensor
+    assert "_iex_card_id" not in polled
+    assert "_firmware_version" not in polled
+    assert "c1000.ld10_rgb_mode" not in polled
+
+
+async def test_startup_tags_used_during_setup(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test the startup tags still decide the device info and rgb lights."""
+    await setup_with_tags(hass, aioclient_mock, mock_config_entry, STARTUP_TAGS)
+
+    device = dr.async_get(hass).async_get(
+        er.async_get(hass).async_get("climate.climate_c1000_th00_thermostat").device_id
+    )
+    assert (device.model, device.sw_version) == ("TH-2-IQ", "1.0.0.0")
+    light = hass.states.get("light.lights_light_c1000_ld10_qw00_light")
+    assert light.attributes["supported_color_modes"] == ["hs"]
+
+
+async def test_startup_tag_of_custom_sensor_still_polled(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """Test a custom sensor on a startup tag keeps being updated."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=2,
+        title=TITLE,
+        unique_id=TITLE,
+        options={
+            **OPTIONS,
+            "sensor": [
+                {"tag": "th00_firmware_version", "name": "Firmware", "unique_id": "fw"}
+            ],
+        },
+    )
+    controller = await setup_with_tags(hass, aioclient_mock, entry, STARTUP_TAGS)
+    entity_id = er.async_get(hass).async_get_entity_id("sensor", DOMAIN, "fw")
+
+    controller.values["c1000.th00_firmware_version"] = "1001"
+    await refresh(hass, entry)
+
+    assert hass.states.get(entity_id).state == "1001"
 
 
 async def test_entities_unavailable_while_offline(
