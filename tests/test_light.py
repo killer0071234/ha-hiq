@@ -85,6 +85,19 @@ async def test_dimmable_light_brightness(
     assert hass.states.get(DIMMER).state == "on"
 
 
+@pytest.mark.parametrize("brightness", [26, 77, 128, 179, 230])
+async def test_dimmable_light_keeps_brightness(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+    brightness: int,
+) -> None:
+    """Test a brightness of a whole percent is reported back unchanged."""
+    await call_service(hass, "light", "turn_on", DIMMER, brightness=brightness)
+
+    assert hass.states.get(DIMMER).attributes["brightness"] == brightness
+
+
 async def test_rgb_light(
     hass: HomeAssistant,
     controller: FakeController,
@@ -94,7 +107,7 @@ async def test_rgb_light(
     state = hass.states.get(RGB)
     assert state.attributes["color_mode"] == ColorMode.HS
     assert state.attributes["supported_color_modes"] == [ColorMode.HS]
-    assert state.attributes["brightness"] == 127
+    assert state.attributes["brightness"] == 128  # 50 %
 
     await call_service(hass, "light", "turn_on", RGB, hs_color=(120, 50))
 

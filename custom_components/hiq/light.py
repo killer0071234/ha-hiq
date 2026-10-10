@@ -262,7 +262,8 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         if res is None or res.value == "?":
             LOGGER.debug("%s -> unknown brightness", self._attr_unique_id)
             return None
-        return round(int(res.value) * 2.55)
+        # integer math, rounding half up: 50 % is 128 (not 127.4999...)
+        return (int(res.value) * 255 + 50) // 100
 
     @property
     def is_on(self) -> bool:
@@ -280,7 +281,7 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         if ATTR_BRIGHTNESS in kwargs:
             await self.coordinator.cybro.write_var(
                 self._dimming_out,
-                str(max(1, round(int(kwargs[ATTR_BRIGHTNESS]) / 2.55))),
+                str(max(1, (int(kwargs[ATTR_BRIGHTNESS]) * 100 + 127) // 255)),
             )
         if ATTR_HS_COLOR in kwargs:
             hue, sat = kwargs[ATTR_HS_COLOR]
