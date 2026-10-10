@@ -28,9 +28,14 @@
     "step": {
       "init": {
         "menu_options": {
-          "add_sensor": "Benutzerdefinierten Sensor hinzufügen",
-          "select_edit_sensor": "Benutzerdefinierten Sensor konfigurieren",
-          "remove_sensor": "Benutzerdefinierten Sensor löschen"
+          "add_entity": "Benutzerdefinierte Entität hinzufügen",
+          "select_edit_entity": "Benutzerdefinierte Entität konfigurieren",
+          "remove_entity": "Benutzerdefinierte Entitäten löschen"
+        }
+      },
+      "add_entity": {
+        "menu_options": {
+          "add_sensor": "Sensor"
         }
       },
       "add_sensor": {
@@ -69,6 +74,18 @@
           "state_class": "Die Zustandsklasse des Sensors.",
           "unit_of_measurement": "Wähle eine Maßeinheit oder erstelle eine eigene.",
           "value_template": "Definiert eine Vorlage, um den Status des Sensors abzurufen."
+        }
+      },
+      "select_edit_entity": {
+        "title": "Benutzerdefinierte Entität konfigurieren",
+        "data": {
+          "index": "Entität"
+        }
+      },
+      "remove_entity": {
+        "title": "Benutzerdefinierte Entitäten löschen",
+        "data": {
+          "index": "Entitäten"
         }
       }
     }

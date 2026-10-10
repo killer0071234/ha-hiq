@@ -20,9 +20,10 @@ menu that covers both custom sensors and custom selects. Selects are stored in
 - **Reuse `HiqSelectEntity`.** It already maps labels to integers and writes with
   `write_var` when `var_write_req is None`. Its existing `unique_id` parameter
   covers the uuid.
-- **Branching via callable `next_step`** (supported by HA 2026.9.4
-  `SchemaFlowFormStep`). The chosen type and the edit target go into
-  `handler.flow_state`.
+- **Add branches through an `add_entity` sub-menu. Edit branches through a
+  callable `next_step`.** The callable only receives the options, so the edited
+  platform is kept in a transient `_edit_platform` key there. The edit step
+  removes it again.
 - **Edit/remove keys `"<platform>:<index>"`**, parsed by one helper, used by both
   steps.
 - **Options stored as `{label: int}`.** The form takes a multi-value
@@ -44,7 +45,7 @@ T1 and T2 are independent of each other. T3 needs both.
 ## Task List
 
 ### Phase 1: Foundation
-- [ ] T1: Unified options menu (sensors only, behaviour unchanged)
+- [x] T1: Unified options menu (sensors only, behaviour unchanged)
 - [ ] T2: Custom select entities from `entry.options["select"]`
 
 ### Checkpoint: Foundation

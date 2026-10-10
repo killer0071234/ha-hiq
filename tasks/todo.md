@@ -6,19 +6,18 @@ See [plan.md](plan.md) and [SPEC.md](../SPEC.md). Write the tests first in every
 
 **Description:** Replace the `add_sensor / select_edit_sensor / remove_sensor`
 menu with `add_entity / select_edit_entity / remove_entity`.
-`add_entity` asks for the type and only offers `sensor` for now; a callable
-`next_step` routes to `add_sensor`. Edit/remove lists use `"sensor:<idx>"` keys
+`add_entity` is a sub-menu of types, only offering `sensor` for now. Edit/remove lists use `"sensor:<idx>"` keys
 and `"<name> (Sensor)"` labels. Extract the `c{nad} custom` DeviceInfo into
 `models.py`.
 
 **Acceptance criteria:**
-- [ ] The menu shows exactly `add_entity`, `select_edit_entity` and `remove_entity`. Adding, editing and removing a sensor works through them.
-- [ ] Existing sensor tests pass with only step ids and index keys changed. Their assertions are unchanged.
-- [ ] Regression: an entry with only `"sensor"` options keeps its unique ids and entity ids.
+- [x] The menu shows exactly `add_entity`, `select_edit_entity` and `remove_entity`. Adding, editing and removing a sensor works through them.
+- [x] Existing sensor tests pass with only step ids and index keys changed. Their assertions are unchanged.
+- [x] Regression: an entry with only `"sensor"` options keeps its unique ids and entity ids.
 
 **Verification:**
-- [ ] `scripts/test tests/test_config_flow.py tests/test_consistency.py`
-- [ ] `scripts/lint`
+- [x] `scripts/test tests/test_config_flow.py tests/test_consistency.py`
+- [x] `scripts/lint`
 
 **Dependencies:** None
 

@@ -58,7 +58,7 @@ types when editing or removing.
 
 ```
 init (menu)
-├── add_entity            form: type = sensor | select
+├── add_entity            menu: sensor | select
 │   ├── add_sensor        existing sensor form (unchanged fields)
 │   └── add_select        tag, name, options
 ├── select_edit_entity    form: pick one entity across both types
@@ -67,7 +67,10 @@ init (menu)
 └── remove_entity         form: multi-select across both types
 ```
 
-- Branching uses `SchemaFlowFormStep(next_step=<async callable>)`.
+- Adding branches through the `add_entity` sub-menu. Editing branches with
+  `SchemaFlowFormStep(next_step=<async callable>)`. The callable only receives
+  the options, so the platform being edited is kept in a transient
+  `_edit_platform` options key, which the edit step removes again.
 - Entities in edit/remove lists are keyed `"<platform>:<index>"`
   (e.g. `"sensor:0"`, `"select:2"`) and labelled `"<name> (<Sensor|Select>)"`.
 - The options field is a multi-value `SelectSelector` with `custom_value=True`;

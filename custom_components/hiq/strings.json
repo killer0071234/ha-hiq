@@ -28,9 +28,14 @@
     "step": {
       "init": {
         "menu_options": {
-          "add_sensor": "[%key:component::hiq::options::step::init::menu_options::add_sensor%]",
-          "select_edit_sensor": "[%key:component::hiq::options::step::init::menu_options::select_edit_sensor%]",
-          "remove_sensor": "[%key:component::hiq::options::step::init::menu_options::remove_sensor%]"
+          "add_entity": "Add custom entity",
+          "select_edit_entity": "Configure custom entity",
+          "remove_entity": "Remove custom entities"
+        }
+      },
+      "add_entity": {
+        "menu_options": {
+          "add_sensor": "Sensor"
         }
       },
       "add_sensor": {
@@ -70,6 +75,18 @@
           "name": "Sensor name"
         },
         "description": "Add a custom sensor to read from HIQ controller."
+      },
+      "select_edit_entity": {
+        "title": "Configure custom entity",
+        "data": {
+          "index": "Entity"
+        }
+      },
+      "remove_entity": {
+        "title": "Remove custom entities",
+        "data": {
+          "index": "Entities"
+        }
       }
     }
   },

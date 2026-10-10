@@ -87,13 +87,30 @@ async def test_user_flow_already_configured(
     assert result["reason"] == "already_configured"
 
 
-async def _options_step(hass: HomeAssistant, entry: MockConfigEntry, step: str) -> dict:
+async def _options_menu(hass: HomeAssistant, entry: MockConfigEntry, step: str) -> dict:
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] is FlowResultType.MENU
-    result = await hass.config_entries.options.async_configure(
+    return await hass.config_entries.options.async_configure(
         result["flow_id"], {"next_step_id": step}
     )
+
+
+async def _options_step(hass: HomeAssistant, entry: MockConfigEntry, step: str) -> dict:
+    result = await _options_menu(hass, entry, step)
     assert result["type"] is FlowResultType.FORM
+    return result
+
+
+async def _add_entity_step(
+    hass: HomeAssistant, entry: MockConfigEntry, platform: str
+) -> dict:
+    result = await _options_menu(hass, entry, "add_entity")
+    assert result["type"] is FlowResultType.MENU
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": f"add_{platform}"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == f"add_{platform}"
     return result
 
 
@@ -107,7 +124,7 @@ async def _reload_data(hass: HomeAssistant, entry: MockConfigEntry) -> None:
 async def _add_sensor(
     hass: HomeAssistant, entry: MockConfigEntry, user_input: dict
 ) -> None:
-    result = await _options_step(hass, entry, "add_sensor")
+    result = await _add_entity_step(hass, entry, "sensor")
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], user_input
     )
@@ -115,14 +132,20 @@ async def _add_sensor(
     await _reload_data(hass, entry)
 
 
-async def _remove_sensor(hass: HomeAssistant, entry: MockConfigEntry) -> None:
-    result = await _options_step(hass, entry, "remove_sensor")
+async def _remove_entities(
+    hass: HomeAssistant, entry: MockConfigEntry, *keys: str
+) -> None:
+    result = await _options_step(hass, entry, "remove_entity")
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"index": ["0"]}
+        result["flow_id"], {"index": list(keys)}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert entry.options["sensor"] == []
     await hass.async_block_till_done()
+
+
+async def _remove_sensor(hass: HomeAssistant, entry: MockConfigEntry) -> None:
+    await _remove_entities(hass, entry, "sensor:0")
+    assert entry.options["sensor"] == []
 
 
 def _custom_entities(hass: HomeAssistant, entry: MockConfigEntry) -> list[str]:
@@ -134,6 +157,20 @@ def _custom_entities(hass: HomeAssistant, entry: MockConfigEntry) -> list[str]:
         return []
     return [
         e.entity_id for e in er.async_entries_for_device(er.async_get(hass), device.id)
+    ]
+
+
+async def test_options_flow_menu(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test the options menu offers to add, edit and remove custom entities."""
+    result = await hass.config_entries.options.async_init(init_integration.entry_id)
+
+    assert result["type"] is FlowResultType.MENU
+    assert result["menu_options"] == [
+        "add_entity",
+        "select_edit_entity",
+        "remove_entity",
     ]
 
 
@@ -162,9 +199,12 @@ async def test_options_flow_custom_sensor(
     assert state.attributes["unit_of_measurement"] == "min"
 
     # edit: name changes, the template is dropped
-    result = await _options_step(hass, entry, "select_edit_sensor")
+    result = await _options_step(hass, entry, "select_edit_entity")
+    assert result["data_schema"].schema["index"].container == {
+        "sensor:0": "Max time (Sensor)"
+    }
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"index": "0"}
+        result["flow_id"], {"index": "sensor:0"}
     )
     assert result["step_id"] == "edit_sensor"
     result = await hass.config_entries.options.async_configure(
@@ -265,7 +305,7 @@ async def test_options_flow_only_lists_own_variables(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Test the variable list contains the variables without controller prefix."""
-    result = await _options_step(hass, init_integration, "add_sensor")
+    result = await _add_entity_step(hass, init_integration, "sensor")
 
     options = result["data_schema"].schema["tag"].config["options"]
     assert "scan_time" in options

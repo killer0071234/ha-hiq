@@ -28,9 +28,14 @@
     "step": {
       "init": {
         "menu_options": {
-          "add_sensor": "Add custom sensor",
-          "select_edit_sensor": "Configure custom sensor",
-          "remove_sensor": "Remove custom sensor"
+          "add_entity": "Add custom entity",
+          "select_edit_entity": "Configure custom entity",
+          "remove_entity": "Remove custom entities"
+        }
+      },
+      "add_entity": {
+        "menu_options": {
+          "add_sensor": "Sensor"
         }
       },
       "add_sensor": {
@@ -69,6 +74,18 @@
           "state_class": "The state_class of the sensor",
           "unit_of_measurement": "Choose unit of measurement for the sensor (shall match device / state class)",
           "value_template": "Defines a template to get the state of the sensor"
+        }
+      },
+      "select_edit_entity": {
+        "title": "Configure custom entity",
+        "data": {
+          "index": "Entity"
+        }
+      },
+      "remove_entity": {
+        "title": "Remove custom entities",
+        "data": {
+          "index": "Entities"
         }
       }
     }

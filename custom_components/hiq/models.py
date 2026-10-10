@@ -14,6 +14,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     AREA_CLIMATE,
     DEVICE_DESCRIPTION,
+    DEVICE_HW_VERSION,
+    DEVICE_SW_VERSION,
+    DOMAIN,
     MANUFACTURER,
     MANUFACTURER_URL,
 )
@@ -41,6 +44,20 @@ def hvac_device_info(coordinator: HiqDataUpdateCoordinator, prefix: str) -> Devi
         name=f"{prefix} HVAC",
         suggested_area=AREA_CLIMATE,
         **coordinator.via_device_info,
+    )
+
+
+def custom_device_info(coordinator: HiqDataUpdateCoordinator) -> DeviceInfo:
+    """Return the device info of the user defined entities, eg: c1000 custom."""
+    return DeviceInfo(
+        identifiers={(DOMAIN, f"{coordinator.data.plc_info.nad} custom")},
+        manufacturer=MANUFACTURER,
+        name=f"c{coordinator.cybro.nad} custom",
+        model=DEVICE_DESCRIPTION,
+        configuration_url=MANUFACTURER_URL,
+        entry_type=None,
+        sw_version=DEVICE_SW_VERSION,
+        hw_version=DEVICE_HW_VERSION,
     )
 
 

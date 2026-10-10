@@ -205,25 +205,52 @@ async def validate_sensor_setup(
     return {}
 
 
-async def validate_select_sensor(
-    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
-) -> dict[str, Any]:
-    """Store sensor index in flow state."""
-    handler.flow_state["_idx"] = int(user_input[CONF_INDEX])
-    return {}
+# options key holding the platform of the entity being edited, until it is saved
+EDIT_PLATFORM = "_edit_platform"
+
+# platforms of the custom entities, in the order they are listed
+CUSTOM_PLATFORMS = (SENSOR_DOMAIN,)
 
 
-def _sensor_names(handler: SchemaCommonFlowHandler) -> dict[str, str]:
-    """Return the configured sensor names by index."""
+def _entity_key(platform: str, index: int) -> str:
+    """Return the key of a custom entity, eg: sensor:0."""
+    return f"{platform}:{index}"
+
+
+def _parse_entity_key(key: str) -> tuple[str, int]:
+    """Return platform and index of a custom entity key."""
+    platform, index = key.split(":")
+    return platform, int(index)
+
+
+def _entity_names(handler: SchemaCommonFlowHandler) -> dict[str, str]:
+    """Return the configured custom entity names by key."""
     return {
-        str(index): config[CONF_NAME]
-        for index, config in enumerate(handler.options[SENSOR_DOMAIN])
+        _entity_key(platform, index): f"{config[CONF_NAME]} ({platform.capitalize()})"
+        for platform in CUSTOM_PLATFORMS
+        for index, config in enumerate(handler.options.get(platform, []))
     }
 
 
-async def get_select_sensor_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
-    """Return schema for selecting a sensor."""
-    return vol.Schema({vol.Required(CONF_INDEX): vol.In(_sensor_names(handler))})
+async def get_select_entity_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
+    """Return schema for selecting a custom entity."""
+    return vol.Schema({vol.Required(CONF_INDEX): vol.In(_entity_names(handler))})
+
+
+async def validate_select_entity(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Store the entity to edit in the flow state."""
+    platform, index = _parse_entity_key(user_input[CONF_INDEX])
+    handler.flow_state["_idx"] = index
+    # the next step is chosen from the options only
+    handler.options[EDIT_PLATFORM] = platform
+    return {}
+
+
+async def next_edit_step(options: dict[str, Any]) -> str:
+    """Return the edit step of the selected entity."""
+    return f"edit_{options[EDIT_PLATFORM]}"
 
 
 async def get_edit_sensor_suggested_values(
@@ -238,6 +265,7 @@ async def validate_sensor_edit(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
     """Update edited sensor."""
+    handler.options.pop(EDIT_PLATFORM, None)
     # Default name is tag name
     if user_input.get(CONF_NAME) is None:
         user_input[CONF_NAME] = user_input[CONF_TAG]
@@ -254,32 +282,35 @@ async def validate_sensor_edit(
     return {}
 
 
-async def get_remove_sensor_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
-    """Return schema for sensor removal."""
+async def get_remove_entity_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
+    """Return schema for custom entity removal."""
     return vol.Schema(
-        {vol.Required(CONF_INDEX): cv.multi_select(_sensor_names(handler))}
+        {vol.Required(CONF_INDEX): cv.multi_select(_entity_names(handler))}
     )
 
 
-async def validate_remove_sensor(
+async def validate_remove_entity(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
-    """Validate remove sensor."""
-    removed_indexes: set[str] = set(user_input[CONF_INDEX])
+    """Validate remove custom entities."""
+    removed_keys: set[str] = set(user_input[CONF_INDEX])
 
     # Standard behavior is to merge the result with the options.
     # In this case, we want to remove sub-items so we update the options directly.
     entity_registry = er.async_get(handler.parent_handler.hass)
-    sensors: list[dict[str, Any]] = []
-    sensor: dict[str, Any]
-    for index, sensor in enumerate(handler.options[SENSOR_DOMAIN]):
-        if str(index) not in removed_indexes:
-            sensors.append(sensor)
-        elif entity_id := entity_registry.async_get_entity_id(
-            SENSOR_DOMAIN, DOMAIN, sensor[CONF_UNIQUE_ID]
-        ):
-            entity_registry.async_remove(entity_id)
-    handler.options[SENSOR_DOMAIN] = sensors
+    for platform in CUSTOM_PLATFORMS:
+        if platform not in handler.options:
+            continue
+        kept: list[dict[str, Any]] = []
+        config: dict[str, Any]
+        for index, config in enumerate(handler.options[platform]):
+            if _entity_key(platform, index) not in removed_keys:
+                kept.append(config)
+            elif entity_id := entity_registry.async_get_entity_id(
+                platform, DOMAIN, config[CONF_UNIQUE_ID]
+            ):
+                entity_registry.async_remove(entity_id)
+        handler.options[platform] = kept
     return {}
 
 
@@ -291,27 +322,30 @@ CONFIG_FLOW = {
 }
 
 OPTIONS_FLOW = {
-    "init": SchemaFlowMenuStep(["add_sensor", "select_edit_sensor", "remove_sensor"]),
+    "init": SchemaFlowMenuStep(["add_entity", "select_edit_entity", "remove_entity"]),
+    "add_entity": SchemaFlowMenuStep(
+        [f"add_{platform}" for platform in CUSTOM_PLATFORMS]
+    ),
     "add_sensor": SchemaFlowFormStep(
         get_sensor_setup,
         suggested_values=None,
         validate_user_input=validate_sensor_setup,
     ),
-    "select_edit_sensor": SchemaFlowFormStep(
-        get_select_sensor_schema,
+    "select_edit_entity": SchemaFlowFormStep(
+        get_select_entity_schema,
         suggested_values=None,
-        validate_user_input=validate_select_sensor,
-        next_step="edit_sensor",
+        validate_user_input=validate_select_entity,
+        next_step=next_edit_step,
     ),
     "edit_sensor": SchemaFlowFormStep(
         DATA_SCHEMA_EDIT_SENSOR,
         suggested_values=get_edit_sensor_suggested_values,
         validate_user_input=validate_sensor_edit,
     ),
-    "remove_sensor": SchemaFlowFormStep(
-        get_remove_sensor_schema,
+    "remove_entity": SchemaFlowFormStep(
+        get_remove_entity_schema,
         suggested_values=None,
-        validate_user_input=validate_remove_sensor,
+        validate_user_input=validate_remove_entity,
     ),
 }
 
