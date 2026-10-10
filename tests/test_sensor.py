@@ -219,3 +219,42 @@ async def test_no_module_sensors(
         for entity_id in hass.states.async_entity_ids("sensor")
         if not entity_id.startswith("sensor.system_")
     ] == []
+
+
+async def test_power_meter_voltage_in_volts(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test a voltage reported in volts (not 0.1 V) is not scaled."""
+    await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {"power_meter_error": "0", "power_meter_voltage": "231"},
+    )
+
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "sensor", DOMAIN, "c1000.power_meter_voltage"
+    )
+    assert hass.states.get(entity_id).state == "231"
+
+
+async def test_enocean_general_error(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test the general error of the EnOcean module is named after it."""
+    await setup_with_tags(
+        hass, aioclient_mock, mock_config_entry, {"eno_general_error": "0"}
+    )
+
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "binary_sensor", DOMAIN, "c1000.eno_general_error"
+    )
+    state = hass.states.get(entity_id)
+    assert state.attributes["friendly_name"] == "c1000 diagnostic EnOcean General error"
+    assert state.state == "off"

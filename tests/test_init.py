@@ -7,13 +7,16 @@ from typing import TypedDict
 from unittest.mock import patch
 
 import pytest
+from cybro import CybroConnectionTimeoutError
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.hiq import get_write_req_th
 from custom_components.hiq.const import DOMAIN
+from custom_components.hiq.coordinator import HiqDataUpdateCoordinator
 
 from .const import HOST, NAD, OPTIONS, PORT, TITLE
 from .fake_controller import HIQ_TAGS, FakeController
@@ -60,6 +63,63 @@ async def test_setup_retry_when_offline(
     await hass.async_block_till_done()
 
     assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_setup_retry_when_module_states_unreadable(
+    hass: HomeAssistant,
+    controller: FakeController,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test setup is retried when the module states can not be read.
+
+    They are read in a second poll, as they decide which entities are created.
+    """
+    refresh = HiqDataUpdateCoordinator.async_refresh
+
+    async def _offline_refresh(coordinator: HiqDataUpdateCoordinator) -> None:
+        controller.online = False
+        await refresh(coordinator)
+
+    mock_config_entry.add_to_hass(hass)
+    with patch.object(HiqDataUpdateCoordinator, "async_refresh", _offline_refresh):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_entities_unavailable_on_timeout(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test a timeout of the SCGI server makes the entities unavailable."""
+    coordinator = hass.data[DOMAIN][init_integration.entry_id]
+
+    with patch.object(
+        coordinator.cybro, "update", side_effect=CybroConnectionTimeoutError
+    ):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    assert hass.states.get(LIGHT).state == STATE_UNAVAILABLE
+    assert "Could not connect" in str(coordinator.last_exception)
+
+
+@pytest.mark.parametrize(
+    ("tag", "request_tag"),
+    [
+        ("fan_options", "config1_req"),
+        ("setpoint_idle", "config2_req"),
+        ("beep_enable", "config3_req"),
+        ("dndmmr_enable", "config4_req"),
+        ("setpoint", None),
+    ],
+)
+def test_thermostat_write_request(tag: str, request_tag: str | None) -> None:
+    """Test thermostat config tags are written together with their request."""
+    expected = request_tag and f"c1000.th00_{request_tag}"
+    assert get_write_req_th(f"c1000.th00_{tag}", "c1000.th00") == expected
 
 
 async def test_entities_unavailable_while_offline(
