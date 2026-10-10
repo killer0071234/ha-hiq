@@ -477,3 +477,58 @@ async def test_options_flow_edit_select_invalid_options(
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "select_option_duplicate_value"}
     assert entry.options["select"][0]["options"] == {"on": 1}
+
+
+async def test_options_flow_remove_select(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test a removed custom select is removed from states and registry."""
+    entry = init_integration
+    await _add_select(hass, entry, {"tag": "th00_max_time", "options": ["on=1"]})
+    [entity_id] = _custom_entities(hass, entry)
+
+    await _remove_entities(hass, entry, "select:0")
+
+    assert entry.options["select"] == []
+    assert hass.states.get(entity_id) is None
+    assert er.async_get(hass).async_get(entity_id) is None
+
+
+async def test_options_flow_remove_sensor_and_select(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test removing a sensor and a select together keeps the other entities."""
+    entry = init_integration
+    await _add_sensor(hass, entry, {"tag": "th00_max_time", "name": "Sensor"})
+    await _add_select(
+        hass, entry, {"tag": "th00_max_time", "name": "First", "options": ["on=1"]}
+    )
+    await _add_select(
+        hass, entry, {"tag": "scan_time", "name": "Second", "options": ["on=1"]}
+    )
+    registry = er.async_get(hass)
+    removed = [
+        registry.async_get_entity_id(
+            "sensor", DOMAIN, entry.options["sensor"][0]["unique_id"]
+        ),
+        registry.async_get_entity_id(
+            "select", DOMAIN, entry.options["select"][0]["unique_id"]
+        ),
+    ]
+    kept = registry.async_get_entity_id(
+        "select", DOMAIN, entry.options["select"][1]["unique_id"]
+    )
+
+    result = await _options_step(hass, entry, "remove_entity")
+    assert result["data_schema"].schema["index"].options == {
+        "sensor:0": "Sensor (Sensor)",
+        "select:0": "First (Select)",
+        "select:1": "Second (Select)",
+    }
+    await _remove_entities(hass, entry, "sensor:0", "select:0")
+    await _reload_data(hass, entry)
+
+    assert entry.options["sensor"] == []
+    assert [select["name"] for select in entry.options["select"]] == ["Second"]
+    assert [registry.async_get(entity_id) for entity_id in removed] == [None, None]
+    assert _custom_entities(hass, entry) == [kept]

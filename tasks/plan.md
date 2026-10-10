@@ -54,10 +54,10 @@ T1 and T2 are independent of each other. T3 needs both.
 ### Phase 2: Flow
 - [x] T3: Add custom select via options flow, with validation
 - [x] T4: Edit custom select
-- [ ] T5: Remove custom selects (incl. mixed sensor + select removal)
+- [x] T5: Remove custom selects (incl. mixed sensor + select removal)
 
 ### Checkpoint: Flow
-- [ ] Full add → edit → remove cycle works for both types. Registry cleanup is verified.
+- [x] Full add → edit → remove cycle works for both types. Registry cleanup is verified.
 - [ ] Manual check in dev HA (`scripts/develop`)
 
 ### Phase 3: Polish

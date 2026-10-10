@@ -109,11 +109,11 @@ removed entry is dropped from its platform list, and its entity is removed from
 the registry using that platform's domain.
 
 **Acceptance criteria:**
-- [ ] A removed select is gone from both the states and the entity registry.
-- [ ] Removing a sensor and a select together leaves the other entries and their indexes intact.
+- [x] A removed select is gone from both the states and the entity registry.
+- [x] Removing a sensor and a select together leaves the other entries and their indexes intact.
 
 **Verification:**
-- [ ] `scripts/test tests/test_config_flow.py`
+- [x] `scripts/test tests/test_config_flow.py`
 
 **Dependencies:** T4
 
@@ -123,7 +123,7 @@ the registry using that platform's domain.
 **Estimated scope:** S
 
 ## Checkpoint: Flow
-- [ ] `scripts/test` and `scripts/lint` are green
+- [x] `scripts/test` and `scripts/lint` are green
 - [ ] Manual check: in `scripts/develop`, add, edit, use and remove a custom select
 - [ ] Review with the user before continuing
 
