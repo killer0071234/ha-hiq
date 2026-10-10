@@ -72,11 +72,8 @@ def add_hvac_tags(
     if len(hvacs) == 0:
         return None
 
-    unique_id = hvacs[0]
-    # identifier is cNAD, taken from the last plc var
-    grp = search(r"c\d+", next(reversed(coordinator.data.plc_info.plc_vars)))
-    if grp:
-        unique_id = grp.group()
+    # identifier is cNAD, taken from the hvac tag
+    unique_id = search(r"c\d+", hvacs[0]).group()
 
     # check for existing global parameter
     global_params = (

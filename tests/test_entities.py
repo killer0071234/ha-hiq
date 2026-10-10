@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 import logging
+from unittest.mock import patch
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -13,6 +14,8 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMocker,
 )
 
+from custom_components.hiq import button
+from custom_components.hiq import select
 from custom_components.hiq.const import DOMAIN
 
 from .common import call_service, refresh, setup_with_tags
@@ -339,6 +342,45 @@ async def test_no_thermostat_buttons(
     await setup_with_tags(hass, aioclient_mock, mock_config_entry, tags)
 
     assert hass.states.async_entity_ids("button") == []
+
+
+async def test_thermostat_buttons_controller_id_from_hvac_tag(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test the controller id is taken from the hvac tags, not the last variable."""
+    coordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator.data.plc_info.plc_vars["unrelated"] = "int"
+
+    buttons = button.add_hvac_tags(coordinator)
+
+    assert buttons is not None
+    assert {b.entity_description.key for b in buttons} == {
+        "c1000.th00_config1_req",
+        "c1000.th00_options_back_req",
+    }
+
+
+async def test_thermostat_selects_check_only_their_module(
+    hass: HomeAssistant,
+    controller: FakeController,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test the general error is only checked for thermostat select variables."""
+    with patch(
+        "custom_components.hiq.select.is_general_error_ok",
+        wraps=select.is_general_error_ok,
+    ) as general_error_ok:
+        mock_config_entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    checked = sorted(call.args[1] for call in general_error_ok.call_args_list)
+    assert checked == [
+        "c1000.th00_display_mode",
+        "c1000.th00_fan_limit",
+        "c1000.th00_temperature_source",
+    ]
 
 
 async def test_weather(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
