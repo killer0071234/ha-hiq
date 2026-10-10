@@ -9,7 +9,7 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.hiq.const import ATTR_FLOOR_TEMP, ATTR_SETPOINT_IDLE
@@ -210,6 +210,25 @@ async def test_set_temperature_eco(
         (f"{TH}_setpoint_idle", "175"),
         (f"{TH}_config2_req", "1"),
     ]
+
+
+async def test_set_temperature_range_not_supported(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test a temperature range is rejected, only a single target is supported."""
+    with pytest.raises(ServiceValidationError):
+        await call_service(
+            hass,
+            "climate",
+            "set_temperature",
+            THERMOSTAT,
+            target_temp_low=18,
+            target_temp_high=22,
+        )
+
+    assert controller.writes == []
 
 
 async def test_set_temperature_boost(
