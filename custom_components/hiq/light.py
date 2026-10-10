@@ -29,6 +29,7 @@ from .const import MANUFACTURER
 from .const import MANUFACTURER_URL
 from .coordinator import HiqDataUpdateCoordinator
 from .models import HiqEntity
+from .models import module_device_info
 
 
 async def async_setup_entry(
@@ -154,17 +155,18 @@ def find_dimm_lights(
 
 
 def _light_device_info(coordinator: HiqDataUpdateCoordinator, key: str) -> DeviceInfo:
-    """Return the device info of a light output."""
+    """Return the device info of a light output (eg: c1000.lc00_qx00)."""
+    versions = {"model": DEVICE_DESCRIPTION, "sw_version": DEVICE_SW_VERSION}
+    module = key.split("_")[0]
     return DeviceInfo(
         identifiers={(DOMAIN, key)},
         manufacturer=MANUFACTURER,
         name=f"Light {key}",
         suggested_area=AREA_LIGHTS,
-        model=DEVICE_DESCRIPTION,
         configuration_url=MANUFACTURER_URL,
         entry_type=None,
-        sw_version=DEVICE_SW_VERSION,
         hw_version=DEVICE_HW_VERSION,
+        **(versions | module_device_info(coordinator, module)),
         **coordinator.via_device_info,
     )
 

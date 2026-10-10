@@ -344,6 +344,22 @@ Some of them are additions to HIQ functionality.
 
 A device is created for each HIQ-controller (diagnostics) and for every light, blind, thermostat and HVAC.
 
+Newer controllers report the card id and firmware of every IEX expansion unit
+(`cXXXX.mmYY_iex_card_id` and `cXXXX.mmYY_firmware_version`). They are read once
+when the integration starts, and shown on the light, blind and thermostat
+devices of that unit:
+
+| Device info | Taken from | Example |
+| --- | --- | --- |
+| Model | card id | `60` → `LC-10-IQ`, `63` → `BC-5-IQ`, `66` → `TH-2-IQ`, `72` → `LD-D10-IQ` |
+| Firmware | firmware version as `major.minor.build.release` | `1203` → `1.2.0.3`, `32767` → `32.7.6.7` |
+
+A card id without a known model is shown as `card <id>`. If one of both values
+is missing or `0`, it is shown as `unknown`. If both are missing (older
+controllers or an empty slot), the device shows `HIQ controller` and the
+integration version. A firmware update of a unit is shown after the
+integration is reloaded.
+
 ---
 
 ### Services

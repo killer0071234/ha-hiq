@@ -5,10 +5,14 @@ from __future__ import annotations
 import pytest
 from homeassistant.components.light import ColorMode
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMocker,
 )
+
+from custom_components.hiq.const import DEVICE_SW_VERSION
 
 from .common import call_service, refresh, setup_with_tags
 from .fake_controller import FakeController
@@ -263,6 +267,60 @@ async def test_light_on_module_not_polled_by_default(
 
     state = hass.states.get("light.lights_light_c1000_ld10_qw00_light")
     assert state.attributes["supported_color_modes"] == [color_mode]
+
+
+@pytest.mark.parametrize(
+    ("entity_id", "model", "sw_version"),
+    [
+        (ONOFF, "LC-10-IQ", "1.2.0.3"),
+        (DIMMER, "LD-D10-IQ", "2.0.0.1"),
+        # module without card id and firmware
+        (RGB, "HIQ controller", DEVICE_SW_VERSION),
+    ],
+)
+async def test_light_device_shows_module(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    entity_id: str,
+    model: str,
+    sw_version: str,
+) -> None:
+    """Test a light device shows the model and firmware of its module."""
+    entry = er.async_get(hass).async_get(entity_id)
+    device = dr.async_get(hass).async_get(entry.device_id)
+
+    assert (device.model, device.sw_version, device.hw_version) == (
+        model,
+        sw_version,
+        "2/3",
+    )
+
+
+async def test_light_devices_of_one_module(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test every output of a module shows the same module info."""
+    await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {
+            "lc00_general_error": "0",
+            "lc00_iex_card_id": "60",
+            "lc00_firmware_version": "1203",
+            "lc00_qx00": "0",
+            "lc00_qx01": "0",
+        },
+    )
+
+    devices = [
+        dr.async_get(hass).async_get(er.async_get(hass).async_get(e).device_id)
+        for e in hass.states.async_entity_ids("light")
+    ]
+    assert len(devices) == 2
+    assert {(d.model, d.sw_version) for d in devices} == {("LC-10-IQ", "1.2.0.3")}
 
 
 async def test_no_lights(

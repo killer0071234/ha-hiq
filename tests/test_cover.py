@@ -4,9 +4,16 @@ from __future__ import annotations
 
 import pytest
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import (
+    AiohttpClientMocker,
+)
 
-from .common import call_service, refresh
+from custom_components.hiq.const import DEVICE_SW_VERSION
+
+from .common import call_service, refresh, setup_with_tags
 from .fake_controller import FakeController
 
 BLIND = "cover.blinds_blind_c1000_bc00_blinds_position_00_blind"
@@ -83,3 +90,44 @@ async def test_blind_control(
     await call_service(hass, "cover", service, BLIND, **data)
 
     assert controller.written(SETPOINT) == [written]
+
+
+def _device(hass: HomeAssistant, entity_id: str) -> dr.DeviceEntry:
+    """Return the device of an entity."""
+    entry = er.async_get(hass).async_get(entity_id)
+    return dr.async_get(hass).async_get(entry.device_id)
+
+
+async def test_blind_device_shows_module(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test a blind device shows the model and firmware of its module."""
+    device = _device(hass, BLIND)
+
+    assert (device.model, device.sw_version, device.hw_version) == (
+        "BC-5-IQ",
+        "1.1.0.2",
+        "2/3",
+    )
+
+
+async def test_blind_device_defaults(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test a blind without module info keeps the default device info."""
+    await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {"bc00_general_error": "0", "bc00_blinds_position_00": "40"},
+    )
+
+    device = _device(hass, BLIND)
+    assert device.name == "Blind c1000.bc00_blinds_position_00"
+    assert (device.model, device.sw_version, device.hw_version) == (
+        "HIQ controller",
+        DEVICE_SW_VERSION,
+        "2/3",
+    )

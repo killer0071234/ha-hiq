@@ -20,6 +20,8 @@ HIQ_TAGS: dict[str, str] = {
     # on/off light
     "lc00_qx00": "1",
     "lc00_general_error": "0",
+    "lc00_iex_card_id": "60",
+    "lc00_firmware_version": "1203",
     # rgb light (dimmer + hue + saturation)
     "ld00_qw00": "50",
     "ld00_qw01": "50",
@@ -30,6 +32,8 @@ HIQ_TAGS: dict[str, str] = {
     "ld01_qw00": "40",
     "ld01_rgb_mode": "0",
     "ld01_general_error": "0",
+    "ld01_iex_card_id": "72",
+    "ld01_firmware_version": "2001",
     # module with a general error -> its light must not be created
     "lc01_qx00": "0",
     "lc01_general_error": "1",
@@ -39,8 +43,12 @@ HIQ_TAGS: dict[str, str] = {
     "bc00_qxs00_up": "0",
     "bc00_qxs00_dn": "0",
     "bc00_general_error": "0",
+    "bc00_iex_card_id": "63",
+    "bc00_firmware_version": "1102",
     # thermostat
     "th00_general_error": "0",
+    "th00_iex_card_id": "66",
+    "th00_firmware_version": "1000",
     "th00_ix00": "0",
     "th00_output": "1",
     # leftover variable of a PLC program, must not become a second output
