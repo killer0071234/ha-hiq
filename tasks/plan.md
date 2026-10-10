@@ -58,7 +58,7 @@ T1 and T2 are independent of each other. T3 needs both.
 
 ### Checkpoint: Flow
 - [x] Full add → edit → remove cycle works for both types. Registry cleanup is verified.
-- [ ] Manual check in dev HA (`scripts/develop`)
+- [x] Manual check against a live controller (c10000)
 
 ### Phase 3: Polish
 - [x] T6: README section and final pass

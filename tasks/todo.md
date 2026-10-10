@@ -124,7 +124,7 @@ the registry using that platform's domain.
 
 ## Checkpoint: Flow
 - [x] `scripts/test` and `scripts/lint` are green
-- [ ] Manual check: in `scripts/develop`, add, edit, use and remove a custom select
+- [x] Manual check: add, edit, use and remove a custom select on a live controller (c10000, presence_phone_enable)
 - [ ] Review with the user before continuing
 
 ## Task 6: README and final pass
