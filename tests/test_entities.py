@@ -9,10 +9,13 @@ import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import (
+    AiohttpClientMocker,
+)
 
 from custom_components.hiq.const import DOMAIN
 
-from .common import call_service, refresh
+from .common import call_service, refresh, setup_with_tags
 from .fake_controller import FakeController
 
 TH = "climate_c1000_th00_thermostat"
@@ -136,6 +139,44 @@ async def test_number_written_in_whole_tenths(
     )
 
     assert controller.written("c1000.th00_setpoint_idle") == ["211"]
+
+
+async def test_number_without_write_request(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test settings without a write request are written alone."""
+    entity_id = f"number.{TH}_setpoint_offset"
+
+    await call_service(hass, "number", "set_value", entity_id, value=-1.5)
+
+    assert controller.writes == [("c1000.th00_setpoint_offset", "-15")]
+    assert hass.states.get(entity_id).state == "-1.5"
+
+
+@pytest.mark.parametrize("suffix", ["h", "c"])
+async def test_number_per_hvac_mode(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+    suffix: str,
+) -> None:
+    """Test thermostat settings for heating / cooling only are temperatures."""
+    await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {"th00_general_error": "0", f"th00_setpoint_idle_{suffix}": "175"},
+    )
+
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "number", DOMAIN, f"c1000.th00_setpoint_idle_{suffix}"
+    )
+    state = hass.states.get(entity_id)
+    assert state.state == "17.5"
+    assert state.attributes["unit_of_measurement"] == "°C"
 
 
 async def test_number_limits(
@@ -272,6 +313,32 @@ async def test_button_debug_log(
 
     for record in caplog.records:
         record.getMessage()
+
+
+@pytest.mark.parametrize(
+    "tags",
+    [
+        # thermostat with a general error
+        {
+            "th00_general_error": "1",
+            "th00_config1_req": "0",
+            "hvac_temperature_source": "0",
+        },
+        # hvac without global parameters
+        {"th00_general_error": "0", "th00_config1_req": "0", "hvac_mode": "1"},
+    ],
+)
+async def test_no_thermostat_buttons(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+    tags: dict[str, str],
+) -> None:
+    """Test config buttons need a working thermostat and global hvac parameters."""
+    await setup_with_tags(hass, aioclient_mock, mock_config_entry, tags)
+
+    assert hass.states.async_entity_ids("button") == []
 
 
 async def test_weather(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:

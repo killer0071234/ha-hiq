@@ -312,3 +312,59 @@ async def test_thermostat_modes_match_state_after_setup(
     state = hass.states.get(THERMOSTAT)
     assert state.attributes["hvac_modes"] == hvac_modes
     assert state.attributes.get("preset_modes") == preset_modes
+
+
+async def test_comfort_target_without_active_setpoint(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test the comfort setpoint is the target while no setpoint is active."""
+    await _set(
+        hass,
+        controller,
+        init_integration,
+        th00_setpoint_active="0",
+        th00_setpoint="215",
+    )
+
+    assert hass.states.get(THERMOSTAT).attributes["temperature"] == 21.5
+
+
+async def test_set_preset_boost(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test boost runs the fan at max."""
+    await _set(hass, controller, init_integration, th00_fan_options="16")
+
+    await call_service(
+        hass, "climate", "set_preset_mode", THERMOSTAT, preset_mode="boost"
+    )
+
+    assert controller.writes == [(f"{TH}_fan_limit", "4")]
+    assert hass.states.get(THERMOSTAT).attributes["preset_mode"] == "boost"
+
+
+async def test_set_temperature_boost_cooling(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test boost while cooling changes the lower setpoint limit."""
+    await _set(
+        hass,
+        controller,
+        init_integration,
+        hvac_mode="2",
+        th00_fan_options="16",
+        th00_fan_limit="4",
+    )
+
+    await call_service(hass, "climate", "set_temperature", THERMOSTAT, temperature=18)
+
+    assert controller.writes == [
+        (f"{TH}_setpoint_lo", "180"),
+        (f"{TH}_config2_req", "1"),
+    ]
