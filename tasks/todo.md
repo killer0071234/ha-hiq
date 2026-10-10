@@ -87,12 +87,12 @@ stays fixed). The stored options are prefilled as `label=value` strings, and the
 same validation as in add applies.
 
 **Acceptance criteria:**
-- [ ] The edit form is prefilled with the current name and options.
-- [ ] After a change, the entity shows the new name and options and keeps its entity id after reload.
-- [ ] Invalid options show the same error keys as in add.
+- [x] The edit form is prefilled with the current name and options.
+- [x] After a change, the entity shows the new name and options and keeps its entity id after reload.
+- [x] Invalid options show the same error keys as in add.
 
 **Verification:**
-- [ ] `scripts/test tests/test_config_flow.py tests/test_consistency.py`
+- [x] `scripts/test tests/test_config_flow.py tests/test_consistency.py`
 
 **Dependencies:** T3
 

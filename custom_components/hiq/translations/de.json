@@ -94,6 +94,17 @@
           "value_template": "Definiert eine Vorlage, um den Status des Sensors abzurufen."
         }
       },
+      "edit_select": {
+        "description": "Bearbeite die benutzerdefinierte Auswahl.",
+        "data": {
+          "name": "Name",
+          "options": "Optionen"
+        },
+        "data_description": {
+          "name": "Name der benutzerdefinierten Auswahl",
+          "options": "Eine Option pro Eintrag als Bezeichnung=Wert, der Wert wird in die Variable geschrieben. zB: eco=1"
+        }
+      },
       "select_edit_entity": {
         "title": "Benutzerdefinierte Entität konfigurieren",
         "data": {

@@ -53,7 +53,7 @@ T1 and T2 are independent of each other. T3 needs both.
 
 ### Phase 2: Flow
 - [x] T3: Add custom select via options flow, with validation
-- [ ] T4: Edit custom select
+- [x] T4: Edit custom select
 - [ ] T5: Remove custom selects (incl. mixed sensor + select removal)
 
 ### Checkpoint: Flow

@@ -94,6 +94,17 @@
           "value_template": "Defines a template to get the state of the sensor"
         }
       },
+      "edit_select": {
+        "description": "Edit the custom select.",
+        "data": {
+          "name": "Name",
+          "options": "Options"
+        },
+        "data_description": {
+          "name": "Select name",
+          "options": "One option per entry as label=value, the value is written to the variable. eg: eco=1"
+        }
+      },
       "select_edit_entity": {
         "title": "Configure custom entity",
         "data": {

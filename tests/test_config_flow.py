@@ -399,3 +399,81 @@ async def test_options_flow_add_select_invalid_options(
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": error}
     assert "select" not in init_integration.options
+
+
+def _suggested_values(result: dict) -> dict:
+    return {
+        str(key): key.description["suggested_value"]
+        for key in result["data_schema"].schema
+        if key.description and "suggested_value" in key.description
+    }
+
+
+async def _edit_select_step(hass: HomeAssistant, entry: MockConfigEntry) -> dict:
+    result = await _options_step(hass, entry, "select_edit_entity")
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"index": "select:0"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "edit_select"
+    return result
+
+
+async def test_options_flow_edit_select(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test editing name and options of a custom select."""
+    entry = init_integration
+    await _add_select(
+        hass,
+        entry,
+        {"tag": "th00_max_time", "name": "Activation", "options": ["short=30"]},
+    )
+    [entity_id] = _custom_entities(hass, entry)
+    unique_id = entry.options["select"][0]["unique_id"]
+
+    result = await _options_step(hass, entry, "select_edit_entity")
+    assert result["data_schema"].schema["index"].container == {
+        "select:0": "Activation (Select)"
+    }
+    result = await _edit_select_step(hass, entry)
+    assert _suggested_values(result) == {
+        "name": "Activation",
+        "options": ["short=30"],
+    }
+    assert "tag" not in result["data_schema"].schema
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"options": ["short=30", "normal=60"]}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["select"] == [
+        {
+            "tag": "th00_max_time",
+            "name": "th00_max_time",
+            "unique_id": unique_id,
+            "options": {"short": 30, "normal": 60},
+        }
+    ]
+    await _reload_data(hass, entry)
+    assert _custom_entities(hass, entry) == [entity_id]
+    state = hass.states.get(entity_id)
+    assert state.state == "normal"
+    assert state.attributes["options"] == ["short", "normal"]
+
+
+async def test_options_flow_edit_select_invalid_options(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test invalid options on edit show an error and keep the select."""
+    entry = init_integration
+    await _add_select(hass, entry, {"tag": "th00_max_time", "options": ["on=1"]})
+    result = await _edit_select_step(hass, entry)
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"options": ["on=1", "off=1"]}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "select_option_duplicate_value"}
+    assert entry.options["select"][0]["options"] == {"on": 1}

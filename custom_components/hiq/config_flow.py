@@ -163,6 +163,8 @@ SELECT_SETUP = {
 
 DATA_SCHEMA_PLC = vol.Schema(PLC_SETUP)
 
+DATA_SCHEMA_EDIT_SELECT = vol.Schema(SELECT_SETUP)
+
 DATA_SCHEMA_EDIT_SENSOR = vol.Schema(SENSOR_SETUP)
 
 
@@ -350,6 +352,33 @@ async def validate_sensor_edit(
     return {}
 
 
+async def get_edit_select_suggested_values(
+    handler: SchemaCommonFlowHandler,
+) -> dict[str, Any]:
+    """Return suggested values for select editing."""
+    select: dict[str, Any] = handler.options[SELECT_DOMAIN][handler.flow_state["_idx"]]
+    return {
+        CONF_NAME: select[CONF_NAME],
+        CONF_OPTIONS: [
+            f"{label}={value}" for label, value in select[CONF_OPTIONS].items()
+        ],
+    }
+
+
+async def validate_select_edit(
+    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
+) -> dict[str, Any]:
+    """Update edited select."""
+    options = _parse_select_options(user_input[CONF_OPTIONS])
+    handler.options.pop(EDIT_PLATFORM, None)
+
+    select: dict[str, Any] = handler.options[SELECT_DOMAIN][handler.flow_state["_idx"]]
+    select[CONF_OPTIONS] = options
+    # Default name is tag name
+    select[CONF_NAME] = user_input.get(CONF_NAME) or select[CONF_TAG]
+    return {}
+
+
 async def get_remove_entity_schema(handler: SchemaCommonFlowHandler) -> vol.Schema:
     """Return schema for custom entity removal."""
     return vol.Schema(
@@ -414,6 +443,11 @@ OPTIONS_FLOW = {
         DATA_SCHEMA_EDIT_SENSOR,
         suggested_values=get_edit_sensor_suggested_values,
         validate_user_input=validate_sensor_edit,
+    ),
+    "edit_select": SchemaFlowFormStep(
+        DATA_SCHEMA_EDIT_SELECT,
+        suggested_values=get_edit_select_suggested_values,
+        validate_user_input=validate_select_edit,
     ),
     "remove_entity": SchemaFlowFormStep(
         get_remove_entity_schema,
