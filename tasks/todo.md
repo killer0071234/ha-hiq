@@ -100,12 +100,12 @@ shows `TH-2-IQ` / `1.0.0.0` and `th00` keeps the defaults. Document the module
 model / firmware in the README.
 
 **Acceptance criteria:**
-- [x] The live test passes against c10000 (`HIQ_LIVE_HOST=192.168.10.48 HIQ_LIVE_NAD=10000`).
+- [x] The live test passes against a live controller (`HIQ_LIVE_HOST=192.168.1.10 HIQ_LIVE_NAD=1000`).
 - [x] The README says where model and firmware come from, and what `unknown` means.
 - [x] All SPEC success criteria are checked.
 
 **Verification:**
-- [x] `HIQ_LIVE_HOST=192.168.10.48 HIQ_LIVE_NAD=10000 scripts/test tests/live`
+- [x] `HIQ_LIVE_HOST=192.168.1.10 HIQ_LIVE_NAD=1000 scripts/test tests/live`
 - [x] `scripts/test`, `scripts/lint`, `ruff format --check .`
 
 **Dependencies:** T3, T4
