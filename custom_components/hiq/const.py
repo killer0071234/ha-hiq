@@ -12,7 +12,7 @@ MANUFACTURER_URL = "http://hiq-home.com/"
 ATTRIBUTION_PLC = "Data read from HIQ controller"
 DEVICE_DESCRIPTION = "HIQ controller"
 DEVICE_HW_VERSION = "2/3"
-DEVICE_SW_VERSION = "0.4.1"
+DEVICE_SW_VERSION = "0.5.0"
 DEVICE_UNKNOWN = "unknown"
 
 # Model of an expansion module by its card id (cNAD.mmNN_iex_card_id).

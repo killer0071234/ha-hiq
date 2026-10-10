@@ -91,7 +91,7 @@ installed.
 ```
 Test:      scripts/test                      # pytest --cov --cov-report=term
 Single:    scripts/test tests/test_models.py
-Live:      HIQ_LIVE_HOST=192.168.10.48 HIQ_LIVE_NAD=10000 scripts/test tests/live
+Live:      HIQ_LIVE_HOST=192.168.1.10 HIQ_LIVE_NAD=1000 scripts/test tests/live
 Lint:      scripts/lint                      # ruff check . --fix
 Format:    ruff format .
 ```
