@@ -10,6 +10,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.hiq.const import DOCS_URL
 from custom_components.hiq.const import DOMAIN
 
 from .const import NAD, OPTIONS, TITLE
@@ -22,6 +23,7 @@ async def _start_user_flow(hass: HomeAssistant) -> dict:
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
+    assert result["description_placeholders"] == {"docs_url": DOCS_URL}
     return result
 
 

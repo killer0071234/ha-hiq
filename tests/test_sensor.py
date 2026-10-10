@@ -142,7 +142,7 @@ async def test_thermostat_max_timer(
         ("outdoor_temperature", "12.5"),
         ("wall_temperature", "20.5"),
         ("water_temperature", "45.0"),
-        ("auxilary_temperature", "-3.0"),
+        ("auxiliary_temperature", "-3.0"),
     ],
 )
 async def test_hvac_temperatures(
@@ -256,5 +256,5 @@ async def test_enocean_general_error(
         "binary_sensor", DOMAIN, "c1000.eno_general_error"
     )
     state = hass.states.get(entity_id)
-    assert state.attributes["friendly_name"] == "c1000 diagnostic EnOcean General error"
+    assert state.attributes["friendly_name"] == "c1000 diagnostic EnOcean general error"
     assert state.state == "off"

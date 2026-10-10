@@ -74,6 +74,28 @@ async def test_write_tag_by_device(
     assert controller.writes == [("c1000.lc00_qx00", "0")]
 
 
+@pytest.mark.parametrize(
+    ("value", "written"),
+    [(-5, "-5"), (100000, "100000"), (1.5, "1.5")],
+)
+async def test_write_tag_value_range(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+    value: float,
+    written: str,
+) -> None:
+    """Test negative, large and decimal values (as sent by the UI) are written."""
+    await hass.services.async_call(
+        DOMAIN,
+        "write_tag",
+        {"entity_id": [LIGHT], "tag": "lc00_qx00", "value": value},
+        blocking=True,
+    )
+
+    assert controller.writes == [("c1000.lc00_qx00", written)]
+
+
 async def test_write_tag_without_target(
     hass: HomeAssistant,
     controller: FakeController,

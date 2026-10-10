@@ -1,119 +1,135 @@
-# Tasks: Module card id and firmware in device info
+# Tasks: Improve README and help texts
 
-See [plan.md](plan.md) and [SPEC.md](../SPEC.md). Write the tests first in every task.
+Spec: [SPEC.md](../SPEC.md) · Plan: [plan.md](plan.md)
 
-## Task 1: Module device info helper and card id table
+## Phase 1: Foundation and UI texts
 
-**Description:** Add `IEX_CARD_MODELS` (maintainer's full list, e.g. 60 LC-10-IQ, 63 BC-5-IQ, 64 SC-4-IQ, 65 TH-1-IQ,
-66 TH-2-IQ, 67 FC-1-IQ, 72 LD-D10-IQ, 69 TH-3-IQ, CyPro-only ids, plus 70 TH-1T, 71 SC-4T) to `const.py`, and
-`module_device_info(coordinator, module)` to `models.py`. The helper reads
-`{module}_iex_card_id` / `{module}_firmware_version` from
-`coordinator.data.vars`. A value is missing if it is not listed, `0`, `?` or
-not an integer (firmware: also negative).
+- [x] **Task 1: Plain-text strings.json + guard tests**
+  - Description: Replace every `[%key:component::hiq::…%]` and every
+    non-existent `common::` ref in `strings.json` with the text from
+    `en.json`, so both files say the same. Add the guard tests.
+  - Acceptance:
+    - `strings.json` contains no `component::hiq` refs, and every remaining
+      `[%key%]` is on the allow-list (see plan).
+    - New test: `strings.json` equals `en.json` (allowed refs resolved).
+    - New test: no `component::hiq` refs, refs only from the allow-list.
+  - Verify: `scripts/test tests/test_consistency.py`, then `scripts/test`
+  - Files: `strings.json`, `translations/en.json`, `tests/test_consistency.py`
+  - Dependencies: none · Scope: S
 
-**Acceptance criteria:**
-- [x] Both missing → `{}`. One missing → that field is `unknown` and the other is shown. Both present → model and firmware.
-- [x] Every table entry maps to its model, and an unknown id gives `card <id>`.
-- [x] Firmware `32767` → `32.7.6.7`, `10000` → `10.0.0.0`, `1203` → `1.2.0.3`, `1000` → `1.0.0.0`, `1` → `0.0.0.1`.
+- [x] **Task 2: Config flow and options flow help texts**
+  - Description: Setup step description (scgi server prerequisite, README
+    link), labels and `data_description` with examples for host/port/address,
+    clearer `cannot_connect` / `plc_not_existing`. Titles/descriptions for the
+    options menus `init`, `add_entity`, `select_edit_entity`, `remove_entity`.
+    Separate add/edit descriptions, a `data_description` for every field, typo
+    fixes ("to to").
+  - Acceptance:
+    - Every `config.step.*` and `options.step.*` has a `description`, and every
+      `data` key has a `data_description`, in en + de.
+    - New test for the point above.
+    - `edit_sensor`/`edit_select` descriptions say "edit", not "add".
+  - Verify: `scripts/test tests/test_consistency.py tests/test_config_flow.py`
+  - Files: `strings.json`, `translations/en.json`, `translations/de.json`,
+    `tests/test_consistency.py`
+  - Dependencies: Task 1 · Scope: M
 
-**Verification:**
-- [x] `scripts/test tests/test_models.py` (new)
-- [x] `scripts/lint`
+- [x] **Task 3: Entity name typo fixes**
+  - Description: Fix spelling/casing in `entity.*.name` (e.g. "temperatur",
+    "Auxilary", "Iex voltage") in en, and the same plus umlauts in de.
+    Translation keys stay the same.
+  - Acceptance:
+    - No known typos remain. The list of changed names is written down for
+      the PR / release notes.
+    - Entity-id assertions in tests updated only where the slug really
+      changes.
+  - Verify: `scripts/test`
+  - Files: `strings.json`, `translations/en.json`, `translations/de.json`,
+    possibly `tests/test_sensor.py` / `tests/test_entities.py`
+  - Dependencies: Task 1 · Scope: S
 
-**Dependencies:** None
+### Checkpoint 1
+- Renamed names (for release notes):
+  - en: Iex/iex voltage → IEX voltage; Auxilary → Auxiliary (sensor + switch);
+    Max temperatur external → Max temperature external;
+    {module} General error → {module} general error;
+    Operation mode hvac → Operation mode HVAC.
+  - de: Hystherese → Hysterese (3x); Versorgungpannung → Versorgungsspannung;
+    aktvieren → aktivieren; Aussen- → Außen- (2x); Interer → Interner Sensor;
+    Zykluszeit maximum → Zykluszeit Maximum; IP Adresse → IP-Adresse.
+  - New installs only: `…_auxilary_temperature` → `…_auxiliary_temperature`,
+    `…_max_temperatur_external` → `…_max_temperature_external`.
+- [x] `scripts/test` and `scripts/lint` pass
+- [x] `scripts/develop`: setup and all options steps read well in en + de
+- [x] Human review
 
-**Files likely touched:** `custom_components/hiq/const.py`,
-`custom_components/hiq/models.py`, `tests/test_models.py`
+## Phase 2: Services and metadata
 
-**Estimated scope:** S
+- [x] **Task 4: Service texts, translations and wider write_tag selector**
+  - Description: Unique names (`alarm_event` → "Alarm event"), consistent
+    descriptions in `services.yaml`. Explain that `tag` takes the variable
+    without the `cNAD.` prefix. `write_tag.value` selector → number, box,
+    `step: any`, -2147483648..2147483647. Add a `services` section to
+    strings/en/de.
+  - Acceptance:
+    - All 7 services have name + description and field name + description in
+      en + de. Names are unique (test).
+    - Test: selector range and `step: any`.
+    - Test: `write_tag` with `value: -5` writes `-5` to `c1000.<tag>` on the
+      fake controller.
+  - Verify: `scripts/test tests/test_consistency.py tests/test_services.py`
+  - Files: `services.yaml`, `strings.json`, `translations/en.json`,
+    `translations/de.json`, `tests/test_consistency.py`,
+    `tests/test_services.py`
+  - Dependencies: Task 1 · Scope: M
 
-## Task 2: Read module info at startup, show it on thermostat devices
+- [x] **Task 5: iot_class local_polling**
+  - Description: `manifest.json` `iot_class` → `local_polling`, no version
+    bump.
+  - Acceptance: test asserts `iot_class == "local_polling"`.
+  - Verify: `scripts/test tests/test_consistency.py`
+  - Files: `manifest.json`, `tests/test_consistency.py`
+  - Dependencies: none · Scope: XS
 
-**Description:** Extend the startup pre-read regex in `async_setup_entry` with
-`_iex_card_id|_firmware_version`. `thermostat_device_info` gets the shared
-defaults (`HIQ controller`, integration version, `2/3`, configuration URL)
-with `module_device_info` merged over them.
+### Checkpoint 2
+- [x] `scripts/test` and `scripts/lint` pass
+- [ ] Developer tools → Actions: all services with correct texts (en + de),
+      `write_tag` accepts `-5`, `100000`, `1.5`
+- [ ] Human review
 
-**Acceptance criteria:**
-- [x] A thermostat with card id `66` and firmware `1000` shows device model `TH-2-IQ` and sw_version `1.0.0.0`. The values are read before the platforms are set up.
-- [x] A thermostat without these variables shows `HIQ controller` / integration version / `2/3`. Identifiers and name are unchanged.
-- [x] No request contains `_iex_card_id` / `_firmware_version` tags that the controller doesn't list.
+## Phase 3: Documentation
 
-**Verification:**
-- [x] `scripts/test tests/test_climate.py tests/test_init.py`
-- [x] `scripts/test` (full suite: fake controller tags changed)
+- [ ] **Task 6: docs/entities.md**
+  - Description: Full entity reference, one section per platform. Columns:
+    Name | Description | Controller variable | Enabled by default. Names come
+    from `en.json`, and enabled flags come from `entity_registry_enabled_default`
+    in the code. Includes the custom sensor / custom select details from the
+    README.
+  - Acceptance:
+    - Every English entity name created by `init_integration` appears (test).
+    - No entity listed that the code cannot create (manual check against
+      `translation_key`s, recorded in the PR).
+  - Verify: `scripts/test tests/test_consistency.py`
+  - Files: `docs/entities.md`, `tests/test_consistency.py`
+  - Dependencies: Task 3 · Scope: M
 
-**Dependencies:** T1
+- [ ] **Task 7: README restructure**
+  - Description: Sections Prerequisites, Installation (HACS + manual, current
+    menu names), Configuration (setup fields, options flow, polling
+    5 s / 10 s), Entities (overview + absolute link to `docs/entities.md`),
+    Devices (keep), Services (all 7, fields, YAML examples for `write_tag` and
+    `precede_event`), Troubleshooting (link to DEBUGGING.md), Removal, Tested
+    devices, Contributing, Credits. Keep `{% if not installed %}`, remove
+    `exampleimg`.
+  - Acceptance:
+    - Every registered service is mentioned in the README (test).
+    - All listed sections are there, and no entity tables remain in the README.
+    - Every link reference used is defined, and every defined one is used.
+  - Verify: `scripts/test tests/test_consistency.py`, preview the Markdown
+  - Files: `README.md`, `tests/test_consistency.py`
+  - Dependencies: Tasks 4, 6 · Scope: S
 
-**Files likely touched:** `custom_components/hiq/__init__.py`,
-`custom_components/hiq/models.py`, `tests/fake_controller.py`,
-`tests/test_climate.py`, `tests/test_init.py`
-
-**Estimated scope:** M
-
-## Task 3: Show module info on light devices
-
-**Description:** `_light_device_info` merges `module_device_info` for the
-output's module (`cNAD.lcNN` / `cNAD.ldNN`) over today's model / sw_version.
-
-**Acceptance criteria:**
-- [x] Every output device of `lc00` with card id `60` shows `LC-10-IQ` and the module firmware. `ld` modules show `LD-D10-IQ`.
-- [x] Light devices without these variables are identical to today.
-
-**Verification:**
-- [x] `scripts/test tests/test_light.py`
-
-**Dependencies:** T2
-
-**Files likely touched:** `custom_components/hiq/light.py`,
-`tests/fake_controller.py`, `tests/test_light.py`
-
-**Estimated scope:** S
-
-## Task 4: Show module info on blind devices
-
-**Description:** The blind `DeviceInfo` in `cover.py` merges
-`module_device_info` for `cNAD.bcNN` over today's model / sw_version.
-
-**Acceptance criteria:**
-- [x] A blind of `bc00` with card id `63` shows `BC-5-IQ` and the module firmware.
-- [x] Blind devices without these variables are identical to today.
-
-**Verification:**
-- [x] `scripts/test tests/test_cover.py`
-
-**Dependencies:** T2
-
-**Files likely touched:** `custom_components/hiq/cover.py`,
-`tests/fake_controller.py`, `tests/test_cover.py`
-
-**Estimated scope:** S
-
-## Checkpoint: Devices
-- [x] `scripts/test` and `scripts/lint` are green, and coverage of the touched modules has not dropped
-- [x] Review with the user before continuing
-
-## Task 5: Live check and README
-
-**Description:** Extend the read-only live test: on the controller, `th01`
-shows `TH-2-IQ` / `1.0.0.0` and `th00` keeps the defaults. Document the module
-model / firmware in the README.
-
-**Acceptance criteria:**
-- [x] The live test passes against a live controller (`HIQ_LIVE_HOST=192.168.1.10 HIQ_LIVE_NAD=1000`).
-- [x] The README says where model and firmware come from, and what `unknown` means.
-- [x] All SPEC success criteria are checked.
-
-**Verification:**
-- [x] `HIQ_LIVE_HOST=192.168.1.10 HIQ_LIVE_NAD=1000 scripts/test tests/live`
-- [x] `scripts/test`, `scripts/lint`, `ruff format --check .`
-
-**Dependencies:** T3, T4
-
-**Files likely touched:** `tests/live/test_live.py`, `README.md`
-
-**Estimated scope:** S
-
-## Checkpoint: Complete
-- [x] All acceptance criteria met
-- [x] Ready for review
+### Checkpoint: Complete
+- [ ] All spec success criteria checked
+- [ ] `scripts/test` and `scripts/lint` pass
+- [ ] Human review before PR

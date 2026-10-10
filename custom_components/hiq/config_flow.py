@@ -50,6 +50,7 @@ from .const import CONF_INDEX
 from .const import CONF_TAG
 from .const import DEFAULT_HOST
 from .const import DEFAULT_PORT
+from .const import DOCS_URL
 from .const import DOMAIN
 from .const import LOGGER
 
@@ -411,10 +412,16 @@ async def validate_remove_entity(
     return {}
 
 
+async def get_user_placeholders(handler: SchemaCommonFlowHandler) -> dict[str, str]:
+    """Return description placeholders for the user step."""
+    return {"docs_url": DOCS_URL}
+
+
 CONFIG_FLOW = {
     "user": SchemaFlowFormStep(
         schema=DATA_SCHEMA_PLC,
         validate_user_input=validate_plc_setup,
+        description_placeholders=get_user_placeholders,
     )
 }
 

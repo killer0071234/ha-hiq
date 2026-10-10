@@ -9,6 +9,7 @@ DOMAIN = "hiq"
 
 MANUFACTURER = "Robotina D.o.o."
 MANUFACTURER_URL = "http://hiq-home.com/"
+DOCS_URL = "https://github.com/killer0071234/ha-hiq#prerequisites"
 ATTRIBUTION_PLC = "Data read from HIQ controller"
 DEVICE_DESCRIPTION = "HIQ controller"
 DEVICE_HW_VERSION = "2/3"

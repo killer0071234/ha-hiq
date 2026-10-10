@@ -84,7 +84,8 @@ def test_translation_complete(language: str) -> None:
     missing = [
         key
         for key in english
-        if key.startswith(("entity.", "config.", "options.")) and key not in other
+        if key.startswith(("entity.", "config.", "options.", "services."))
+        and key not in other
     ]
     assert missing == []
 
@@ -100,6 +101,28 @@ def test_translation_placeholders(language: str) -> None:
         for key, text in other.items()
         if _placeholders(text) != _placeholders(english[key])
     } == {}
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_flow_steps_described(language: str) -> None:
+    """Test every flow step has a description and every field a help text."""
+    translation = _translation(language)
+    steps = {
+        f"{flow}.{name}": step
+        for flow in ("config", "options")
+        for name, step in translation[flow]["step"].items()
+    }
+
+    assert sorted(key for key, step in steps.items() if "description" not in step) == []
+    assert (
+        sorted(
+            f"{key}.{field}"
+            for key, step in steps.items()
+            for field in step.get("data", {})
+            if field not in step.get("data_description", {})
+        )
+        == []
+    )
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
@@ -126,6 +149,39 @@ def test_strings_match_english() -> None:
     assert sorted(set(strings) ^ set(english)) == []
 
 
+def test_strings_equal_english() -> None:
+    """Test strings.json holds the same texts as translations/en.json.
+
+    Custom integrations don't resolve [%key:...%] references, so the English
+    texts are kept as plain text in both files.
+    """
+    assert _json(INTEGRATION / "strings.json") == _translation("en")
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_translation_has_no_references(language: str) -> None:
+    """Test translations contain no unresolved [%key:...%] references."""
+    references = {
+        key: text
+        for key, text in _flatten(_translation(language)).items()
+        if "[%key:" in text
+    }
+
+    assert references == {}
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_translation_has_no_urls(language: str) -> None:
+    """Test translations contain no URLs (hassfest requires placeholders)."""
+    urls = {
+        key: text
+        for key, text in _flatten(_translation(language)).items()
+        if re.search(r"https?://", text)
+    }
+
+    assert urls == {}
+
+
 async def test_services_documented(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
@@ -135,6 +191,57 @@ async def test_services_documented(
     )
 
     assert set(documented) == set(hass.services.async_services_for_domain(DOMAIN))
+
+
+def _services_yaml() -> dict:
+    return yaml.safe_load((INTEGRATION / "services.yaml").read_text(encoding="utf-8"))
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_services_translated(language: str) -> None:
+    """Test every service and field has a name and a description."""
+    services = _translation(language).get("services", {})
+
+    missing = [
+        f"{service}.{key}"
+        for service, definition in _services_yaml().items()
+        for key in (
+            "name",
+            "description",
+            *(
+                f"fields.{field}.{text}"
+                for field in definition.get("fields", {})
+                for text in ("name", "description")
+            ),
+        )
+        if key not in _flatten(services.get(service, {}))
+    ]
+    assert missing == []
+    assert sorted(set(services) - set(_services_yaml())) == []
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_service_names_unique(language: str) -> None:
+    """Test no two services share a name."""
+    names = [s["name"] for s in _translation(language).get("services", {}).values()]
+
+    assert len(names) == len(set(names))
+
+
+def test_services_yaml_names_unique() -> None:
+    """Test no two services share a name in services.yaml (fallback texts)."""
+    names = [s["name"] for s in _services_yaml().values()]
+
+    assert len(names) == len(set(names))
+
+
+def test_write_tag_value_selector() -> None:
+    """Test the write_tag value field allows 32-bit and decimal values."""
+    selector = _services_yaml()["write_tag"]["fields"]["value"]["selector"]["number"]
+
+    assert selector["min"] <= -(2**31)
+    assert selector["max"] >= 2**31 - 1
+    assert selector["step"] == "any"
 
 
 def test_requirements_pinned_for_tests() -> None:
@@ -165,3 +272,8 @@ def test_homeassistant_versions_match() -> None:
 
     assert plugin == {pinned}
     assert version("homeassistant") == pinned
+
+
+def test_iot_class_polling() -> None:
+    """Test the manifest declares polling, as the coordinator polls the server."""
+    assert _json(INTEGRATION / "manifest.json")["iot_class"] == "local_polling"

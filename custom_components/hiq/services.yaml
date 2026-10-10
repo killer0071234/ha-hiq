@@ -1,6 +1,6 @@
 alarm_event:
-  name: Home event
-  description: Send smartphone alarm event to HIQ - controller.
+  name: Alarm clock event
+  description: Sends the smartphone alarm clock event (alarm clock rings) to the HIQ controller.
   target:
     entity:
       integration: hiq
@@ -8,7 +8,7 @@ alarm_event:
        - binary_sensor
 presence_signal:
   name: Presence signal
-  description: Send smartphone presence signal to HIQ - controller.
+  description: Sends the smartphone presence signal to the HIQ controller.
   target:
     entity:
       integration: hiq
@@ -16,7 +16,7 @@ presence_signal:
        - binary_sensor
 charge_on_event:
   name: Charge on event
-  description: Send smartphone charge on event to HIQ - controller.
+  description: Sends the smartphone charge on event (charger connected) to the HIQ controller.
   target:
     entity:
       integration: hiq
@@ -24,7 +24,7 @@ charge_on_event:
        - binary_sensor
 charge_off_event:
   name: Charge off event
-  description: Send smartphone charge off event to HIQ - controller.
+  description: Sends the smartphone charge off event (charger disconnected) to the HIQ controller.
   target:
     entity:
       integration: hiq
@@ -32,7 +32,7 @@ charge_off_event:
        - binary_sensor
 home_event:
   name: Home event
-  description: Send smartphone home event to HIQ - controller.
+  description: Sends the smartphone home event to the HIQ controller.
   target:
     entity:
       integration: hiq
@@ -40,7 +40,7 @@ home_event:
        - binary_sensor
 precede_event:
   name: Precede event
-  description: Send smartphone Precede event to HIQ - controller.
+  description: Sends the smartphone event triggered some minutes before the alarm clock to the HIQ controller, e.g. to turn on the heating in advance.
   target:
     entity:
       integration: hiq
@@ -48,8 +48,8 @@ precede_event:
        - binary_sensor
   fields:
     time:
-      name: Time
-      description: The precede time in minutes.
+      name: Precede time
+      description: Minutes before the alarm clock at which the event is triggered.
       required: true
       example: 10
       selector:
@@ -59,7 +59,7 @@ precede_event:
           unit_of_measurement: "min"
 write_tag:
   name: Write tag
-  description: Set / Write a Variable / Tag in HIQ - controller.
+  description: Writes a value to a variable of the HIQ controller.
   target:
     entity:
       integration: hiq
@@ -67,18 +67,20 @@ write_tag:
        - binary_sensor
   fields:
     tag:
-      name: Variable / Tag
-      description: Controller Variable / Tag name.
+      name: Variable
+      description: Name of the controller variable without the cNAD. prefix, e.g. smartphone_presence_signal.
       required: true
       example: "smartphone_presence_signal"
       selector:
         text:
     value:
       name: Value
-      description: Variable / Tag value to write.
+      description: Value to write, e.g. 10. Negative and decimal values are allowed.
       required: true
       example: 10
       selector:
         number:
-          min: 0
-          max: 1000
+          min: -2147483648
+          max: 2147483647
+          step: any
+          mode: box

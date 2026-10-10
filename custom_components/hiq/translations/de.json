@@ -1,128 +1,142 @@
 {
   "config": {
-    "error": {
-      "cannot_connect": "Fehler beim verbinden zum SCGI Server (Läuft der Server?, Ist der Server installiert?, Ist das cybroscgiserver Addon installiert?)",
-      "plc_not_existing": "HIQ Steuerung existiert im SCGI Server nicht (Ist die Adresse (NAD) richtig?)",
-      "select_options_empty": "Füge mindestens eine Option hinzu",
-      "select_option_invalid": "Optionen müssen als Bezeichnung=Wert mit einer ganzen Zahl als Wert eingegeben werden, zB: eco=1",
-      "select_option_duplicate_label": "Jede Bezeichnung darf nur einmal verwendet werden",
-      "select_option_duplicate_value": "Jeder Wert darf nur einmal verwendet werden"
-    },
     "flow_title": "{name}",
     "step": {
       "user": {
+        "description": "Verbinde eine HIQ Steuerung über den CybroScgiServer.\nDer SCGI Server muss laufen, bevor du fortfährst. Siehe [Dokumentation]({docs_url}).",
         "data": {
-          "host": "SCGI Server host",
-          "port": "SCGI Server port",
-          "address": "Steuerungsadresse (NAD)"
+          "host": "SCGI Server Host",
+          "port": "SCGI Server Port",
+          "address": "Adresse der Steuerung (NAD)"
         },
         "data_description": {
-          "host": "SCGI Server host (für das cybroscgiserver addon '85493909-cybroscgiserver')",
-          "port": "SCGI Server port (für das cybroscgiserver addon '4000')",
-          "address": "Adresse der HIQ Steuerung (NAD) (z.B.: 1000)"
-        },
-        "description": "Richte HIQ-Home mit Home Assistant ein.\nVor der Einrichtung der Integration muss ein cybro SCGI Server laufen!\nSiehe Dokumentation der Integration für Details."
+          "host": "Hostname oder IP-Adresse des SCGI Servers. Für das CybroScgiServer Add-on 85493909-cybroscgiserver verwenden.",
+          "port": "Port des SCGI Servers. Für das CybroScgiServer Add-on 4000 verwenden.",
+          "address": "Netzwerkadresse (NAD) der HIQ Steuerung, z. B. 1000."
+        }
       }
     },
+    "error": {
+      "cannot_connect": "Keine Verbindung zum SCGI Server. Prüfe, ob er läuft und ob Host und Port stimmen.",
+      "plc_not_existing": "Der SCGI Server kennt keine HIQ Steuerung mit dieser Adresse. Prüfe die NAD und ob die Steuerung erreichbar ist.",
+      "select_options_empty": "Füge mindestens eine Option hinzu.",
+      "select_option_invalid": "Gib jede Option als Bezeichnung=Wert mit einer ganzen Zahl als Wert ein, z. B. eco=1.",
+      "select_option_duplicate_label": "Jede Bezeichnung darf nur einmal verwendet werden.",
+      "select_option_duplicate_value": "Jeder Wert darf nur einmal verwendet werden."
+    },
     "abort": {
-      "already_configured": "HIQ Steuerung ist bereits in Home Assistant konfiguriert"
+      "already_configured": "Diese HIQ Steuerung ist bereits eingerichtet."
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "HIQ Optionen",
+        "description": "Benutzerdefinierte Entitäten zeigen oder setzen beliebige Variablen der Steuerung.",
         "menu_options": {
           "add_entity": "Benutzerdefinierte Entität hinzufügen",
-          "select_edit_entity": "Benutzerdefinierte Entität konfigurieren",
+          "select_edit_entity": "Benutzerdefinierte Entität bearbeiten",
           "remove_entity": "Benutzerdefinierte Entitäten löschen"
         }
       },
       "add_entity": {
+        "title": "Benutzerdefinierte Entität hinzufügen",
+        "description": "Wähle die Art der Entität.\n- Sensor: zeigt den Wert einer Variable.\n- Auswahl: schreibt einen von mehreren Werten in eine Variable.",
         "menu_options": {
           "add_sensor": "Sensor",
           "add_select": "Auswahl"
         }
       },
       "add_sensor": {
-        "description": "Füge einen benutzerdefinierten Sensor hinzu.",
+        "title": "Benutzerdefinierten Sensor hinzufügen",
+        "description": "Füge einen Sensor hinzu, der den Wert einer Variable der Steuerung zeigt.",
         "data": {
           "name": "Name",
-          "tag": "Variable in HIQ Steuerung",
-          "device_class": "Device Class",
-          "state_class": "State Class",
-          "unit_of_measurement": "Unit of Measurement",
-          "value_template": "Value Template"
+          "tag": "Variable der Steuerung",
+          "value_template": "Wertvorlage",
+          "device_class": "Geräteklasse",
+          "state_class": "Zustandsklasse",
+          "unit_of_measurement": "Maßeinheit"
         },
         "data_description": {
-          "name": "Name des benutzerdefinierten Sensors",
-          "tag": "Definiert welche Variable aus der HIQ Steuerung gelesen werden soll. zB: cybro_serial",
-          "device_class": "Der Typ/die Klasse des Sensors, um das Symbol im Frontend festzulegen.",
-          "state_class": "Die Zustandsklasse des Sensors.",
-          "unit_of_measurement": "Wähle eine Maßeinheit oder erstelle eine eigene.",
-          "value_template": "Definiert eine Vorlage, um den Status des Sensors abzurufen."
+          "name": "Name des Sensors in Home Assistant.",
+          "tag": "Variable, die gelesen wird, z. B. cybro_serial. Die Liste zeigt alle Variablen dieser Steuerung.",
+          "value_template": "Optionale Vorlage, um den Rohwert umzurechnen. Der Rohwert ist als value verfügbar. Beispiele stehen in der Dokumentation.",
+          "device_class": "Art des Sensors. Legt das Symbol und die passenden Einheiten fest.",
+          "state_class": "Nötig für Langzeitstatistiken: Messung für Werte wie eine Temperatur, Gesamt oder Gesamt steigend für Zähler.",
+          "unit_of_measurement": "Einheit des Wertes. Wähle eine aus der Liste oder gib eine eigene ein. Sie muss zur Geräteklasse passen."
         }
       },
       "add_select": {
-        "description": "Füge eine benutzerdefinierte Auswahl hinzu, um einen Wert einer Variable der HIQ Steuerung zu wählen.",
+        "title": "Benutzerdefinierte Auswahl hinzufügen",
+        "description": "Füge eine Auswahl hinzu, die einen von mehreren Werten in eine Variable der Steuerung schreibt. Sie zeigt die Option des aktuellen Werts.",
         "data": {
           "name": "Name",
-          "tag": "Variable in HIQ Steuerung",
+          "tag": "Variable der Steuerung",
           "options": "Optionen"
         },
         "data_description": {
-          "name": "Name der benutzerdefinierten Auswahl",
-          "tag": "Definiert welche Variable der HIQ Steuerung gelesen und geschrieben werden soll. zB: th00_mode",
-          "options": "Eine Option pro Eintrag als Bezeichnung=Wert, der Wert wird in die Variable geschrieben. zB: eco=1"
+          "name": "Name der Auswahl in Home Assistant.",
+          "tag": "Variable, die gelesen und geschrieben wird, z. B. th00_mode. Die Liste zeigt alle Variablen dieser Steuerung.",
+          "options": "Eine Option pro Eintrag als Bezeichnung=Wert. Der Wert ist eine ganze Zahl und wird in die Variable geschrieben, z. B. eco=1."
         }
       },
       "edit_sensor": {
-        "description": "Bearbeite den benutzerdefinierten Sensor.",
+        "title": "Benutzerdefinierten Sensor bearbeiten",
+        "description": "Ändere die Einstellungen des benutzerdefinierten Sensors. Die Variable kann nicht geändert werden.",
         "data": {
           "name": "Name",
-          "tag": "Variable in HIQ Steuerung",
-          "device_class": "Device Class",
-          "state_class": "State Class",
-          "unit_of_measurement": "Unit of Measurement",
-          "value_template": "Value Template"
+          "value_template": "Wertvorlage",
+          "device_class": "Geräteklasse",
+          "state_class": "Zustandsklasse",
+          "unit_of_measurement": "Maßeinheit"
         },
         "data_description": {
-          "name": "Name des benutzerdefinierten Sensors",
-          "tag": "Definiert welche Variable aus der HIQ Steuerung gelesen werden soll. zB: cybro_serial",
-          "device_class": "Der Typ/die Klasse des Sensors, um das Symbol im Frontend festzulegen.",
-          "state_class": "Die Zustandsklasse des Sensors.",
-          "unit_of_measurement": "Wähle eine Maßeinheit oder erstelle eine eigene.",
-          "value_template": "Definiert eine Vorlage, um den Status des Sensors abzurufen."
+          "name": "Name des Sensors in Home Assistant.",
+          "value_template": "Optionale Vorlage, um den Rohwert umzurechnen. Der Rohwert ist als value verfügbar. Beispiele stehen in der Dokumentation.",
+          "device_class": "Art des Sensors. Legt das Symbol und die passenden Einheiten fest.",
+          "state_class": "Nötig für Langzeitstatistiken: Messung für Werte wie eine Temperatur, Gesamt oder Gesamt steigend für Zähler.",
+          "unit_of_measurement": "Einheit des Wertes. Wähle eine aus der Liste oder gib eine eigene ein. Sie muss zur Geräteklasse passen."
         }
       },
       "edit_select": {
-        "description": "Bearbeite die benutzerdefinierte Auswahl.",
+        "title": "Benutzerdefinierte Auswahl bearbeiten",
+        "description": "Ändere den Namen und die Optionen der benutzerdefinierten Auswahl. Die Variable kann nicht geändert werden.",
         "data": {
           "name": "Name",
           "options": "Optionen"
         },
         "data_description": {
-          "name": "Name der benutzerdefinierten Auswahl",
-          "options": "Eine Option pro Eintrag als Bezeichnung=Wert, der Wert wird in die Variable geschrieben. zB: eco=1"
+          "name": "Name der Auswahl in Home Assistant.",
+          "options": "Eine Option pro Eintrag als Bezeichnung=Wert. Der Wert ist eine ganze Zahl und wird in die Variable geschrieben, z. B. eco=1."
         }
       },
       "select_edit_entity": {
-        "title": "Benutzerdefinierte Entität konfigurieren",
+        "title": "Benutzerdefinierte Entität bearbeiten",
+        "description": "Wähle die benutzerdefinierte Entität, die du bearbeiten willst.",
         "data": {
           "index": "Entität"
+        },
+        "data_description": {
+          "index": "Benutzerdefinierter Sensor oder Auswahl dieser Steuerung."
         }
       },
       "remove_entity": {
         "title": "Benutzerdefinierte Entitäten löschen",
+        "description": "Wähle die benutzerdefinierten Entitäten, die du löschen willst. Sie werden auch aus Home Assistant entfernt.",
         "data": {
           "index": "Entitäten"
+        },
+        "data_description": {
+          "index": "Benutzerdefinierte Sensoren und Auswahlen dieser Steuerung."
         }
       }
     },
     "error": {
-      "select_options_empty": "Füge mindestens eine Option hinzu",
-      "select_option_invalid": "Optionen müssen als Bezeichnung=Wert mit einer ganzen Zahl als Wert eingegeben werden, zB: eco=1",
-      "select_option_duplicate_label": "Jede Bezeichnung darf nur einmal verwendet werden",
-      "select_option_duplicate_value": "Jeder Wert darf nur einmal verwendet werden"
+      "select_options_empty": "Füge mindestens eine Option hinzu.",
+      "select_option_invalid": "Gib jede Option als Bezeichnung=Wert mit einer ganzen Zahl als Wert ein, z. B. eco=1.",
+      "select_option_duplicate_label": "Jede Bezeichnung darf nur einmal verwendet werden.",
+      "select_option_duplicate_value": "Jeder Wert darf nur einmal verwendet werden."
     }
   },
   "entity": {
@@ -166,13 +180,13 @@
     },
     "sensor": {
       "sys_ip_port": {
-        "name": "IP Adresse Steuerung"
+        "name": "IP-Adresse Steuerung"
       },
       "scan_time": {
         "name": "Zykluszeit"
       },
       "scan_time_max": {
-        "name": "Zykluszeit maximum"
+        "name": "Zykluszeit Maximum"
       },
       "cybro_uptime": {
         "name": "Betriebszeit"
@@ -190,7 +204,7 @@
         "name": "{module} IEX Spannung"
       },
       "cybro_power_supply": {
-        "name": "Versorgungspannung Steuerung"
+        "name": "Versorgungsspannung Steuerung"
       },
       "temperature_1": {
         "name": "Externe Temperatur"
@@ -202,7 +216,7 @@
         "name": "Max Funktion Restzeit"
       },
       "outdoor_temperature": {
-        "name": "Aussentemperatur"
+        "name": "Außentemperatur"
       },
       "wall_temperature": {
         "name": "Wandtemperatur"
@@ -245,7 +259,7 @@
       "temperature_source": {
         "name": "Temperatursensor Quelle",
         "state": {
-          "internal_sensor": "Interer Sensor",
+          "internal_sensor": "Interner Sensor",
           "external_sensor": "Externer Sensor",
           "remote_sensor": "Remote Sensor"
         }
@@ -315,13 +329,13 @@
         "name": "Sollwert max heizen"
       },
       "hysteresis": {
-        "name": "Hystherese"
+        "name": "Hysterese"
       },
       "hysteresis_c": {
-        "name": "Hystherese kühlen"
+        "name": "Hysterese kühlen"
       },
       "hysteresis_h": {
-        "name": "Hystherese heizen"
+        "name": "Hysterese heizen"
       },
       "max_temp": {
         "name": "Max Temperatur extern"
@@ -362,7 +376,7 @@
         "name": "Anforderung aktivieren"
       },
       "outdoor_temperature_enable": {
-        "name": "Aussentemperatur aktivieren"
+        "name": "Außentemperatur aktivieren"
       },
       "wall_temperature_enable": {
         "name": "Wandtemperatur aktivieren"
@@ -371,7 +385,7 @@
         "name": "Wassertemperatur aktivieren"
       },
       "auxilary_temperature_enable": {
-        "name": "Externe Temperatur aktvieren"
+        "name": "Externe Temperatur aktivieren"
       },
       "auto_limits_enable": {
         "name": "Automatische Grenzwerte aktivieren"
@@ -387,6 +401,52 @@
       },
       "hvac_fan_option_b04": {
         "name": "Lüfter Max Funktion Freigabe"
+      }
+    }
+  },
+  "services": {
+    "alarm_event": {
+      "name": "Wecker",
+      "description": "Sendet das Smartphone-Ereignis Wecker klingelt an die HIQ Steuerung."
+    },
+    "presence_signal": {
+      "name": "Anwesenheitssignal",
+      "description": "Sendet das Smartphone Anwesenheitssignal an die HIQ Steuerung."
+    },
+    "charge_on_event": {
+      "name": "Laden ein Ereignis",
+      "description": "Sendet das Smartphone Ereignis Laden ein (Ladegerät verbunden) an die HIQ Steuerung."
+    },
+    "charge_off_event": {
+      "name": "Laden aus Ereignis",
+      "description": "Sendet das Smartphone Ereignis Laden aus (Ladegerät getrennt) an die HIQ Steuerung."
+    },
+    "home_event": {
+      "name": "Zuhause Ereignis",
+      "description": "Sendet das Smartphone Zuhause Ereignis an die HIQ Steuerung."
+    },
+    "precede_event": {
+      "name": "Weckvorlauf",
+      "description": "Sendet das Smartphone-Ereignis einige Minuten vor dem Wecker an die HIQ Steuerung, z. B. um vorher die Heizung einzuschalten.",
+      "fields": {
+        "time": {
+          "name": "Vorlaufzeit",
+          "description": "Minuten vor dem Wecker, zu denen das Ereignis ausgelöst wird."
+        }
+      }
+    },
+    "write_tag": {
+      "name": "Variable schreiben",
+      "description": "Schreibt einen Wert in eine Variable der HIQ Steuerung.",
+      "fields": {
+        "tag": {
+          "name": "Variable",
+          "description": "Name der Variable der Steuerung ohne das Präfix cNAD., z. B. smartphone_presence_signal."
+        },
+        "value": {
+          "name": "Wert",
+          "description": "Wert, der geschrieben wird, z. B. 10. Negative Werte und Kommazahlen sind erlaubt."
+        }
       }
     }
   }
