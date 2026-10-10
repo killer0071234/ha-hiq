@@ -170,6 +170,18 @@ def test_translation_has_no_references(language: str) -> None:
     assert references == {}
 
 
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_translation_has_no_urls(language: str) -> None:
+    """Test translations contain no URLs (hassfest requires placeholders)."""
+    urls = {
+        key: text
+        for key, text in _flatten(_translation(language)).items()
+        if re.search(r"https?://", text)
+    }
+
+    assert urls == {}
+
+
 async def test_services_documented(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:

@@ -3,7 +3,7 @@
     "flow_title": "{name}",
     "step": {
       "user": {
-        "description": "Connect a HIQ controller through the CybroScgiServer.\nThe scgi server must be running before you continue. See the [documentation](https://github.com/killer0071234/ha-hiq#prerequisites).",
+        "description": "Connect a HIQ controller through the CybroScgiServer.\nThe scgi server must be running before you continue. See the [documentation]({docs_url}).",
         "data": {
           "host": "scgi server host",
           "port": "scgi server port",
