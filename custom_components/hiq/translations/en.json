@@ -1,128 +1,142 @@
 {
   "config": {
-    "error": {
-      "cannot_connect": "Failed to connect to scgi server (Is the server running?, Is the server installed?, Is the cybroscgiserver addon installed?)",
-      "plc_not_existing": "HIQ controller does not exist in scgi server (Is the address / NAD correct?)",
-      "select_options_empty": "Add at least one option",
-      "select_option_invalid": "Options must be entered as label=value with a whole number value, eg: eco=1",
-      "select_option_duplicate_label": "Each option label may only be used once",
-      "select_option_duplicate_value": "Each option value may only be used once"
-    },
     "flow_title": "{name}",
     "step": {
       "user": {
+        "description": "Connect a HIQ controller through the CybroScgiServer.\nThe scgi server must be running before you continue. See the [documentation](https://github.com/killer0071234/ha-hiq#prerequisites).",
         "data": {
           "host": "scgi server host",
           "port": "scgi server port",
-          "address": "HIQ controller address (NAD)"
+          "address": "Controller address (NAD)"
         },
         "data_description": {
-          "host": "scgi server Hostname / IP (for cybroscgiserver addon use '85493909-cybroscgiserver')",
-          "port": "scgi server Port (for cybroscgiserver addon use '4000')",
-          "address": "HIQ controller address (NAD) (eg: 1000)"
-        },
-        "description": "Set up your HIQ-Home control to integrate with Home Assistant.\nBefore you continue make sure you had a running cybro scgi server!\nSee integration documentation for details."
+          "host": "Host name or IP address of the scgi server. For the CybroScgiServer add-on use 85493909-cybroscgiserver.",
+          "port": "Port of the scgi server. For the CybroScgiServer add-on use 4000.",
+          "address": "Network address (NAD) of the HIQ controller, e.g. 1000."
+        }
       }
     },
+    "error": {
+      "cannot_connect": "Cannot connect to the scgi server. Check that it is running and that host and port are correct.",
+      "plc_not_existing": "The scgi server knows no HIQ controller with this address. Check the NAD and that the controller is online.",
+      "select_options_empty": "Add at least one option.",
+      "select_option_invalid": "Enter each option as label=value with a whole number as value, e.g. eco=1.",
+      "select_option_duplicate_label": "Each option label may only be used once.",
+      "select_option_duplicate_value": "Each option value may only be used once."
+    },
     "abort": {
-      "already_configured": "HIQ controller is already configured in Home Assistant"
+      "already_configured": "This HIQ controller is already configured."
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "HIQ options",
+        "description": "Custom entities show or set any variable of the controller.",
         "menu_options": {
           "add_entity": "Add custom entity",
-          "select_edit_entity": "Configure custom entity",
+          "select_edit_entity": "Edit custom entity",
           "remove_entity": "Remove custom entities"
         }
       },
       "add_entity": {
+        "title": "Add custom entity",
+        "description": "Choose the type of entity.\n- Sensor: shows the value of a variable.\n- Select: writes one of several values to a variable.",
         "menu_options": {
           "add_sensor": "Sensor",
           "add_select": "Select"
         }
       },
       "add_sensor": {
-        "description": "Add a custom sensor to read from HIQ controller.",
+        "title": "Add custom sensor",
+        "description": "Add a sensor that shows the value of a controller variable.",
         "data": {
           "name": "Name",
-          "tag": "PLC tag / variable",
-          "device_class": "Device Class",
-          "state_class": "State Class",
-          "unit_of_measurement": "Unit of Measurement",
-          "value_template": "Value Template"
+          "tag": "Controller variable",
+          "value_template": "Value template",
+          "device_class": "Device class",
+          "state_class": "State class",
+          "unit_of_measurement": "Unit of measurement"
         },
         "data_description": {
-          "name": "Sensor name",
-          "tag": "Defines what tag / variable to to read from the plc. eg: cybro_serial",
-          "device_class": "The type/class of the sensor to set the icon in the frontend",
-          "state_class": "The state_class of the sensor",
-          "unit_of_measurement": "Choose unit of measurement for the sensor (shall match device / state class)",
-          "value_template": "Defines a template to get the state of the sensor"
+          "name": "Name of the sensor in Home Assistant.",
+          "tag": "Variable to read, e.g. cybro_serial. The list shows all variables of this controller.",
+          "value_template": "Optional template to convert the raw value, which is available as value. See the documentation for examples.",
+          "device_class": "Type of the sensor. Sets the icon and the units that fit.",
+          "state_class": "Needed for long-term statistics: Measurement for values like a temperature, Total or Total increasing for counters.",
+          "unit_of_measurement": "Unit of the value. Choose one from the list or enter your own. It must fit the device class."
         }
       },
       "add_select": {
-        "description": "Add a custom select to choose a value of a HIQ controller variable.",
+        "title": "Add custom select",
+        "description": "Add a select that writes one of several values to a controller variable. It shows the option of the current value.",
         "data": {
           "name": "Name",
-          "tag": "PLC tag / variable",
+          "tag": "Controller variable",
           "options": "Options"
         },
         "data_description": {
-          "name": "Select name",
-          "tag": "Defines what tag / variable to read from and write to the plc. eg: th00_mode",
-          "options": "One option per entry as label=value, the value is written to the variable. eg: eco=1"
+          "name": "Name of the select in Home Assistant.",
+          "tag": "Variable to read and write, e.g. th00_mode. The list shows all variables of this controller.",
+          "options": "One option per entry as label=value. The value is a whole number and is written to the variable, e.g. eco=1."
         }
       },
       "edit_sensor": {
-        "description": "Add a custom sensor to read from HIQ controller.",
+        "title": "Edit custom sensor",
+        "description": "Change the settings of the custom sensor. The variable cannot be changed.",
         "data": {
           "name": "Name",
-          "tag": "PLC tag / variable",
-          "device_class": "Device Class",
-          "state_class": "State Class",
-          "unit_of_measurement": "Unit of Measurement",
-          "value_template": "Value Template"
+          "value_template": "Value template",
+          "device_class": "Device class",
+          "state_class": "State class",
+          "unit_of_measurement": "Unit of measurement"
         },
         "data_description": {
-          "name": "Sensor name",
-          "tag": "Defines what tag / variable to to read from the plc. eg: cybro_serial",
-          "device_class": "The type/class of the sensor to set the icon in the frontend",
-          "state_class": "The state_class of the sensor",
-          "unit_of_measurement": "Choose unit of measurement for the sensor (shall match device / state class)",
-          "value_template": "Defines a template to get the state of the sensor"
+          "name": "Name of the sensor in Home Assistant.",
+          "value_template": "Optional template to convert the raw value, which is available as value. See the documentation for examples.",
+          "device_class": "Type of the sensor. Sets the icon and the units that fit.",
+          "state_class": "Needed for long-term statistics: Measurement for values like a temperature, Total or Total increasing for counters.",
+          "unit_of_measurement": "Unit of the value. Choose one from the list or enter your own. It must fit the device class."
         }
       },
       "edit_select": {
-        "description": "Edit the custom select.",
+        "title": "Edit custom select",
+        "description": "Change the name and the options of the custom select. The variable cannot be changed.",
         "data": {
           "name": "Name",
           "options": "Options"
         },
         "data_description": {
-          "name": "Select name",
-          "options": "One option per entry as label=value, the value is written to the variable. eg: eco=1"
+          "name": "Name of the select in Home Assistant.",
+          "options": "One option per entry as label=value. The value is a whole number and is written to the variable, e.g. eco=1."
         }
       },
       "select_edit_entity": {
-        "title": "Configure custom entity",
+        "title": "Edit custom entity",
+        "description": "Choose the custom entity to edit.",
         "data": {
           "index": "Entity"
+        },
+        "data_description": {
+          "index": "Custom sensor or select of this controller."
         }
       },
       "remove_entity": {
         "title": "Remove custom entities",
+        "description": "Choose the custom entities to remove. They are also deleted from Home Assistant.",
         "data": {
           "index": "Entities"
+        },
+        "data_description": {
+          "index": "Custom sensors and selects of this controller."
         }
       }
     },
     "error": {
-      "select_options_empty": "Add at least one option",
-      "select_option_invalid": "Options must be entered as label=value with a whole number value, eg: eco=1",
-      "select_option_duplicate_label": "Each option label may only be used once",
-      "select_option_duplicate_value": "Each option value may only be used once"
+      "select_options_empty": "Add at least one option.",
+      "select_option_invalid": "Enter each option as label=value with a whole number as value, e.g. eco=1.",
+      "select_option_duplicate_label": "Each option label may only be used once.",
+      "select_option_duplicate_value": "Each option value may only be used once."
     }
   },
   "selector": {
@@ -205,7 +219,7 @@
         "name": "General error"
       },
       "general_error_iex": {
-        "name": "{module} General error"
+        "name": "{module} general error"
       },
       "eno_general_error": {
         "name": "EnOcean general error"
@@ -252,10 +266,10 @@
         "name": "Controller program cycles"
       },
       "iex_power_supply": {
-        "name": "Iex voltage"
+        "name": "IEX voltage"
       },
       "iex_power_supply_iex": {
-        "name": "{module} iex voltage"
+        "name": "{module} IEX voltage"
       },
       "cybro_power_supply": {
         "name": "Controller supply voltage"
@@ -279,7 +293,7 @@
         "name": "Water temperature"
       },
       "auxilary_temperature": {
-        "name": "Auxilary temperature"
+        "name": "Auxiliary temperature"
       },
       "power_meter_power_phase": {
         "name": "Power L{phase}"
@@ -337,7 +351,7 @@
         }
       },
       "hvac_mode": {
-        "name": "Operation mode hvac",
+        "name": "Operation mode HVAC",
         "state": {
           "off": "Off",
           "heating": "Heating",
@@ -392,7 +406,7 @@
         "name": "Hysteresis heating"
       },
       "max_temp": {
-        "name": "Max temperatur external"
+        "name": "Max temperature external"
       },
       "max_time": {
         "name": "Activation time max function"
@@ -439,7 +453,7 @@
         "name": "Enable water temperature"
       },
       "auxilary_temperature_enable": {
-        "name": "Enable auxilary temperature"
+        "name": "Enable auxiliary temperature"
       },
       "auto_limits_enable": {
         "name": "Enable automatic setpoint limits"
@@ -455,6 +469,52 @@
       },
       "hvac_fan_option_b04": {
         "name": "Fan speed limit max"
+      }
+    }
+  },
+  "services": {
+    "alarm_event": {
+      "name": "Alarm clock event",
+      "description": "Sends the smartphone alarm clock event (alarm clock rings) to the HIQ controller."
+    },
+    "presence_signal": {
+      "name": "Presence signal",
+      "description": "Sends the smartphone presence signal to the HIQ controller."
+    },
+    "charge_on_event": {
+      "name": "Charge on event",
+      "description": "Sends the smartphone charge on event (charger connected) to the HIQ controller."
+    },
+    "charge_off_event": {
+      "name": "Charge off event",
+      "description": "Sends the smartphone charge off event (charger disconnected) to the HIQ controller."
+    },
+    "home_event": {
+      "name": "Home event",
+      "description": "Sends the smartphone home event to the HIQ controller."
+    },
+    "precede_event": {
+      "name": "Precede event",
+      "description": "Sends the smartphone event triggered some minutes before the alarm clock to the HIQ controller, e.g. to turn on the heating in advance.",
+      "fields": {
+        "time": {
+          "name": "Precede time",
+          "description": "Minutes before the alarm clock at which the event is triggered."
+        }
+      }
+    },
+    "write_tag": {
+      "name": "Write tag",
+      "description": "Writes a value to a variable of the HIQ controller.",
+      "fields": {
+        "tag": {
+          "name": "Variable",
+          "description": "Name of the controller variable without the cNAD. prefix, e.g. smartphone_presence_signal."
+        },
+        "value": {
+          "name": "Value",
+          "description": "Value to write, e.g. 10. Negative and decimal values are allowed."
+        }
       }
     }
   }

@@ -1,78 +1,71 @@
-# Implementation Plan: Module card id and firmware in device info
+# Implementation Plan: Improve README and help texts
 
-Spec: [SPEC.md](../SPEC.md) · Tasks: [todo.md](todo.md) · Issue: #298
+Spec: [SPEC.md](../SPEC.md) · Tasks: [todo.md](todo.md)
 
 ## Overview
 
-Read `mmNN_iex_card_id` and `mmNN_firmware_version` once at startup and show
-them as `model` / `sw_version` on the existing light, blind and thermostat
-devices. One helper in `models.py` turns the two values into device info
-fields. Each device builder merges that over the shared defaults
-(`HIQ controller`, integration version). If both values are missing (incl.
-`0`), the defaults stay as they are.
+Make the UI texts and documentation correct and complete. `strings.json` becomes
+plain English text with `en.json` as an exact copy. Setup and options dialogs
+and services get full help texts in English and German. Entity name typos are
+fixed. The `write_tag` value selector is widened and `iot_class` is corrected.
+The README is restructured, and the entity reference moves to
+`docs/entities.md`. Python code is not changed. Only tests are added.
 
 ## Architecture Decisions
 
-- **One helper, three callers.** `module_device_info(coordinator, module)` in
-  `models.py` returns `{}` (both missing) or `{"model": …, "sw_version": …}`.
-  The callers are `light._light_device_info`, the blind `DeviceInfo` in
-  `cover.py` and `models.thermostat_device_info`. All entities of one
-  thermostat (climate, sensors, numbers, selects, switches, buttons) already
-  share `thermostat_device_info`, so they stay consistent without extra work.
-- **Module prefix from the tag.** The module is the tag up to the first `_`
-  (`c1000.lc00_qx03` → `c1000.lc00`, `c1000.th00` → itself), the same split the
-  code already uses for `_general_error`.
-- **Read in the existing startup pre-read.** Extend the regex in
-  `async_setup_entry` with `_iex_card_id|_firmware_version`. Only listed
-  variables are added (iterates `plc_info.plc_vars`), so older controllers get
-  no extra requests. No separate poll.
-- **Card id table in `const.py`** (`IEX_CARD_MODELS: dict[int, str]`), next to
-  the other device constants.
-- **Firmware format** as a small pure function:
-  `f"{v // 1000}.{v // 100 % 10}.{v // 10 % 10}.{v % 10}"`.
-- **Thermostat defaults** are added to `thermostat_device_info` itself
-  (`model`, `sw_version`, `hw_version`, `configuration_url`), so all thermostat
-  entities change together.
-
-## Dependency Graph
-
-```
-T1 helper + table (models.py, const.py)
- ├── T2 startup pre-read + thermostat devices   (first caller, proves the read)
- │    ├── T3 light devices
- │    └── T4 blind devices
- └──────────── T5 live check + README
-```
-
-T3 and T4 are independent of each other once T2 is done.
+- **Guard tests first.** Task 1 adds the consistency tests (`strings.json` ==
+  `en.json`, no `component::hiq` refs) together with the conversion, so every
+  later text edit is checked automatically.
+- **Translation files are edited together.** Every task that touches texts
+  edits `strings.json`, `en.json` and `de.json` in the same commit, so
+  `test_strings_match_english` and `test_translation_complete` stay green
+  after every task.
+- **Text slices by area** (config flow, options flow, entities, services)
+  instead of by file. Each slice can be reviewed in the UI on its own.
+- **Docs last.** `docs/entities.md` and the README use the final entity names
+  and service texts, so they are written after the texts are settled.
+- **No `[%key%]` refs (decided in Task 1):** custom integrations don't
+  resolve them, so `strings.json` is plain text and equals `en.json`.
+  `test_strings_equal_english` and `test_translation_has_no_references` keep
+  it that way.
 
 ## Task List
 
-### Phase 1: Foundation
-- [x] Task 1: Module device info helper and card id table
+### Phase 1: Foundation and UI texts
+- [x] Task 1: Plain-text strings.json + guard tests
+- [x] Task 2: Config flow and options flow help texts
+- [x] Task 3: Entity name typo fixes
 
-### Phase 2: Devices
-- [x] Task 2: Read module info at startup, show it on thermostat devices
-- [x] Task 3: Show module info on light devices
-- [x] Task 4: Show module info on blind devices
+### Checkpoint 1
+- [x] `scripts/test` and `scripts/lint` pass
+- [x] Dialogs reviewed in the UI (en + de) via `scripts/develop`
 
-### Checkpoint: Devices
-- [x] `scripts/test`, `scripts/lint` green; review with the user
+### Phase 2: Services and metadata
+- [x] Task 4: Service texts, translations and wider write_tag selector
+- [x] Task 5: iot_class local_polling
 
-### Phase 3: Finish
-- [x] Task 5: Live check and README
+### Checkpoint 2
+- [x] `scripts/test` and `scripts/lint` pass
+- [ ] Services shown correctly in Developer tools → Actions (en + de)
+
+### Phase 3: Documentation
+- [ ] Task 6: docs/entities.md
+- [ ] Task 7: README restructure
 
 ### Checkpoint: Complete
-- [x] All SPEC success criteria met, ready for review
+- [ ] All spec success criteria checked
+- [ ] Review with human before PR
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Adding card id / firmware tags to the default fake controller changes devices in unrelated tests | Med | Add them only to the modules under test (th00, lc00, ld01, bc00). Run the full suite after T2. |
-| Thermostat devices now get `hw_version` / `configuration_url`, so existing thermostat device assertions change | Low | Intended (spec decision 3). Update the assertions and say so in the commit. |
-| Device registry keeps old values until reload | Low | Expected: read once at startup (spec assumption 6). |
-| Firmware format only seen on two test values | Low | Format fixed in spec decision 8 (up to `32767`), unit-tested at the edges. |
+| Fixing a name typo changes the entity_id for **new** installs (e.g. `…_auxilary_temperature` → `…_auxiliary_temperature`) | Med | Existing installs keep IDs (registry). Mention in release notes. Check `tests/test_entities.py` / `test_sensor.py` entity ids. |
+| Services `services` translations override `services.yaml` texts | Low | Keep both identical in English, check in Developer tools. |
+| Number selector with `step: any` and ±2^31 bounds renders badly | Low | Check in UI at Checkpoint 2. Fallback: `step: 1` + text hint for decimals. |
+| `docs/entities.md` drifts again | Med | Substring test against entities created by `init_integration`. |
+| The fake controller doesn't create every entity (e.g. EnOcean, power meter phases) | Med | Check the fixture's entity list in Task 6. Document entities that aren't covered by hand, and list them in the PR. |
+| HACS renders README outside the repo, relative links break | Low | Absolute GitHub URLs for `docs/entities.md` and `DEBUGGING.md`. |
 
 ## Open Questions
 
