@@ -391,6 +391,7 @@ async def test_weather(hass: HomeAssistant, init_integration: MockConfigEntry) -
     assert state.attributes["humidity"] == 60
     assert state.attributes["wind_speed"] == 1.2
     assert state.attributes["wind_bearing"] == 90
+    assert state.attributes["pressure"] == 1013.0
 
 
 async def test_weather_state(

@@ -92,7 +92,7 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
     @property
     def native_pressure(self) -> float | None:
         """Return the pressure."""
-        return self.coordinator.get_value(f"{self._attr_unique_id}pressure")
+        return self.coordinator.get_value(f"{self._attr_unique_id}pressure", 0.1, 1)
 
     @property
     def humidity(self) -> float | None:
