@@ -542,3 +542,24 @@ async def test_entity_names_unique(
     )
 
     assert [name for name, count in names.items() if count > 1] == []
+
+
+async def test_controller_hours_disabled_by_default(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test the controller uptime / operating hours are disabled by default."""
+    await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {"cybro_uptime": "1000", "operating_hours": "10"},
+    )
+    registry = er.async_get(hass)
+
+    for tag in ("cybro_uptime", "operating_hours"):
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"c1000.{tag}")
+        assert registry.async_get(entity_id).disabled_by is (
+            er.RegistryEntryDisabler.INTEGRATION
+        )

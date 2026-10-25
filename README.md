@@ -130,9 +130,9 @@ To have a basic diagnostic, there are some `binary_sensor` Entities exposed.
 
 | Entity name            | Description                                                                        | Enabled |
 | ---------------------- | ---------------------------------------------------------------------------------- | ------- |
-| `cXXXX.general_error`  | Logical or of IEX general errors, indicates that at least one module has an error. | yes     |
-| `cXXXX.retentive_fail` | Indicates that retentive memory failed.                                            | yes     |
-| `cXXXX.scan_overrun`   | Too long scan execution caused scan overrun error.                                 | yes     |
+| `cXXXX.general_error`  | Logical or of IEX general errors, indicates that at least one module has an error. | no      |
+| `cXXXX.retentive_fail` | Indicates that retentive memory failed.                                            | no      |
+| `cXXXX.scan_overrun`   | Too long scan execution caused scan overrun error.                                 | no      |
 
 #### Indicators of the controller:
 
@@ -145,14 +145,14 @@ To have a basic diagnostic, there are some `binary_sensor` Entities exposed.
 
 | Entity name                | Description                                                                  | Enabled |
 | -------------------------- | ---------------------------------------------------------------------------- | ------- |
-| `cXXXX.YYYY_general_error` | Combined system error (timeout or program error), module is not operational. | yes     |
+| `cXXXX.YYYY_general_error` | Combined system error (timeout or program error), module is not operational. | no      |
 
 #### For TH (thermostat) expansion unit:
 
 | Entity name                    | Description                            | Controller var     | Enabled       |
 | ------------------------------ | -------------------------------------- | -------------------| ------------- |
-| `cXXXX.thYY thermostat window` | Indicate state of window switch input. | `cXXXX.thYY_ix00`  | if configured |
-| `cXXXX.thYY thermostat output` | Radiator output.                       | `cXXXX.thYY_output`| yes           |
+| `cXXXX.thYY thermostat window` | Indicate state of window switch input. | `cXXXX.thYY_ix00`  | no            |
+| `cXXXX.thYY thermostat output` | Radiator output.                       | `cXXXX.thYY_output`| no            |
 
 XXXX is the NAD of the controller, and YYYY is the IEX module prefix
 
