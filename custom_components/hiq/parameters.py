@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from re import search
 
-from cybro import VarType
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import HiqDataUpdateCoordinator
 from .cover import blind_device_info
@@ -73,29 +71,3 @@ def output_device_info(
         return blind_device_info(coordinator, f"{module}_blinds_position_{output:02d}")
     out = "qw" if kind == "ld" else "qx"
     return light_device_info(coordinator, f"{module}_{out}{output:02d}")
-
-
-class ModuleParameterEntity(CoordinatorEntity):
-    """Parameter of a module output (up to 10 per module, disabled by default).
-
-    Its variable (the entity description key) is only polled while the entity
-    is enabled, not from the start like the other entities.
-    """
-
-    coordinator: HiqDataUpdateCoordinator
-
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize the entity, without polling its variable."""
-        super().__init__(*args, **kwargs)
-        self.coordinator.data.remove_var(self.entity_description.key)
-
-    async def async_added_to_hass(self) -> None:
-        """Poll the variable of the parameter."""
-        await super().async_added_to_hass()
-        self.coordinator.data.add_var(self.entity_description.key, VarType.INT)
-        await self.coordinator.async_request_refresh()
-
-    async def async_will_remove_from_hass(self) -> None:
-        """Stop polling the variable of the parameter."""
-        await super().async_will_remove_from_hass()
-        self.coordinator.data.remove_var(self.entity_description.key)

@@ -149,8 +149,8 @@ class HiqThermostat(HiqEntity, ClimateEntity):
             "fan_limit",
             "fan_options",
         ):
-            coordinator.data.add_var(f"{self._prefix}_{suffix}")
-        coordinator.data.add_var(f"{self._nad}.hvac_mode")
+            self.poll_var(f"{self._prefix}_{suffix}")
+        self.poll_var(f"{self._nad}.hvac_mode")
 
     @property
     def _controller_hvac_mode(self) -> HVACMode | None:

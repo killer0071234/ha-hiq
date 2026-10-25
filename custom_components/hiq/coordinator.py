@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from cybro import Cybro
 from cybro import CybroConnectionTimeoutError
 from cybro import CybroError
 from cybro import Device as HiqDevice
+from cybro import VarType
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.const import CONF_HOST
@@ -49,6 +50,8 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         self.unique_id = "c" + str(entry.options[CONF_ADDRESS])
         self.unsub: Callable | None = None
         self.device_id: str | None = None
+        # number of entities polling a variable
+        self._var_users: dict[str, int] = {}
 
         is_local = entry.options[CONF_HOST] in (
             DEFAULT_HOST,
@@ -79,6 +82,21 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
             ) from error
 
         return device
+
+    def add_vars(self, variables: dict[str, VarType]) -> None:
+        """Poll the variables of an entity."""
+        for name, var_type in variables.items():
+            self._var_users[name] = self._var_users.get(name, 0) + 1
+            self.data.add_var(name, var_type=var_type)
+
+    def remove_vars(self, names: Iterable[str]) -> None:
+        """Stop polling the variables of an entity, unless another one uses them."""
+        for name in names:
+            users = self._var_users.pop(name, 0) - 1
+            if users > 0:
+                self._var_users[name] = users
+            else:
+                self.data.remove_var(name)
 
     @property
     def via_device_info(self) -> dict[str, Any]:

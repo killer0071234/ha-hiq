@@ -1,5 +1,8 @@
 """Models for HIQ-Home."""
 
+from typing import Any
+
+from cybro import VarType
 from homeassistant.const import (
     ATTR_CONFIGURATION_URL,
     ATTR_IDENTIFIERS,
@@ -105,9 +108,34 @@ def custom_device_info(coordinator: HiqDataUpdateCoordinator) -> DeviceInfo:
 
 
 class HiqEntity(CoordinatorEntity):
-    """Defines a base HIQ entity."""
+    """Defines a base HIQ entity.
+
+    Its variables are only polled while it is added to Home Assistant, so not
+    while it is disabled.
+    """
 
     coordinator: HiqDataUpdateCoordinator
+
+    def __init__(
+        self, coordinator: HiqDataUpdateCoordinator, context: Any = None
+    ) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, context)
+        self._polled_vars: dict[str, VarType] = {}
+
+    def poll_var(self, name: str, var_type: VarType = 0) -> None:
+        """Poll a variable while the entity is added."""
+        self._polled_vars[name] = var_type
+
+    async def async_added_to_hass(self) -> None:
+        """Start polling the variables of the entity."""
+        await super().async_added_to_hass()
+        self.coordinator.add_vars(self._polled_vars)
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Stop polling the variables of the entity."""
+        await super().async_will_remove_from_hass()
+        self.coordinator.remove_vars(self._polled_vars)
 
     @property
     def device_info(self):

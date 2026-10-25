@@ -170,7 +170,7 @@ class HiqSwitchEntity(HiqEntity, SwitchEntity):
         self._attr_device_info = dev_info
 
         LOGGER.debug(self._attr_unique_id)
-        coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
+        self.poll_var(self._attr_unique_id, VarType.INT)
 
     @property
     def is_on(self) -> bool | None:

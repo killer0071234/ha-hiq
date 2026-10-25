@@ -33,7 +33,6 @@ from .models import HiqEntity
 from .models import custom_device_info
 from .models import thermostat_device_info
 from .models import hvac_device_info
-from .parameters import ModuleParameterEntity
 from .parameters import find_module_parameters
 from .parameters import module_parameter_tags
 from .parameters import output_device_info
@@ -253,7 +252,7 @@ def add_module_parameters(
     eg: c1000.lc00_input_mode_03, c1000.ld00_color_mode_00
     """
     return [
-        HiqParameterSelect(
+        HiqSelectEntity(
             coordinator=coordinator,
             entity_description=HiqSelectEntityDescription(
                 key=key,
@@ -295,7 +294,7 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
         self._attr_device_info = dev_info
 
         LOGGER.debug(self._attr_unique_id)
-        coordinator.data.add_var(self._var, var_type=VarType.INT)
+        self.poll_var(self._var, VarType.INT)
         self._attr_options = list(attr_options)
         self._var_map = attr_options
         self._option_by_value = {value: key for key, value in attr_options.items()}
@@ -339,7 +338,3 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
             LOGGER.debug("write value: %s -> %s (%s)", self._var, value, option)
             await self.coordinator.cybro.write_var(self._var, value)
         await self.coordinator.async_refresh()
-
-
-class HiqParameterSelect(ModuleParameterEntity, HiqSelectEntity):
-    """Defines a select for a parameter of a module output."""

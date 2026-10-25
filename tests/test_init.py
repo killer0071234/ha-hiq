@@ -207,11 +207,26 @@ async def test_startup_tags_not_polled_after_setup(
 
     polled = await _polled_after_setup(hass, aioclient_mock, mock_config_entry)
 
-    assert "c1000.th00_general_error" in polled  # used by its binary sensor
+    # its binary sensor is disabled by default
+    assert "c1000.th00_general_error" not in polled
     assert "_iex_card_id" not in polled
     assert "_firmware_version" not in polled
     assert "c1000.ld10_rgb_mode" not in polled
     assert "c1000.ld11_color_mode_00" not in polled
+
+
+async def test_startup_tag_polled_by_enabled_entity(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test a startup tag stays polled when an enabled entity uses it."""
+    await setup_with_tags(hass, aioclient_mock, mock_config_entry, STARTUP_TAGS)
+
+    polled = await _polled_after_setup(hass, aioclient_mock, mock_config_entry)
+
+    assert "c1000.th00_general_error" in polled  # used by its binary sensor
 
 
 async def test_startup_tags_used_during_setup(

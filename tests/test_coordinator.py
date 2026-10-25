@@ -106,3 +106,18 @@ async def test_listeners_updated_once_with_new_data(
     unsub()
 
     assert seen == [42]
+
+
+async def test_shared_variable_polled_until_last_user_removed(
+    coordinator: HiqDataUpdateCoordinator,
+) -> None:
+    """Test a variable used by two entities stays polled until both are gone."""
+    var = "c1000.th00_outputsdf"  # not used by an entity
+    coordinator.add_vars({var: 0})
+    coordinator.add_vars({var: 0})
+
+    coordinator.remove_vars([var])
+    assert var in coordinator.data.user_vars
+
+    coordinator.remove_vars([var])
+    assert var not in coordinator.data.user_vars

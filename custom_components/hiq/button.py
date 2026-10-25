@@ -182,7 +182,7 @@ class HiqButtonEntity(HiqEntity, ButtonEntity):
         self._var_value = var_value
 
         LOGGER.debug(self._attr_unique_id)
-        coordinator.data.add_var(self._var, var_type=VarType.INT)
+        self.poll_var(self._var, VarType.INT)
 
     @property
     def extra_state_attributes(self):

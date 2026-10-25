@@ -94,7 +94,7 @@ class HiqScene(HiqEntity, Scene):
         self._attr_unique_id = status_tag
         self._attr_translation_placeholders = {"index": str(index)}
         self._attr_device_info = scene_device_info(coordinator)
-        coordinator.data.add_var(status_tag, var_type=0)
+        self.poll_var(status_tag)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

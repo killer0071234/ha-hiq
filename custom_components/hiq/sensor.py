@@ -472,8 +472,8 @@ def _power_meter_voltage_factor(
 
 
 def _is_power_meter_ok(coordinator: HiqDataUpdateCoordinator, var: str):
+    # read during setup, before the platforms
     ge_name = f"{var.split('_')[0]}_meter_error"
-    coordinator.data.add_var(ge_name)
     ge_val = coordinator.data.vars.get(ge_name)
     if ge_val is None:
         return False
@@ -657,7 +657,7 @@ class HiqSensorEntity(HiqEntity, SensorEntity):
         LOGGER.debug(self._attr_unique_id)
         # set var type to string for template handling (conversion shall be done in template)
         self._var_type = var_type if value_template is None else VarType.STR
-        coordinator.data.add_var(self._var, var_type=self._var_type)
+        self.poll_var(self._var, self._var_type)
         self._val_fact = val_fact
         self._value_template = value_template
 

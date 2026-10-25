@@ -227,7 +227,7 @@ class HiqBinarySensor(HiqEntity, BinarySensorEntity):
         self.entity_description = entity_description
         self._attr_unique_id = unique_id or entity_description.key
         self._attr_device_info = dev_info
-        coordinator.data.add_var(self._attr_unique_id, var_type=0)
+        self.poll_var(self._attr_unique_id)
         self._value_template = value_template
 
     @property
