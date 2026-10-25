@@ -317,11 +317,20 @@ writes work, reprogramming the controller reloads the ALC.
   see notes "Home Assistant OS test"). The port is left to running apps
   that declare UDP 8442; the repair stops them, turns off their start on
   boot and reconnects the direct entries. Busy port logged once per run.
-- [ ] **T14 (S) Passive listener.** Socket frames (to_nad 0 + ACK) from a
+- [x] **T14 (S) Passive listener.** Socket frames (to_nad 0 + ACK) from a
   configured NAD with a new IP → update the entry. Unknown NADs are ignored
   (no flow). REQ frames are ignored. Only works while bound to 8442.
   Also retry binding 8442 on each scan while the fallback port is used
   (eg: after the app was stopped by hand), so a reload isn't needed.
+  *Done (2026-10-25):* `listener.py` handles frames to NAD 0 with ACK
+  (socket, push, broadcast). An entry with static IP gets the new IP (also
+  one stuck in setup retry), an entry without static IP uses it right away.
+  The scan uses the same update. `transport.async_retry_port` runs before
+  each scan: it reconnects the direct entries on 8442 once the port is free
+  and no app declares it. HAOS: after the Edge Toolkit was stopped by
+  hand, the next scan took 8442 and the repair was gone (no reload). The
+  listener isn't verified live: c10000, the only configured controller,
+  sends no sockets.
   *Done when:* a socket frame from an unknown NAD creates no flow, one from a
   configured NAD with a new IP updates `CONF_IP`.
 - [ ] **T15 (S) DHCP discovery.** `manifest.json` matcher `00CB00*` +

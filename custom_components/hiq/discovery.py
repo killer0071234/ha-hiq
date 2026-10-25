@@ -21,12 +21,12 @@ from homeassistant.helpers import discovery_flow
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.start import async_at_started
 
-from .const import CONF_CONNECTION
-from .const import CONNECTION_DIRECT
 from .const import DOMAIN
 from .const import HIQ_PROGRAM_ID
 from .const import LOGGER
 from .const import SCAN_INTERVAL_DISCOVERY
+from .listener import async_ip_seen
+from .transport import async_retry_port
 from .transport import async_scan_transport
 
 CONF_VERSION = "version"
@@ -56,6 +56,7 @@ def async_setup_discovery(hass: HomeAssistant) -> None:
 async def async_discover(hass: HomeAssistant, checked: dict[int, str | None]) -> None:
     """Scan once, offer new HIQ controllers and update the IP of known ones."""
     try:
+        await async_retry_port(hass)
         async with async_scan_transport(hass) as transport:
             for result in await scan(transport):
                 await _async_found(hass, transport, result, checked)
@@ -71,21 +72,13 @@ async def _async_found(
 ) -> None:
     """Handle a controller that answered the scan."""
     nad, ip = result.nad, result.ip
+    if async_ip_seen(hass, nad, ip):
+        return
     entries = [
         entry
         for entry in hass.config_entries.async_entries(DOMAIN, include_ignore=False)
         if entry.options.get(CONF_ADDRESS) == nad
     ]
-    direct = [e for e in entries if e.options[CONF_CONNECTION] == CONNECTION_DIRECT]
-    for entry in direct:
-        # entries without IP find the controller by broadcast themselves
-        if entry.options.get(CONF_IP_ADDRESS) not in (None, ip):
-            LOGGER.info("Controller c%s has the new IP address %s", nad, ip)
-            hass.config_entries.async_update_entry(
-                entry, options={**entry.options, CONF_IP_ADDRESS: ip}
-            )
-    if direct:
-        return
     data = {CONF_ADDRESS: nad, CONF_IP_ADDRESS: ip}
     if not entries:
         # variables can only be read from a running program

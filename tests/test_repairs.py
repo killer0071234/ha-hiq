@@ -21,6 +21,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.hiq import transport
 from custom_components.hiq.const import DOMAIN, ISSUE_PORT_IN_USE
+from custom_components.hiq.discovery import async_discover
 from custom_components.hiq.transport import async_current_transport
 
 from .fake_abus import TRANSPORT, direct_entry, start_hiq_controller
@@ -376,3 +377,38 @@ async def test_app_found_by_port(
     assert issue.is_fixable is found
     if found:
         assert issue.data == {"slugs": app.slug}
+
+
+async def test_port_taken_when_free_again(
+    hass: HomeAssistant, abus_controller: FakeAbusController, busy_port: socket.socket
+) -> None:
+    """Test the scan binds the A-bus port once it is free (no reload needed)."""
+    entry = direct_entry()
+    await _setup(hass, entry)
+    fallback = async_current_transport(hass)
+    assert fallback.local_addr[1] != transport.LOCAL_PORT
+
+    busy_port.close()
+    await async_discover(hass, {})
+    await hass.async_block_till_done()
+
+    assert async_current_transport(hass).local_addr[1] == transport.LOCAL_PORT
+    assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_PORT_IN_USE) is None
+    assert entry.state is ConfigEntryState.LOADED
+
+
+async def test_port_not_taken_from_app(
+    hass: HomeAssistant,
+    abus_controller: FakeAbusController,
+    supervisor: MagicMock,
+    busy_port: socket.socket,
+) -> None:
+    """Test the scan leaves the port to a running app, even if it is free."""
+    await _setup(hass, direct_entry())
+    fallback = async_current_transport(hass)
+    # the app hasn't bound the port yet
+    busy_port.close()
+
+    await async_discover(hass, {})
+
+    assert async_current_transport(hass) is fallback

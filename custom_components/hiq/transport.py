@@ -3,18 +3,22 @@
 from __future__ import annotations
 
 import asyncio
+import socket
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from functools import partial
 
 from cybro.abus import ABUS_PORT, AbusTransport
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.util.hass_dict import HassKey
 
-from .const import DOMAIN, ISSUE_PORT_IN_USE
-from .repairs import async_create_port_issue
+from .const import DOMAIN, ISSUE_PORT_IN_USE, LOGGER
+from .listener import async_frame_received
 from .repairs import async_apps_using_port
+from .repairs import async_create_port_issue
+from .repairs import async_reconnect
 
 # controllers send push and socket frames to this port of Home Assistant
 BIND_HOST = "0.0.0.0"  # noqa: S104
@@ -82,7 +86,33 @@ async def async_scan_transport(hass: HomeAssistant) -> AsyncIterator[AbusTranspo
         transport.close()
 
 
+async def async_retry_port(hass: HomeAssistant) -> None:
+    """Bind the A-bus port once it is free, eg: after an app was stopped by hand."""
+    transport = async_current_transport(hass)
+    # port 0: any port is what is wanted (tests)
+    if not LOCAL_PORT or transport is None or transport.local_addr[1] == LOCAL_PORT:
+        return
+    if await async_apps_using_port(hass, LOCAL_PORT):
+        return
+    probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        probe.bind((BIND_HOST, LOCAL_PORT))
+    except OSError:
+        return
+    finally:
+        probe.close()
+    LOGGER.info("UDP port %s is free again, reconnecting the controllers", LOCAL_PORT)
+    await async_reconnect(hass)
+
+
 async def _async_create(hass: HomeAssistant) -> AbusTransport:
+    """Open the shared socket, it also gets the frames controllers send on their own."""
+    transport = await _async_open(hass)
+    transport.on_unsolicited(partial(async_frame_received, hass))
+    return transport
+
+
+async def _async_open(hass: HomeAssistant) -> AbusTransport:
     """Open the socket on the A-bus port, on any port if it is in use or left to apps."""
     options = {"broadcast": BROADCAST, "port": CONTROLLER_PORT}
     if apps := await async_apps_using_port(hass, LOCAL_PORT):

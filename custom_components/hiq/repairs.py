@@ -92,7 +92,7 @@ async def async_create_port_issue(
     )
 
 
-async def _async_reconnect(hass: HomeAssistant) -> None:
+async def async_reconnect(hass: HomeAssistant) -> None:
     """Open the shared socket again, it binds the A-bus port if it is free."""
     entries = [
         entry
@@ -167,7 +167,7 @@ class StopAppsFlow(RepairsFlow):
             except SupervisorError as err:
                 LOGGER.error("Can't stop the app %s: %s", slug, err)
                 return self.async_abort(reason="stop_failed")
-        await _async_reconnect(self.hass)
+        await async_reconnect(self.hass)
         if ir.async_get(self.hass).async_get_issue(DOMAIN, ISSUE_PORT_IN_USE):
             return self.async_abort(reason="still_in_use")
         return self.async_create_entry(data={})
