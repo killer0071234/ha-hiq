@@ -118,6 +118,8 @@ HIQ_TAGS: dict[str, str] = {
     "scan_overrun": "0",
     "retentive_fail": "0",
     "general_error": "0",
+    "presence_indicator": "0",
+    "low_light_indicator": "0",
     "cybro_power_supply": "240",
     "iex_power_supply": "240",
     # outdoor sensor module

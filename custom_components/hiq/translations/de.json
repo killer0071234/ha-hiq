@@ -141,6 +141,12 @@
   },
   "entity": {
     "binary_sensor": {
+      "presence": {
+        "name": "Anwesenheit"
+      },
+      "nighttime": {
+        "name": "Nacht"
+      },
       "scan_overrun": {
         "name": "Programmzyklus Überlauf Steuerung"
       },

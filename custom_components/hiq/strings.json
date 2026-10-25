@@ -209,6 +209,12 @@
   },
   "entity": {
     "binary_sensor": {
+      "presence": {
+        "name": "Presence"
+      },
+      "nighttime": {
+        "name": "Nighttime"
+      },
       "scan_overrun": {
         "name": "Controller program cycle overrun"
       },
