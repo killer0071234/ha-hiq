@@ -178,8 +178,8 @@ Custom sensors are changed with `Configure custom entity` and deleted with
 | `cXXXX.scan_time_max`      | Maximal scan execution time encountered since program started [ms]. | no      |
 | `cXXXX.scan_frequency`     | Actual number of scans per second.                                  | no      |
 | `cXXXX.cybro_power_supply` | Measured power supply voltage [V]. Measuring range is 0..40V.       | no      |
-| `cXXXX.cybro_uptime`       | Number of operating hours since power-on [h].                       | yes     |
-| `cXXXX.operating_hours`    | Total number of operating hours [h].                                | yes     |
+| `cXXXX.cybro_uptime`       | Number of operating hours since power-on [h].                       | no      |
+| `cXXXX.operating_hours`    | Total number of operating hours [h].                                | no      |
 | `cXXXX.sys.ip_port`        | IP address and UDP port of the controller.                          | no      |
 
 #### For every IEX expansion unit:

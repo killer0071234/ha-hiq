@@ -221,6 +221,7 @@ def add_system_tags(
             description = {
                 "native_unit_of_measurement": UnitOfTime.HOURS,
                 "device_class": SensorDeviceClass.DURATION,
+                "entity_registry_enabled_default": False,
                 "suggested_display_precision": 0,
             }
         elif key in (f"{var_prefix}scan_frequency"):
