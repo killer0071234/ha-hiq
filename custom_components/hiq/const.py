@@ -13,7 +13,7 @@ DOCS_URL = "https://github.com/killer0071234/ha-hiq#through-the-cybroscgiserver"
 ATTRIBUTION_PLC = "Data read from HIQ controller"
 DEVICE_DESCRIPTION = "HIQ controller"
 DEVICE_HW_VERSION = "2/3"
-DEVICE_SW_VERSION = "0.7.0"
+DEVICE_SW_VERSION = "0.7.1"
 DEVICE_UNKNOWN = "unknown"
 
 # Model of an expansion module by its card id (cNAD.mmNN_iex_card_id).
