@@ -319,3 +319,10 @@ def test_homeassistant_versions_match() -> None:
 def test_iot_class_polling() -> None:
     """Test the manifest declares polling, as the coordinator polls the server."""
     assert _json(INTEGRATION / "manifest.json")["iot_class"] == "local_polling"
+
+
+def test_manifest_keys_sorted() -> None:
+    """Test the manifest keys are ordered like hassfest wants them."""
+    keys = list(_json(INTEGRATION / "manifest.json"))
+
+    assert keys == ["domain", "name", *sorted(keys[2:])]

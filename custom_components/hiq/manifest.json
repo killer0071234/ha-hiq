@@ -1,11 +1,11 @@
 {
   "domain": "hiq",
   "name": "HIQ-Home",
-  "codeowners": [
-    "@killer0071234"
-  ],
   "after_dependencies": [
     "hassio"
+  ],
+  "codeowners": [
+    "@killer0071234"
   ],
   "config_flow": true,
   "dhcp": [
