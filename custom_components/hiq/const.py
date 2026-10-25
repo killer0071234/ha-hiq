@@ -106,6 +106,9 @@ LOGGER = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=10)
 SCAN_INTERVAL_ADDON = timedelta(seconds=5)
 
+# scenes of lights and blinds (SC-4-IQ), cNAD.scene_status[0..31]
+SCENE_COUNT = 32
+
 DEFAULT_HOST = "85493909-cybroscgiserver"
 DEFAULT_PORT = 4000
 DEFAULT_NAME = "hiq custom sensor"

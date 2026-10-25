@@ -43,6 +43,7 @@ from .const import SERVICE_PRECEDE
 from .const import SERVICE_PRESENCE_SIGNAL
 from .const import SERVICE_WRITE_TAG
 from .coordinator import HiqDataUpdateCoordinator
+from .scene import scene_status_tags
 
 PLATFORMS = [
     Platform.BINARY_SENSOR,
@@ -55,6 +56,7 @@ PLATFORMS = [
     Platform.NUMBER,
     Platform.SELECT,
     Platform.SWITCH,
+    Platform.SCENE,
 ]
 
 PLC_SCHEMA = {
@@ -143,9 +145,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await coordinator.async_config_entry_first_refresh()
 
-    # Entities are only created for working modules (and the power meter voltage
-    # scale, color lights and device info depend on their values), so read these
-    # before the platforms are set up
+    # Entities are only created for working modules and defined scenes (and the
+    # power meter voltage scale, color lights and device info depend on their
+    # values), so read these before the platforms are set up
     startup_vars = [
         var
         for var in coordinator.data.plc_info.plc_vars
@@ -154,7 +156,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             r"|_color_mode_\d+|_iex_card_id|_firmware_version)$",
             var,
         )
-    ]
+    ] + scene_status_tags(coordinator)
     for var in startup_vars:
         coordinator.data.add_var(var)
     await coordinator.async_refresh()

@@ -24,6 +24,8 @@ from .coordinator import HiqDataUpdateCoordinator
 from .light import is_general_error_ok
 from .models import HiqEntity
 from .models import thermostat_device_info
+from .scene import defined_scenes
+from .scene import scene_device_info
 
 
 async def async_setup_entry(
@@ -39,6 +41,10 @@ async def async_setup_entry(
     )
     if hvac_tags is not None:
         async_add_entities(hvac_tags)
+
+    scene_tags = add_scene_tags(coordinator)
+    if scene_tags is not None:
+        async_add_entities(scene_tags)
 
 
 @dataclass
@@ -117,6 +123,36 @@ def add_hvac_tags(
     return None
 
 
+def add_scene_tags(
+    coordinator: HiqDataUpdateCoordinator,
+) -> list[HiqButtonEntity] | None:
+    """Add a button to memorize the current state as scene, for defined scenes.
+
+    eg: c1000.global_memory_request = 3 stores scene 3.
+    """
+    scenes = defined_scenes(coordinator)
+    if len(scenes) == 0:
+        return None
+    var = f"c{coordinator.cybro.nad}.global_memory_request"
+    dev_info = scene_device_info(coordinator)
+    return [
+        HiqButtonEntity(
+            coordinator=coordinator,
+            entity_description=HiqButtonEntityDescription(
+                key=f"{var}[{index}]",
+                translation_key="scene_memorize",
+                translation_placeholders={"index": str(index)},
+                entity_category=EntityCategory.CONFIG,
+                entity_registry_enabled_default=False,
+            ),
+            var=var,
+            var_value=index,
+            dev_info=dev_info,
+        )
+        for index, _ in scenes
+    ]
+
+
 def unique_matches(pattern: str, keys: Iterable[str]) -> list[str]:
     """Return the distinct matches of pattern in keys, in order of appearance."""
     return list(
@@ -132,6 +168,7 @@ class HiqButtonEntity(HiqEntity, ButtonEntity):
         coordinator: HiqDataUpdateCoordinator,
         entity_description: HiqButtonEntityDescription | None = None,
         unique_id: str | None = None,
+        var: str | None = None,
         var_value: int = 1,
         dev_info: DeviceInfo = None,
     ) -> None:
@@ -140,29 +177,31 @@ class HiqButtonEntity(HiqEntity, ButtonEntity):
         self.entity_description = entity_description
         self._attr_unique_id = unique_id or entity_description.key
         self._attr_device_info = dev_info
+        # the variable written on press, the unique id if not given
+        self._var = var or self._attr_unique_id
         self._var_value = var_value
 
         LOGGER.debug(self._attr_unique_id)
-        coordinator.data.add_var(self._attr_unique_id, var_type=VarType.INT)
+        coordinator.data.add_var(self._var, var_type=VarType.INT)
 
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
         try:
-            desc = self.coordinator.data.vars[self._attr_unique_id].description
+            desc = self.coordinator.data.vars[self._var].description
         except KeyError:
             desc = "?"
         return {
             ATTR_DESCRIPTION: desc,
-            ATTR_VARIABLE: self._attr_unique_id,
+            ATTR_VARIABLE: self._var,
         }
 
     async def async_press(self) -> None:
         """Write Button press to tag."""
         LOGGER.debug(
             "write value: %s -> %s",
-            self._attr_unique_id,
+            self._var,
             self._var_value,
         )
-        await self.coordinator.cybro.write_var(self._attr_unique_id, self._var_value)
+        await self.coordinator.cybro.write_var(self._var, self._var_value)
         await self.coordinator.async_refresh()

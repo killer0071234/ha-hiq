@@ -47,6 +47,7 @@ Currently supported are:
 
 - [light](#light)
 - [cover](#cover)
+- [scene](#scene)
 - [climate](#climate)
 - [binary_sensor](#binary_sensor)
 - [sensor](#sensor)
@@ -92,6 +93,16 @@ Possible commands for the blinds are:
 - close cover
 - stop cover
 - set position
+
+---
+
+### scene<a name="scene"></a>
+
+The scenes of lights and blinds (SC-4-IQ) are [scene](#scene) devices in HA.
+A scene is created for every defined scene of `cXXXX.scene_status[0..31]` (status is
+not `-1`) when the integration starts. Activating a scene writes its number to
+`cXXXX.global_scene_request`. The attribute `active` shows if the scene is active on
+the controller.
 
 ---
 
@@ -332,6 +343,12 @@ To save / read parameters in the expansion units, there are some `button` Entiti
 | ------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------- |
 | `cXXXX HVAC thYY config request`           | Set to update configuration parameters. It will reset automatically after sending. | `cXXXX.thYY_config1_req`      |
 | `cXXXX HVAC thYY config read back request` | Request to read options back from thermostat.                                      | `cXXXX.thYY_options_back_req` |
+
+#### For every defined scene:
+
+| Entity name                      | Description                                       | Controller var                |
+| -------------------------------- | ------------------------------------------------- | ----------------------------- |
+| `cXXXX scenes store scene YY`    | Store the current lights and blinds as scene YY.  | `cXXXX.global_memory_request` |
 
 By default all of the `button` entities are disabled.
 
