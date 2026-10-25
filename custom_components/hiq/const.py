@@ -105,6 +105,7 @@ IEX_CARD_MODELS: Final = {
 LOGGER = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=10)
 SCAN_INTERVAL_ADDON = timedelta(seconds=5)
+SCAN_INTERVAL_DIRECT = timedelta(seconds=5)
 
 # scenes of lights and blinds (SC-4-IQ), cNAD.scene_status[0..31]
 SCENE_COUNT = 32
@@ -112,6 +113,10 @@ SCENE_COUNT = 32
 # how the controller is reached
 CONF_CONNECTION = "connection"
 CONNECTION_SCGI = "scgi"
+CONNECTION_DIRECT = "direct"
+
+# repair issue: the A-bus port is used by another program
+ISSUE_PORT_IN_USE = "port_in_use"
 
 DEFAULT_HOST = "85493909-cybroscgiserver"
 DEFAULT_PORT = 4000

@@ -27,6 +27,7 @@ from homeassistant.helpers.trigger_template_entity import (
 from .const import AREA_SYSTEM
 from .const import CONF_CONNECTION
 from .const import CONF_TAG
+from .const import CONNECTION_DIRECT
 from .const import CONNECTION_SCGI
 from .const import DEFAULT_HOST
 from .const import DEFAULT_PORT
@@ -45,6 +46,8 @@ from .const import SERVICE_PRECEDE
 from .const import SERVICE_PRESENCE_SIGNAL
 from .const import SERVICE_WRITE_TAG
 from .coordinator import HiqDataUpdateCoordinator
+from .transport import async_get_transport
+from .transport import async_release_transport
 from .scene import scene_status_tags
 
 PLATFORMS = [
@@ -158,7 +161,11 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HIQ from a config entry."""
-    coordinator = HiqDataUpdateCoordinator(hass, entry=entry)
+    transport = None
+    if entry.options.get(CONF_CONNECTION) == CONNECTION_DIRECT:
+        transport = await async_get_transport(hass, entry.entry_id)
+        entry.async_on_unload(lambda: async_release_transport(hass, entry.entry_id))
+    coordinator = HiqDataUpdateCoordinator(hass, entry=entry, transport=transport)
 
     await coordinator.async_config_entry_first_refresh()
 

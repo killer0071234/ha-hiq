@@ -564,5 +564,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "port_in_use": {
+      "title": "UDP port {port} is in use",
+      "description": "Another program on the Home Assistant host uses UDP port {port}, for example the CybroScgiServer add-on. Controllers connected directly still work, but they can't send data to Home Assistant on their own. Stop the other program, or switch its controllers to the direct connection, then reload the HIQ-Home entries."
+    }
   }
 }

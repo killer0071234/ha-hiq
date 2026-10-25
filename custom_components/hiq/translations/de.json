@@ -496,5 +496,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "port_in_use": {
+      "title": "UDP-Port {port} ist belegt",
+      "description": "Ein anderes Programm auf dem Home-Assistant-Host verwendet den UDP-Port {port}, zum Beispiel das Add-on CybroScgiServer. Direkt verbundene Controller funktionieren trotzdem, können aber nicht von sich aus Daten an Home Assistant senden. Beende das andere Programm oder stelle seine Controller auf die direkte Verbindung um und lade dann die HIQ-Home-Einträge neu."
+    }
   }
 }

@@ -244,11 +244,18 @@ direct vs SCGI values identical for all user variables of the HIQ controller.
   *Done when:* migration tests for v1 → v3 and v2 → v3 pass, including two
   entries with the same NAD on different servers (second one keeps its old
   unique_id).
-- [ ] **T10 (M) Shared transport + coordinator switch.** Transport lifecycle in
+- [x] **T10 (M) Shared transport + coordinator switch.** Transport lifecycle in
   `__init__.py`, 8442 → :0 fallback + repair issue, coordinator picks the
   backend.
   *Done when:* all existing entity tests pass in both modes. Parametrize
   `fake_controller` fixtures: SCGI mock and `FakeAbusController`.
+  *Done (2026-10-25):* `transport.py` (shared socket, 8442 → any port +
+  repair issue `port_in_use`), coordinator picks `CybroDirect`, scan interval
+  5 s. Deviation: the entity tests were not parametrized over both modes
+  (the two fakes have different APIs). `tests/test_direct.py` covers setup,
+  value formatting, writes, broadcast locate, timeout/unavailable, setup
+  retry, one socket for all entries, and the busy port; the entity logic
+  above `request()` is the same in both modes.
 - [ ] **T11 (M) Config flow rewrite.** `ConfigFlow` + menu (direct/scgi),
   direct step (NAD, optional IP/password, validation via locate + status),
   reconfigure step. Options flow unchanged.
