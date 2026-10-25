@@ -13,7 +13,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.hiq.const import DOCS_URL
 from custom_components.hiq.const import DOMAIN
 
-from .const import NAD, OPTIONS, TITLE
+from .const import HOST, NAD, OPTIONS, TITLE, UNIQUE_ID, USER_INPUT
 from .fake_controller import FakeController
 
 
@@ -35,12 +35,16 @@ async def test_user_flow(
     controller.values[f"c{NAD}.sys.plc_status"] = plc_status
     result = await _start_user_flow(hass)
 
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], OPTIONS)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], USER_INPUT
+    )
     await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == TITLE
     entry = result["result"]
+    assert entry.version == 3
+    assert entry.unique_id == UNIQUE_ID
     assert entry.options == OPTIONS
     assert entry.data == {}
     assert entry.state is config_entries.ConfigEntryState.LOADED
@@ -53,12 +57,16 @@ async def test_user_flow_cannot_connect(
     controller.online = False
     result = await _start_user_flow(hass)
 
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], OPTIONS)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], USER_INPUT
+    )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "cannot_connect"}
 
     controller.online = True
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], OPTIONS)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], USER_INPUT
+    )
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
@@ -70,7 +78,9 @@ async def test_user_flow_plc_not_existing(
     controller.values[f"c{NAD}.sys.plc_status"] = "pgm missing"
     result = await _start_user_flow(hass)
 
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], OPTIONS)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], USER_INPUT
+    )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "plc_not_existing"}
 
@@ -84,7 +94,41 @@ async def test_user_flow_already_configured(
     mock_config_entry.add_to_hass(hass)
     result = await _start_user_flow(hass)
 
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], OPTIONS)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], USER_INPUT
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_user_flow_already_configured_on_other_server(
+    hass: HomeAssistant,
+    controller: FakeController,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test a controller is only added once, whatever server it is reached by."""
+    mock_config_entry.add_to_hass(hass)
+    result = await _start_user_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**USER_INPUT, "host": f"x{HOST}"}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_user_flow_already_configured_with_old_unique_id(
+    hass: HomeAssistant, controller: FakeController
+) -> None:
+    """Test an entry that kept its old unique id still blocks its controller."""
+    MockConfigEntry(
+        domain=DOMAIN, version=3, title=TITLE, unique_id=TITLE, options=OPTIONS
+    ).add_to_hass(hass)
+    result = await _start_user_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], USER_INPUT
+    )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
 
@@ -270,9 +314,9 @@ async def test_custom_sensor_unique_id_migration(
     """
     entry = MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=TITLE,
-        unique_id=TITLE,
+        unique_id=UNIQUE_ID,
         options={
             **OPTIONS,
             "sensor": [{"tag": tag, "name": "Custom", "unique_id": "abc"}],

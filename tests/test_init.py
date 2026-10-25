@@ -22,7 +22,7 @@ from custom_components.hiq.const import DOMAIN
 from custom_components.hiq.coordinator import HiqDataUpdateCoordinator
 
 from .common import refresh, setup_with_tags
-from .const import HOST, NAD, OPTIONS, PORT, TITLE
+from .const import HOST, NAD, OPTIONS, PORT, TITLE, UNIQUE_ID, USER_INPUT
 from .fake_controller import HIQ_TAGS, FakeController
 
 LIGHT = "light.lights_light_c1000_lc00_qx00_light"
@@ -253,9 +253,9 @@ async def test_startup_tag_of_custom_sensor_still_polled(
     """Test a custom sensor on a startup tag keeps being updated."""
     entry = MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=TITLE,
-        unique_id=TITLE,
+        unique_id=UNIQUE_ID,
         options={
             **OPTIONS,
             "sensor": [
@@ -295,7 +295,7 @@ async def test_entities_unavailable_while_offline(
 async def test_migrate_entry_v1(
     hass: HomeAssistant, controller: FakeController
 ) -> None:
-    """Test version 1 entries move the connection from data to options."""
+    """Test version 1 entries are migrated to version 3."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         version=1,
@@ -308,11 +308,58 @@ async def test_migrate_entry_v1(
     await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.LOADED
-    assert entry.version == 2
+    assert entry.version == 3
     assert entry.data == {}
     assert entry.options == OPTIONS
     assert entry.title == TITLE
-    assert entry.unique_id == TITLE
+    assert entry.unique_id == UNIQUE_ID
+
+
+@pytest.mark.parametrize("unique_id", [TITLE, None])
+async def test_migrate_entry_v2(
+    hass: HomeAssistant, controller: FakeController, unique_id: str | None
+) -> None:
+    """Test version 2 entries get the scgi connection and the NAD as unique id."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=2,
+        title=TITLE,
+        unique_id=unique_id,
+        options={**USER_INPUT, "sensor": []},
+    )
+    entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.version == 3
+    assert entry.unique_id == UNIQUE_ID
+    assert entry.options == {**OPTIONS, "sensor": []}
+
+
+async def test_migrate_entry_v2_keeps_unique_id_in_use(
+    hass: HomeAssistant, controller: FakeController
+) -> None:
+    """Test the second entry of the same controller keeps its old unique id."""
+    first = MockConfigEntry(
+        domain=DOMAIN, version=3, title=TITLE, unique_id=UNIQUE_ID, options=OPTIONS
+    )
+    first.add_to_hass(hass)
+    second_id = f"c{NAD}@x{HOST}:{PORT}"
+    second = MockConfigEntry(
+        domain=DOMAIN,
+        version=2,
+        title=second_id,
+        unique_id=second_id,
+        options={**USER_INPUT, "host": f"x{HOST}"},
+    )
+    second.add_to_hass(hass)
+
+    assert await second.async_migrate(hass)
+    assert second.version == 3
+    assert second.unique_id == second_id
+    assert second.options["connection"] == "scgi"
 
 
 async def test_devices_linked_to_controller(
@@ -343,8 +390,9 @@ async def test_unload_one_of_two_controllers(
     controller.add_controller(1001, HIQ_TAGS)
     second = MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=f"c1001@{HOST}:{PORT}",
+        unique_id="c1001",
         options={**OPTIONS, "address": 1001},
     )
     second.add_to_hass(hass)

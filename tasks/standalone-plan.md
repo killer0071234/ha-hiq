@@ -234,13 +234,13 @@ direct vs SCGI values identical for all user variables of the HIQ controller.
 
 ### Phase 3: Direct mode in the integration (ha-hiq)
 
-- [ ] **T8a (S) Minimum HA 2026.10.** `hacs.json` `homeassistant: 2026.10.0`,
+- [x] **T8a (S) Minimum HA 2026.10.** `hacs.json` `homeassistant: 2026.10.0`,
   `requirements.txt` `homeassistant==2026.10.x`, matching
   `pytest-homeassistant-custom-component` in `requirements_test.txt`.
   `via_device_id` always exists from 2026.8, so the `via_device` fallback in
   `coordinator.via_device_info` can go.
   *Done when:* `scripts/test` + `scripts/lint` green on 2026.10.
-- [ ] **T9 (S) Migration v2 → v3.** Add `connection: scgi`, unique_id `c{nad}`.
+- [x] **T9 (S) Migration v2 → v3.** Add `connection: scgi`, unique_id `c{nad}`.
   *Done when:* migration tests for v1 → v3 and v2 → v3 pass, including two
   entries with the same NAD on different servers (second one keeps its old
   unique_id).

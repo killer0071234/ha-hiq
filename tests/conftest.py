@@ -16,7 +16,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 
 from custom_components.hiq.const import DOMAIN
 
-from .const import OPTIONS, TITLE
+from .const import OPTIONS, TITLE, UNIQUE_ID
 from .fake_controller import FakeController
 
 
@@ -66,9 +66,9 @@ def mock_config_entry() -> MockConfigEntry:
     """Return a config entry for the fake controller."""
     return MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=TITLE,
-        unique_id=TITLE,
+        unique_id=UNIQUE_ID,
         data={},
         options=OPTIONS,
     )

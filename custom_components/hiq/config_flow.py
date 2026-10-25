@@ -46,8 +46,10 @@ from homeassistant.helpers.selector import TextSelectorConfig
 from homeassistant.helpers.selector import TextSelectorType
 
 from . import COMBINED_SCHEMA
+from .const import CONF_CONNECTION
 from .const import CONF_INDEX
 from .const import CONF_TAG
+from .const import CONNECTION_SCGI
 from .const import DEFAULT_HOST
 from .const import DEFAULT_PORT
 from .const import DOCS_URL
@@ -177,18 +179,16 @@ async def validate_plc_setup(
 
     plc_config: dict[str, Any] = COMBINED_SCHEMA(user_input)
 
-    # abort if the config already exists
-    handler.parent_handler._async_abort_entries_match(
-        {
-            CONF_HOST: plc_config[CONF_HOST],
-            CONF_PORT: plc_config[CONF_PORT],
-            CONF_ADDRESS: plc_config[CONF_ADDRESS],
-        }
-    )
-
     # convert values to int
     plc_config[CONF_PORT] = int(plc_config[CONF_PORT])
     plc_config[CONF_ADDRESS] = int(plc_config[CONF_ADDRESS])
+
+    # abort if the controller already exists, whatever server it is reached by
+    # (entries of the same controller from before version 3 keep an old unique id)
+    flow = handler.parent_handler
+    await flow.async_set_unique_id(f"c{plc_config[CONF_ADDRESS]}")
+    flow._abort_if_unique_id_configured()
+    flow._async_abort_entries_match({CONF_ADDRESS: plc_config[CONF_ADDRESS]})
     try:
         device = await _async_get_device(
             hass,
@@ -208,6 +208,7 @@ async def validate_plc_setup(
     if device.plc_info.plc_status not in ("ok", "run"):
         raise SchemaFlowError("plc_not_existing")
 
+    plc_config[CONF_CONNECTION] = CONNECTION_SCGI
     return plc_config
 
 
@@ -467,7 +468,7 @@ OPTIONS_FLOW = {
 class HiqFlowHandler(SchemaConfigFlowHandler, domain=DOMAIN):
     """Handle a HIQ-Home config flow."""
 
-    VERSION = 2
+    VERSION = 3
 
     config_flow = CONFIG_FLOW
     options_flow = OPTIONS_FLOW

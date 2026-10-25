@@ -88,11 +88,11 @@ async def test_setup(
     caplog.set_level(logging.WARNING)
     entry = MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=f"c{NAD}@{HOST}:{PORT}",
-        unique_id=f"c{NAD}@{HOST}:{PORT}",
+        unique_id=f"c{NAD}",
         data={},
-        options=OPTIONS,
+        options={**OPTIONS, "connection": "scgi"},
     )
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
@@ -136,11 +136,11 @@ async def test_thermostat_device_info(
     """Test thermostat devices show the card id and firmware of their module."""
     entry = MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=f"c{NAD}@{HOST}:{PORT}",
-        unique_id=f"c{NAD}@{HOST}:{PORT}",
+        unique_id=f"c{NAD}",
         data={},
-        options=OPTIONS,
+        options={**OPTIONS, "connection": "scgi"},
     )
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)

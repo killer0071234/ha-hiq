@@ -25,7 +25,9 @@ from homeassistant.helpers.trigger_template_entity import (
 )
 
 from .const import AREA_SYSTEM
+from .const import CONF_CONNECTION
 from .const import CONF_TAG
+from .const import CONNECTION_SCGI
 from .const import DEFAULT_HOST
 from .const import DEFAULT_PORT
 from .const import DEVICE_DESCRIPTION
@@ -131,6 +133,21 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 CONF_PORT: port,
                 CONF_ADDRESS: nad,
             },
+            version=version,
+        )
+
+    # 2 -> 3: add the connection type, the controller (NAD) is the unique id
+    if version == 2:
+        version = 3
+
+        unique_id = f"c{entry.options[CONF_ADDRESS]}"
+        if hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, unique_id):
+            # another entry reaches the same controller, keep the old id
+            unique_id = entry.unique_id
+        hass.config_entries.async_update_entry(
+            entry,
+            unique_id=unique_id,
+            options={**entry.options, CONF_CONNECTION: CONNECTION_SCGI},
             version=version,
         )
 
