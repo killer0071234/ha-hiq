@@ -649,7 +649,26 @@
   "issues": {
     "port_in_use": {
       "title": "UDP port {port} is in use",
-      "description": "Another program on the Home Assistant host uses UDP port {port}, for example the CybroScgiServer add-on. Controllers connected directly still work, but they can't send data to Home Assistant on their own. Stop the other program, or switch its controllers to the direct connection, then reload the HIQ-Home entries."
+      "description": "Another program on the Home Assistant host uses UDP port {port}, for example the CybroScgiServer or Cybro Edge Toolkit app. Controllers connected directly still work, but they can't send data to Home Assistant on their own. Stop the other program, or switch its controllers to the direct connection, then reload the HIQ-Home entries."
+    },
+    "port_in_use_app": {
+      "title": "UDP port {port} is used by {app}",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Stop {app}",
+            "description": "Controllers connected directly still work, but they can't send data to Home Assistant on their own while UDP port 8442 is held by {app}.\n\nSubmit to stop {app} and turn off start on boot. The directly connected controllers are then reconnected."
+          },
+          "confirm_scgi": {
+            "title": "Stop {app}",
+            "description": "Controllers connected directly still work, but they can't send data to Home Assistant on their own while UDP port 8442 is held by {app}.\n\nThese entries still use an scgi server and stop working when {app} is stopped: {entries}. Switch them to the direct connection first (Reconfigure in the entry menu), or submit to stop {app} anyway and turn off start on boot."
+          }
+        },
+        "abort": {
+          "stop_failed": "An app could not be stopped. Stop it in Settings > Apps.",
+          "still_in_use": "The apps are stopped, but another program still uses the port."
+        }
+      }
     }
   }
 }

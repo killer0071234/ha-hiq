@@ -4,6 +4,9 @@
   "codeowners": [
     "@killer0071234"
   ],
+  "after_dependencies": [
+    "hassio"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/killer0071234/ha-hiq",
   "iot_class": "local_polling",

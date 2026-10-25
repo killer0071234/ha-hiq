@@ -581,7 +581,26 @@
   "issues": {
     "port_in_use": {
       "title": "UDP-Port {port} ist belegt",
-      "description": "Ein anderes Programm auf dem Home Assistant Host verwendet den UDP-Port {port}, zum Beispiel das CybroScgiServer Add-on. Direkt verbundene Steuerungen funktionieren trotzdem, können aber nicht von sich aus Daten an Home Assistant senden. Beende das andere Programm oder stelle seine Steuerungen auf die direkte Verbindung um und lade dann die HIQ-Home Einträge neu."
+      "description": "Ein anderes Programm auf dem Home Assistant Host verwendet den UDP-Port {port}, zum Beispiel die App CybroScgiServer oder Cybro Edge Toolkit. Direkt verbundene Steuerungen funktionieren trotzdem, können aber nicht von sich aus Daten an Home Assistant senden. Beende das andere Programm oder stelle seine Steuerungen auf die direkte Verbindung um und lade dann die HIQ-Home Einträge neu."
+    },
+    "port_in_use_app": {
+      "title": "UDP-Port {port} wird von {app} verwendet",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "{app} beenden",
+            "description": "Direkt verbundene Steuerungen funktionieren trotzdem, können aber nicht von sich aus Daten an Home Assistant senden, solange {app} den UDP-Port 8442 belegt.\n\nSende ab, um {app} zu beenden und den Start beim Booten auszuschalten. Die direkt verbundenen Steuerungen werden danach neu verbunden."
+          },
+          "confirm_scgi": {
+            "title": "{app} beenden",
+            "description": "Direkt verbundene Steuerungen funktionieren trotzdem, können aber nicht von sich aus Daten an Home Assistant senden, solange {app} den UDP-Port 8442 belegt.\n\nDiese Einträge verwenden noch einen SCGI Server und funktionieren nicht mehr, wenn {app} beendet ist: {entries}. Stelle sie zuerst auf die direkte Verbindung um (Neu konfigurieren im Menü des Eintrags) oder sende ab, um {app} trotzdem zu beenden und den Start beim Booten auszuschalten."
+          }
+        },
+        "abort": {
+          "stop_failed": "Eine App konnte nicht beendet werden. Beende sie unter Einstellungen > Apps.",
+          "still_in_use": "Die Apps sind beendet, aber ein anderes Programm verwendet den Port noch."
+        }
+      }
     }
   }
 }

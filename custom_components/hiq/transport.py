@@ -12,7 +12,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.util.hass_dict import HassKey
 
-from .const import DOMAIN, ISSUE_PORT_IN_USE, LOGGER
+from .const import DOMAIN, ISSUE_PORT_IN_USE
+from .repairs import async_create_port_issue
+from .repairs import async_apps_using_port
 
 # controllers send push and socket frames to this port of Home Assistant
 BIND_HOST = "0.0.0.0"  # noqa: S104
@@ -81,26 +83,18 @@ async def async_scan_transport(hass: HomeAssistant) -> AsyncIterator[AbusTranspo
 
 
 async def _async_create(hass: HomeAssistant) -> AbusTransport:
-    """Open the socket on the A-bus port, on any port if it is in use."""
+    """Open the socket on the A-bus port, on any port if it is in use or left to apps."""
     options = {"broadcast": BROADCAST, "port": CONTROLLER_PORT}
+    if apps := await async_apps_using_port(hass, LOCAL_PORT):
+        # an app may not have bound the port yet, taking it would break it
+        names = ", ".join(app.name for app in apps)
+        await async_create_port_issue(hass, LOCAL_PORT, apps, f"is left to {names}")
+        return await AbusTransport.create((BIND_HOST, 0), **options)
     try:
         transport = await AbusTransport.create((BIND_HOST, LOCAL_PORT), **options)
     except OSError as err:
-        # eg: the CybroScgiServer add-on runs on the same host
-        LOGGER.warning(
-            "UDP port %s is in use (%s), controllers can't send to Home Assistant",
-            LOCAL_PORT,
-            err,
-        )
-        ir.async_create_issue(
-            hass,
-            DOMAIN,
-            ISSUE_PORT_IN_USE,
-            is_fixable=False,
-            severity=ir.IssueSeverity.WARNING,
-            translation_key=ISSUE_PORT_IN_USE,
-            translation_placeholders={"port": str(LOCAL_PORT)},
-        )
+        # eg: an scgi server outside of Home Assistant
+        await async_create_port_issue(hass, LOCAL_PORT, [], f"is in use ({err})")
         return await AbusTransport.create((BIND_HOST, 0), **options)
     ir.async_delete_issue(hass, DOMAIN, ISSUE_PORT_IN_USE)
     return transport
