@@ -311,7 +311,7 @@ async def test_manual_flow_while_discovered(
         result["flow_id"], {"next_step_id": "direct"}
     )
 
-    result = await _configure(hass, result["flow_id"], {"address": NAD})
+    result = await _configure(hass, result["flow_id"], {"controller": str(NAD)})
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_in_progress"

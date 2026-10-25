@@ -255,3 +255,76 @@ async def test_reconfigure_error_shown(
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "no_answer"}
+
+
+async def _start_direct(hass: HomeAssistant) -> dict:
+    """Choose the direct connection in the user menu."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    return await _configure(hass, result, {"next_step_id": "direct"})
+
+
+def _choices(result: dict) -> list[dict[str, str]]:
+    return result["data_schema"].schema["controller"].config["options"]
+
+
+async def test_direct_flow_lists_found_controllers(
+    hass: HomeAssistant, hiq_controller: FakeAbusController
+) -> None:
+    """Test the HIQ controllers on the LAN are offered first (first setup)."""
+    result = await _start_direct(hass)
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "direct_pick"
+    assert _choices(result) == [
+        {"value": str(NAD), "label": f"c{NAD} (127.0.0.1, HIQ 6.1.1)"},
+        {"value": "manual", "label": "manual"},
+    ]
+
+    result = await _configure(hass, result, {"controller": str(NAD)})
+    assert result["step_id"] == "discovery_confirm"
+    result = await _configure(hass, result, {})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["result"].unique_id == UNIQUE_ID
+    assert result["result"].options == {"address": NAD, "connection": "direct"}
+
+
+async def test_direct_flow_pick_manual(
+    hass: HomeAssistant, hiq_controller: FakeAbusController
+) -> None:
+    """Test the NAD can still be entered by hand."""
+    result = await _start_direct(hass)
+
+    result = await _configure(hass, result, {"controller": "manual"})
+    assert result["step_id"] == "direct"
+    result = await _configure(hass, result, DIRECT_INPUT)
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_direct_flow_skips_configured(
+    hass: HomeAssistant, hiq_controller: FakeAbusController
+) -> None:
+    """Test a controller that is set up isn't listed, the form is shown."""
+    direct_entry().add_to_hass(hass)
+
+    result = await _start_direct(hass)
+
+    assert result["step_id"] == "direct"
+
+
+async def test_direct_flow_lists_ignored(
+    hass: HomeAssistant, hiq_controller: FakeAbusController
+) -> None:
+    """Test a controller ignored under Discovered can still be added here."""
+    MockConfigEntry(
+        domain=DOMAIN, source=config_entries.SOURCE_IGNORE, unique_id=UNIQUE_ID
+    ).add_to_hass(hass)
+
+    result = await _start_direct(hass)
+    result = await _configure(hass, result, {"controller": str(NAD)})
+    result = await _configure(hass, result, {})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY

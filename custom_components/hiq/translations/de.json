@@ -87,6 +87,15 @@
         "data_description": {
           "password": "Nur nötig, wenn in der Steuerung ein A-Bus Passwort gesetzt ist."
         }
+      },
+      "direct_pick": {
+        "description": "Diese HIQ Steuerungen wurden im lokalen Netzwerk gefunden. Wähle die Steuerung zum Hinzufügen oder gib ihre Adresse (NAD) selbst ein.",
+        "data": {
+          "controller": "Steuerung"
+        },
+        "data_description": {
+          "controller": "Bereits eingerichtete Steuerungen werden nicht angezeigt."
+        }
       }
     },
     "error": {
@@ -601,6 +610,13 @@
           "stop_failed": "Eine App konnte nicht beendet werden. Beende sie unter Einstellungen > Apps.",
           "still_in_use": "Die Apps sind beendet, aber ein anderes Programm verwendet den Port noch."
         }
+      }
+    }
+  },
+  "selector": {
+    "direct_pick": {
+      "options": {
+        "manual": "Adresse (NAD) selbst eingeben"
       }
     }
   }

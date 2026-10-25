@@ -53,6 +53,7 @@ from homeassistant.helpers.schema_config_entry_flow import SchemaOptionsFlowHand
 from homeassistant.helpers.selector import NumberSelector
 from homeassistant.helpers.selector import NumberSelectorConfig
 from homeassistant.helpers.selector import NumberSelectorMode
+from homeassistant.helpers.selector import SelectOptionDict
 from homeassistant.helpers.selector import SelectSelector
 from homeassistant.helpers.selector import SelectSelectorConfig
 from homeassistant.helpers.selector import SelectSelectorMode
@@ -211,6 +212,10 @@ SELECT_SETUP = {
 DATA_SCHEMA_PLC = vol.Schema(PLC_SETUP)
 
 DATA_SCHEMA_DIRECT = vol.Schema(DIRECT_SETUP)
+
+# choice of a controller found by the scan when adding one
+CONF_CONTROLLER = "controller"
+CHOICE_MANUAL = "manual"
 
 # a found controller: NAD and IP come from the scan
 DATA_SCHEMA_DISCOVERED = vol.Schema(
@@ -558,6 +563,8 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
 
     # the found controller (scan or DHCP)
     _discovered: dict[str, Any] | None = None
+    # HIQ controllers on the LAN by NAD, None: not scanned yet
+    _found: dict[int, dict[str, Any]] | None = None
     # scgi entry of a found controller, switched to the direct connection
     _switch_entry: ConfigEntry | None = None
 
@@ -577,9 +584,68 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Add a controller reached directly over A-bus (UDP)."""
+        if self._found is None:
+            # first setup: the integration doesn't scan before it is loaded
+            self._found = await self._async_scan()
+            if self._found:
+                return await self.async_step_direct_pick()
         return await self._async_step_connection(
             "direct", DATA_SCHEMA_DIRECT, _direct_options, user_input
         )
+
+    async def async_step_direct_pick(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose a HIQ controller found on the LAN, or enter the NAD."""
+        if user_input is not None:
+            if user_input[CONF_CONTROLLER] == CHOICE_MANUAL:
+                return await self.async_step_direct()
+            self._discovered = self._found[int(user_input[CONF_CONTROLLER])]
+            # aborts if the controller is offered under Discovered
+            await self.async_set_unique_id(f"c{self._discovered[CONF_ADDRESS]}")
+            return await self.async_step_discovery_confirm()
+        choices = [
+            SelectOptionDict(
+                value=str(nad),
+                label=f"c{nad} ({data[CONF_IP_ADDRESS]}, HIQ {data[CONF_VERSION]})",
+            )
+            for nad, data in self._found.items()
+        ]
+        choices.append(SelectOptionDict(value=CHOICE_MANUAL, label=CHOICE_MANUAL))
+        return self.async_show_form(
+            step_id="direct_pick",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_CONTROLLER): SelectSelector(
+                        SelectSelectorConfig(
+                            options=choices,
+                            mode=SelectSelectorMode.LIST,
+                            translation_key="direct_pick",
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def _async_scan(self) -> dict[int, dict[str, Any]]:
+        """Return the HIQ controllers on the LAN that aren't set up."""
+        configured = {
+            entry.options.get(CONF_ADDRESS)
+            for entry in self._async_current_entries(include_ignore=False)
+        }
+        found: dict[int, dict[str, Any]] = {}
+        try:
+            async with async_scan_transport(self.hass) as transport:
+                for result in await scan(transport):
+                    if result.nad not in configured and (
+                        data := await async_discovery_data(
+                            self.hass, transport, result, {}
+                        )
+                    ):
+                        found[result.nad] = data
+        except (CybroError, OSError) as err:
+            LOGGER.debug("Controller scan failed: %s", err)
+        return found
 
     async def async_step_scgi(
         self, user_input: dict[str, Any] | None = None

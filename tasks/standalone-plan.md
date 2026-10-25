@@ -349,9 +349,15 @@ set blind `bc00_blinds_position_01` to 30 %, 80 % and open (setpoints 70,
   no answer from that IP or no running HIQ program aborts silently
   (`not_hiq`). The HIQ check isn't cached for DHCP (the integration may
   not be loaded yet).
-  HAOS: not matched live yet. The DHCP watcher's startup scan saw only 2
-  hosts (no controller); its next network scan is hourly, DHCP requests
-  only come from controllers that use DHCP.
+  HAOS fresh install (c10000 deleted, restart): not matched. The DHCP
+  watcher only knows hosts that HA talked to recently or that send a DHCP
+  request, and most controllers have fixed IPs. So DHCP can't be the way
+  a fresh install finds its first controller, see T15a.
+- [x] **T15a (S) Scan in Add integration.** The direct step scans first
+  and lists the HIQ controllers that aren't set up (NAD, IP, version),
+  plus "enter the NAD manually"; none found → the manual form. A picked
+  controller goes to the confirm step (no static IP). HAOS fresh install:
+  c10000 was listed (the three non-HIQ controllers weren't) and added.
 
 **Checkpoint 4:** a new controller on the LAN appears in "Discovered" without
 user action (at least through one of the three ways).

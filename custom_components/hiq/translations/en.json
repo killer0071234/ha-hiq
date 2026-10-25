@@ -87,6 +87,15 @@
         "data_description": {
           "password": "Only needed if an A-bus password is set in the controller."
         }
+      },
+      "direct_pick": {
+        "description": "These HIQ controllers were found in the local network. Choose the one to add, or enter its address (NAD) yourself.",
+        "data": {
+          "controller": "Controller"
+        },
+        "data_description": {
+          "controller": "Controllers that are already set up aren't listed."
+        }
       }
     },
     "error": {
@@ -286,6 +295,11 @@
     "sensor_unit_of_measurement": {
       "options": {
         "none": "No unit of measurement"
+      }
+    },
+    "direct_pick": {
+      "options": {
+        "manual": "Enter the address (NAD) manually"
       }
     }
   },
