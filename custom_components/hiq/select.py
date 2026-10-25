@@ -50,7 +50,7 @@ HA_TO_CYBRO_DISPLAY_MODE_MAP = {
 }
 
 HA_TO_CYBRO_HVAC_MODE_MAP = {
-    "none": 0,
+    "off": 0,
     "heating": 1,
     "cooling": 2,
 }

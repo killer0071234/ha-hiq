@@ -66,6 +66,30 @@ async def test_entities_have_translated_names(
         assert missing == [], f"missing in {language}.json: {missing}"
 
 
+async def test_select_options_translated(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test every option of a select has a state in all languages."""
+    entries = [
+        e
+        for e in er.async_entries_for_config_entry(
+            er.async_get(hass), init_integration.entry_id
+        )
+        if e.domain == "select" and e.translation_key
+    ]
+    assert entries
+
+    for language in LANGUAGES:
+        names = _translation(language)["entity"]["select"]
+        missing = sorted(
+            f"{e.entity_id}: {option}"
+            for e in entries
+            for option in hass.states.get(e.entity_id).attributes["options"]
+            if option not in names[e.translation_key].get("state", {})
+        )
+        assert missing == [], f"missing in {language}.json: {missing}"
+
+
 @pytest.mark.parametrize("language", [lang for lang in LANGUAGES if lang != "en"])
 def test_translation_has_no_unknown_keys(language: str) -> None:
     """Test translations contain no keys English does not have (stale keys)."""
