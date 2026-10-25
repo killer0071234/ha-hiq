@@ -167,6 +167,9 @@
       }
     },
     "button": {
+      "scene_memorize": {
+        "name": "Szene {index} speichern"
+      },
       "config1_write_req": {
         "name": "Konfiguration schreiben"
       },
@@ -259,6 +262,11 @@
       },
       "module_humidity": {
         "name": "{module} Luftfeuchtigkeit"
+      }
+    },
+    "scene": {
+      "scene": {
+        "name": "Szene {index}"
       }
     },
     "select": {

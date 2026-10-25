@@ -235,6 +235,9 @@
       }
     },
     "button": {
+      "scene_memorize": {
+        "name": "Store scene {index}"
+      },
       "config1_write_req": {
         "name": "Config write request"
       },
@@ -327,6 +330,11 @@
       },
       "module_humidity": {
         "name": "{module} humidity"
+      }
+    },
+    "scene": {
+      "scene": {
+        "name": "Scene {index}"
       }
     },
     "select": {

@@ -139,9 +139,14 @@ def alc_file(names: Iterable[str]) -> str:
         ";CPU CyBro-3 10000",
         ";Addr Id    Array Offset Size Scope  Type  Name                             Description",
     ]
+    # array elements (eg: scene_status[3]) are a single entry of the array
+    sizes: dict[str, int] = {}
+    for name in names:
+        array = name.split("[")[0]
+        sizes[array] = sizes.get(array, 0) + 1
     lines += [
-        f"0050  00000 1     0      1    global int   {name:<32} Description of {name}"
-        for name in names
+        f"0050  00000 {size:<5} 0      1    global int   {name:<32} Description of {name}"
+        for name, size in sizes.items()
     ]
     return "\n".join(lines)
 
