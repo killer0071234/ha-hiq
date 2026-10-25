@@ -563,3 +563,65 @@ async def test_controller_hours_disabled_by_default(
         assert registry.async_get(entity_id).disabled_by is (
             er.RegistryEntryDisabler.INTEGRATION
         )
+
+
+async def _polled(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, entry: MockConfigEntry
+) -> str:
+    """Return the variables requested by the next poll."""
+    calls = len(aioclient_mock.mock_calls)
+    await refresh(hass, entry)
+    return " ".join(str(call[1]) for call in aioclient_mock.mock_calls[calls:])
+
+
+async def test_disabled_entities_not_polled(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test only the variables of enabled entities are polled."""
+    await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {
+            "th00_general_error": "0",
+            "th00_temperature": "215",
+            "th00_max_time": "60",
+            "th00_setpoint_idle": "180",
+            "th00_config2_req": "0",
+        },
+    )
+
+    polled = await _polled(hass, aioclient_mock, mock_config_entry)
+
+    # climate entity (enabled)
+    assert "c1000.th00_temperature" in polled
+    # number only, disabled by default
+    assert "c1000.th00_max_time" not in polled
+    # disabled number, but also used by the climate entity
+    assert "c1000.th00_setpoint_idle" in polled
+
+
+async def test_entity_variables_released_when_disabled(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test the variables of an entity are not polled after it is disabled."""
+    await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {"lc00_general_error": "0", "lc00_qx00": "1", "lc00_qx01": "0"},
+    )
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id("light", DOMAIN, "c1000.lc00_qx01")
+    assert "c1000.lc00_qx01" in await _polled(hass, aioclient_mock, mock_config_entry)
+
+    registry.async_update_entity(entity_id, disabled_by=er.RegistryEntryDisabler.USER)
+    await hass.async_block_till_done()
+
+    polled = await _polled(hass, aioclient_mock, mock_config_entry)
+    assert "c1000.lc00_qx00" in polled
+    assert "c1000.lc00_qx01" not in polled

@@ -165,11 +165,11 @@ class HiqUpdateCover(HiqEntity, CoverEntity):
         self._moving_up_var = var_up_name
         self._moving_dn_var = var_down_name
         LOGGER.debug(self._attr_unique_id)
-        coordinator.data.add_var(self._attr_unique_id, var_type=0)
+        self.poll_var(self._attr_unique_id)
         if self._moving_dn_var != "":
-            coordinator.data.add_var(self._moving_dn_var, var_type=0)
+            self.poll_var(self._moving_dn_var)
         if self._moving_up_var != "":
-            coordinator.data.add_var(self._moving_up_var, var_type=0)
+            self.poll_var(self._moving_up_var)
 
     @property
     def is_closed(self) -> bool | None:

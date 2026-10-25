@@ -13,7 +13,6 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     AREA_WEATHER,
@@ -26,6 +25,7 @@ from .const import (
     MANUFACTURER_URL,
 )
 from .coordinator import HiqDataUpdateCoordinator
+from .models import HiqEntity
 
 PARALLEL_UPDATES = 1
 
@@ -40,13 +40,11 @@ async def async_setup_entry(
     coordinator: HiqDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     var_prefix = f"c{coordinator.data.plc_info.nad}.weather_"
-    # search for any weather station var and add it into the read list
-    has_weather = False
-    for name in WEATHER_VARS:
-        if f"{var_prefix}{name}" in coordinator.data.plc_info.plc_vars:
-            coordinator.data.add_var(f"{var_prefix}{name}", var_type=VarType.INT)
-            has_weather = True
-    if not has_weather:
+    # search for any weather station var
+    if not any(
+        f"{var_prefix}{name}" in coordinator.data.plc_info.plc_vars
+        for name in WEATHER_VARS
+    ):
         return
 
     dev_info = DeviceInfo(
@@ -64,7 +62,7 @@ async def async_setup_entry(
     async_add_entities([HiqWeatherEntity(var_prefix, coordinator, dev_info)])
 
 
-class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
+class HiqWeatherEntity(HiqEntity, WeatherEntity):
     """Define an Weather Station entity."""
 
     coordinator: HiqDataUpdateCoordinator
@@ -83,6 +81,9 @@ class HiqWeatherEntity(CoordinatorEntity, WeatherEntity):
         self._attr_name = f"c{coordinator.data.plc_info.nad} weather"
         self._attr_unique_id = var_prefix
         self._attr_device_info = device
+        for name in WEATHER_VARS:
+            if f"{var_prefix}{name}" in coordinator.data.plc_info.plc_vars:
+                self.poll_var(f"{var_prefix}{name}", VarType.INT)
 
     @property
     def native_temperature(self) -> float | None:

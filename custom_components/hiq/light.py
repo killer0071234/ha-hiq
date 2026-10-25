@@ -70,8 +70,8 @@ class HiqLightEntityDescription(LightEntityDescription):
 
 def is_general_error_ok(coordinator: HiqDataUpdateCoordinator, var: str) -> bool:
     """Check if general error of own module is ok."""
+    # read during setup, before the platforms
     ge_name = f"{var.split('_')[0]}_general_error"
-    coordinator.data.add_var(ge_name)
     ge_val = coordinator.data.vars.get(ge_name)
     if ge_val is None:
         return False
@@ -243,10 +243,10 @@ class HiqUpdateLight(HiqEntity, LightEntity):
         self._attr_icon = attr_icon
         self._attr_device_info = dev_info
         LOGGER.debug(self._attr_unique_id)
-        coordinator.data.add_var(self._attr_unique_id, var_type=0)
+        self.poll_var(self._attr_unique_id)
         for var in (rgb_hue_out, rgb_sat_out):
             if var:
-                coordinator.data.add_var(var, var_type=0)
+                self.poll_var(var)
         supported_color_modes: set[ColorMode] = set()
         if dimming_out:
             self._attr_color_mode = ColorMode.BRIGHTNESS

@@ -33,7 +33,6 @@ from .light import is_general_error_ok
 from .models import HiqEntity
 from .models import thermostat_device_info
 from .models import hvac_device_info
-from .parameters import ModuleParameterEntity
 from .parameters import find_module_parameters
 from .parameters import module_parameter_tags
 from .parameters import output_device_info
@@ -242,7 +241,7 @@ def add_module_parameters(
     ):
         max_value, val_fact = MODULE_PARAMETER_NUMBERS[name]
         res.append(
-            HiqParameterNumber(
+            HiqNumberEntity(
                 coordinator=coordinator,
                 entity_description=HiqNumberEntityDescription(
                     key=key,
@@ -293,7 +292,7 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         self._attr_mode = mode
 
         LOGGER.debug(self._attr_unique_id)
-        coordinator.data.add_var(self._attr_unique_id, var_type=var_type)
+        self.poll_var(self._attr_unique_id, var_type)
         self._val_fact = val_fact
         self._attr_suggested_display_precision = display_precision
         self.entity_description.native_step = self._val_fact
@@ -344,7 +343,3 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
             LOGGER.debug("write value: %s -> %s", self._attr_unique_id, new_val)
             await self.coordinator.cybro.write_var(self._attr_unique_id, new_val)
         await self.coordinator.async_refresh()
-
-
-class HiqParameterNumber(ModuleParameterEntity, HiqNumberEntity):
-    """Defines a number for a parameter of a module output."""
