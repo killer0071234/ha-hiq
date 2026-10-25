@@ -324,6 +324,27 @@
       }
     },
     "select": {
+      "input_mode": {
+        "name": "Input mode",
+        "state": {
+          "toggle": "Toggle on / off",
+          "staircase": "Timer extend on edge (staircase)",
+          "motion": "Timer extend on level (motion sensor)",
+          "motion_night": "Timer extend on level, night only",
+          "inverse": "Inverse (door sensor)",
+          "inverse_night": "Inverse, night only",
+          "direct": "Direct (doorbell)",
+          "event_only": "Event only"
+        }
+      },
+      "color_mode": {
+        "name": "Color mode",
+        "state": {
+          "dimmer": "Standard dimmer",
+          "rgb": "RGB dimmer",
+          "white_temperature": "White temperature"
+        }
+      },
       "temperature_source": {
         "name": "Temperature source sensor",
         "state": {
@@ -360,6 +381,15 @@
       }
     },
     "number": {
+      "output_timer": {
+        "name": "Output timer"
+      },
+      "blinds_time_up": {
+        "name": "Travel time up"
+      },
+      "blinds_time_dn": {
+        "name": "Travel time down"
+      },
       "setpoint_idle": {
         "name": "Setpoint eco"
       },

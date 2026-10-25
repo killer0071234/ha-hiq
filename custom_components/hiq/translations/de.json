@@ -256,6 +256,27 @@
       }
     },
     "select": {
+      "input_mode": {
+        "name": "Eingangsmodus",
+        "state": {
+          "toggle": "Ein / Aus umschalten",
+          "staircase": "Zeit verlängern bei Flanke (Treppenhaus)",
+          "motion": "Zeit verlängern bei Pegel (Bewegungsmelder)",
+          "motion_night": "Zeit verlängern bei Pegel, nur nachts",
+          "inverse": "Invertiert (Türkontakt)",
+          "inverse_night": "Invertiert, nur nachts",
+          "direct": "Direkt (Türklingel)",
+          "event_only": "Nur Ereignis"
+        }
+      },
+      "color_mode": {
+        "name": "Farbmodus",
+        "state": {
+          "dimmer": "Standard Dimmer",
+          "rgb": "RGB Dimmer",
+          "white_temperature": "Weißtemperatur"
+        }
+      },
       "temperature_source": {
         "name": "Temperatursensor Quelle",
         "state": {
@@ -292,6 +313,15 @@
       }
     },
     "number": {
+      "output_timer": {
+        "name": "Ausschaltzeit"
+      },
+      "blinds_time_up": {
+        "name": "Fahrzeit auf"
+      },
+      "blinds_time_dn": {
+        "name": "Fahrzeit ab"
+      },
       "setpoint_idle": {
         "name": "Sollwert Eco"
       },
