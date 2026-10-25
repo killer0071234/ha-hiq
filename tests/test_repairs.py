@@ -412,3 +412,35 @@ async def test_port_not_taken_from_app(
     await async_discover(hass, {})
 
     assert async_current_transport(hass) is fallback
+
+
+@pytest.mark.parametrize("failing", ["list", "addon_info"])
+async def test_port_not_taken_while_apps_unknown(
+    hass: HomeAssistant,
+    abus_controller: FakeAbusController,
+    supervisor: MagicMock,
+    busy_port: socket.socket,
+    failing: str,
+) -> None:
+    """Test the port isn't taken while the apps can't be checked, later it is."""
+    busy_port.close()
+    call = getattr(supervisor.addons, failing)
+    working, call.side_effect = call.side_effect, SupervisorError("boom")
+    entry = direct_entry()
+
+    await _setup(hass, entry)
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert async_current_transport(hass).local_addr[1] != transport.LOCAL_PORT
+    # no conflict is known
+    assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_PORT_IN_USE) is None
+    await async_discover(hass, {})
+    assert async_current_transport(hass).local_addr[1] != transport.LOCAL_PORT
+
+    # the apps can be checked again, the app isn't running any more
+    call.side_effect = working
+    supervisor.app.state = AddonState.STOPPED
+    await async_discover(hass, {})
+    await hass.async_block_till_done()
+
+    assert async_current_transport(hass).local_addr[1] == transport.LOCAL_PORT

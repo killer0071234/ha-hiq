@@ -92,7 +92,8 @@ async def async_retry_port(hass: HomeAssistant) -> None:
     # port 0: any port is what is wanted (tests)
     if not LOCAL_PORT or transport is None or transport.local_addr[1] == LOCAL_PORT:
         return
-    if await async_apps_using_port(hass, LOCAL_PORT):
+    # an app declares the port, or the apps can't be checked (None)
+    if await async_apps_using_port(hass, LOCAL_PORT) != []:
         return
     probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -115,7 +116,12 @@ async def _async_create(hass: HomeAssistant) -> AbusTransport:
 async def _async_open(hass: HomeAssistant) -> AbusTransport:
     """Open the socket on the A-bus port, on any port if it is in use or left to apps."""
     options = {"broadcast": BROADCAST, "port": CONTROLLER_PORT}
-    if apps := await async_apps_using_port(hass, LOCAL_PORT):
+    apps = await async_apps_using_port(hass, LOCAL_PORT)
+    if apps is None:
+        # tried again before each scan
+        LOGGER.debug("UDP port %s not used, the apps can't be checked", LOCAL_PORT)
+        return await AbusTransport.create((BIND_HOST, 0), **options)
+    if apps:
         # an app may not have bound the port yet, taking it would break it
         names = ", ".join(app.name for app in apps)
         await async_create_port_issue(hass, LOCAL_PORT, apps, f"is left to {names}")

@@ -43,8 +43,13 @@ def _uses_port(info: InstalledAddonComplete, port: int) -> bool:
     return False
 
 
-async def async_apps_using_port(hass: HomeAssistant, port: int) -> list[InstalledAddon]:
-    """Return the running apps that use the UDP port, if Home Assistant has apps."""
+async def async_apps_using_port(
+    hass: HomeAssistant, port: int
+) -> list[InstalledAddon] | None:
+    """Return the running apps that use the UDP port, None if unknown.
+
+    Without Supervisor there are no apps.
+    """
     if not is_hassio(hass):
         return []
     client = _supervisor(hass).addons
@@ -54,8 +59,9 @@ async def async_apps_using_port(hass: HomeAssistant, port: int) -> list[Installe
             app for app in apps if _uses_port(await client.addon_info(app.slug), port)
         ]
     except SupervisorError as err:
+        # an app may still bind the port, taking it could break that app
         LOGGER.debug("Can't read the apps: %s", err)
-        return []
+        return None
 
 
 async def async_create_port_issue(
