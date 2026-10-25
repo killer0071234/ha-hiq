@@ -33,6 +33,12 @@ from .models import thermostat_device_info
 
 TEMPLATE_INVERTED = "{{value | string() == '0'}}"
 
+# controller indicators: tag after cNAD. -> (translation key, device class)
+SYSTEM_INDICATORS = {
+    "presence_indicator": ("presence", BinarySensorDeviceClass.PRESENCE),
+    "low_light_indicator": ("nighttime", None),
+}
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -93,6 +99,20 @@ def add_system_tags(
     # find different plc diagnostic vars
     for key in coordinator.data.plc_info.plc_vars:
         if var_prefix not in key:
+            continue
+        if (name := key.removeprefix(var_prefix)) in SYSTEM_INDICATORS:
+            translation_key, device_class = SYSTEM_INDICATORS[name]
+            res.append(
+                HiqBinarySensor(
+                    coordinator,
+                    entity_description=HiqBinarySensorEntityDescription(
+                        key=key,
+                        translation_key=translation_key,
+                        device_class=device_class,
+                    ),
+                    dev_info=dev_info,
+                )
+            )
             continue
         if key in (f"{var_prefix}scan_overrun", f"{var_prefix}retentive_fail"):
             translation_key, translation_placeholders = None, None

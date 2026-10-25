@@ -117,6 +117,13 @@ To have a basic diagnostic, there are some `binary_sensor` Entities exposed.
 | `cXXXX.retentive_fail` | Indicates that retentive memory failed.                                            | yes     |
 | `cXXXX.scan_overrun`   | Too long scan execution caused scan overrun error.                                 | yes     |
 
+#### Indicators of the controller:
+
+| Entity name                  | Description                               | Controller var              | Enabled |
+| ---------------------------- | ----------------------------------------- | --------------------------- | ------- |
+| `cXXXX diagnostic presence`  | Indicates that somebody is at home.       | `cXXXX.presence_indicator`  | yes     |
+| `cXXXX diagnostic nighttime` | Indicates that the sun is below horizon.  | `cXXXX.low_light_indicator` | yes     |
+
 #### For every IEX expansion unit:
 
 | Entity name                | Description                                                                  | Enabled |

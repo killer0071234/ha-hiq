@@ -75,6 +75,8 @@ async def test_sensor_unknown_value(
             "retentive_fail",
             ("0", "1"),
         ),
+        (f"binary_sensor.{DIAG}_presence", "presence_indicator", ("0", "1")),
+        (f"binary_sensor.{DIAG}_nighttime", "low_light_indicator", ("0", "1")),
         (f"binary_sensor.{TH}_output", "th00_output", ("0", "1")),
         # window contact is closed (1) when the window is closed
         (f"binary_sensor.{TH}_window", "th00_ix00", ("1", "0")),
