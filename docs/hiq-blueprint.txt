@@ -1,0 +1,139 @@
+LC-10-IQ
+--------------------
+*** on/off lights
+entity: switch
+quantity: 80 (8 devices, 10 entities each)
+autodetect: lc00_general_error..lc07_general_error (0-connected, 1-disconnected)
+read/write: lc00_qx00..lc07_qx09 (0-off, 1-on)
+
+*** button inputs
+entity: button
+quantity: 80 (8 devices, 10 entities each)
+autodetect: lc00_general_error..lc07_general_error (0-connected, 1-disconnected)
+read by event, check socket specifications (0-short press, 1-short release, 2-long press, 3-long release)
+
+configuration parameters:
+
+*** input mode, defines how input affects the output: 0-toggle on/off, 1-timer extend edge (staircase), 2-timer extend level (motion sensor), 3-timer extend level night only, 4-inverse (door sensor), 5-inverse night only, 6-direct (doorbell), 7-event only
+read: lc00_input_mode_00..lc07_input_mode_09 (0..7)
+write: lc00_input_mode_index (0..9), lc00_input_mode_data (0..7), lc00_input_mode_req=1
+
+*** output timer, timer that automatically turns off the output: 0-no timer, 1..9999-auto off (seconds)
+read: lc00_output_mode_00..lc07_output_mode_09 (0..9999)
+write: lc00_output_mode_index (0..9), lc00_output_mode_data (0..9999), lc00_output_mode_req=1
+
+
+LD-10-IQ
+--------------------
+*** dimmable lights
+entity: light
+quantity: 40 (4 devices, 10 entities each)
+autodetect: ld00_general_error..ld03_general_error (0-connected, 1-disconnected)
+read/write: ld00_qx00 (0-off, 1-on), ld00_qw00 (0..100)
+
+*** button inputs
+entity: button
+quantity: 40 (4 devices, 10 entities each)
+autodetect: ld00_general_error..ld03_general_error (0-connected, 1-disconnected)
+read by event, check socket specifications (0-short press, 1-short release, 2-long press, 3-long release)
+
+configuration parameters:
+
+*** input mode, defines how input affects the output
+read: ld00_input_mode_00..ld03_input_mode_09 (0..7)
+write: ld00_config_group=0, ld00_config_index (0..9), ld00_config_data (0..7), ld00_config_req=1
+
+*** output timer, timer that automatically turns off the output
+read: ld00_output_timer_00..ld03_output_timer_09 (0..9999)
+write: ld00_config_group=1, ld00_config_index (0..9), ld00_config_data (0..9999), ld00_config_req=1
+
+*** color mode: 0-standard dimmer, 1-RGB dimmer, 2-white temperature
+read: ld00_color_mode_00..ld03_color_mode_09 (0..2)
+write: ld00_config_group=2, ld00_config_index (0..9), ld00_config_data (0..2), ld00_config_req=1
+
+
+BC-5-IQ
+--------------------
+*** blinds and shades
+entity: cover
+quantity: 30 (6 devices, 5 entities each)
+autodetect: bc00_general_error..bc05_general_error (0-connected, 1-disconnected)
+read: bc00_blinds_position_00..bc05_blinds_position_04 (0..100)
+write: bc00_blinds_setpoint_00..bc05_blinds_setpoint_04 (0..100, -1-stop, -2-up/stop/down/stop)
+
+configuration parameters:
+
+*** blinds time, bottom to top
+read: bc00_blinds_time_up_00..bc05_blinds_time_up_04 [*100ms]
+write: bc00_blinds_time_index (0..4), bc00_blinds_time_data [*100ms], bc00_blinds_time_req=1
+
+*** blinds time, top to bottom
+read: bc00_blinds_time_dn_00..bc05_blinds_time_dn_04 [*100ms]
+write: bc00_blinds_time_index (5..9), bc00_blinds_time_data [*100ms], bc00_blinds_time_req=1
+
+
+SC-4-IQ
+--------------------
+*** scene of lights and blinds
+entity: scene
+quantity: 32
+autodetect: always present
+read: scene_status[0..31] (-1-not defined, 0-off, 1-active)
+write: global_scene_request (0..31)
+
+configuration parameters:
+
+*** memorize current scene
+write: global_memory_request (0..31)
+
+
+TH-1-IQ
+TH-2-IQ
+--------------------
+entity: climate
+quantity: 6 (6 devices)
+autodetect: th00_general_error..th05_general_error (0-connected, 1-disconnected)
+
+*** measured values
+read: th00_temperature [0.1°C]
+read: th00_humidity [%]
+
+*** thermostat active
+read/write: th00_active (0-off, 1-on)
+
+*** setpoint
+read: th00_setpoint_active [0.1°C] - current setpoint
+read/write: th00_setpoint [0.1°C] - primary setpoint
+
+configuration parameters:
+
+*** source of measured temperature (0-internal sensor, 1-external sensor, 2-remote value)
+read: th00_temperature_source
+write: th00_temperature_source (0..2), th00_config1_req=1
+
+*** measurement correction
+read: th00_temperature_offset [0.1°C]
+write: th00_temperature_offset [0.1°C], th00_config1_req=1
+
+*** setpoint limits
+read: th00_setpoint_lo, th00_setpoint_hi [*0.1°C]
+write: th00_setpoint_lo, th00_setpoint_hi [*0.1°C], th00_config2_req=1
+
+*** secondary setpoint, used when thermostat is off
+read: th00_setpoint_idle [*0.1°C]
+write: th00_setpoint_idle [*0.1°C], th00_config2_req=1
+
+*** window switch enable
+read: th00_window_enable
+write: th00_window_enable, th00_config3_req=1
+
+
+other
+--------------------
+*** indicate that somebody is at home
+entity: binary_sensor.presence
+read: presence_indicator (0-no, 1-yes)
+
+*** indicate that sun is below horizon
+entity: binary_sensor.nighttime
+read: low_light_indicator (0-daytime, 1-nighttime)

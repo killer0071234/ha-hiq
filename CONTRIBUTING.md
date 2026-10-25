@@ -46,6 +46,14 @@ People _love_ thorough bug reports. I'm not even kidding.
 
 Use [black](https://github.com/ambv/black) to make sure the code follows the style.
 
+## Controller variables
+
+[`docs/hiq-blueprint.txt`](./docs/hiq-blueprint.txt) describes the controller
+variables of the HIQ modules (LC, LD, BC, SC, TH and the controller indicators):
+how a module is detected, which variables are read and written, and how the
+configuration parameters are written through their index / data / request
+variables.
+
 ## Test your code modification
 
 The tests in [`tests`](./tests) run the integration in Home Assistant against a
