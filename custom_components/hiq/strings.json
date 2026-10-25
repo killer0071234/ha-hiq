@@ -378,6 +378,9 @@
       "setpoint_offset_h": {
         "name": "Setpoint offset heating"
       },
+      "temperature_offset": {
+        "name": "Temperature offset"
+      },
       "setpoint_lo": {
         "name": "Setpoint min"
       },

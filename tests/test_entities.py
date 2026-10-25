@@ -158,6 +158,36 @@ async def test_number_without_write_request(
     assert hass.states.get(entity_id).state == "-1.5"
 
 
+async def test_number_temperature_offset(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test the measurement correction is written with the config1 request."""
+    controller = await setup_with_tags(
+        hass,
+        aioclient_mock,
+        mock_config_entry,
+        {
+            "th00_general_error": "0",
+            "th00_temperature_offset": "-5",
+            "th00_config1_req": "0",
+        },
+    )
+    entity_id = f"number.{TH}_temperature_offset"
+    state = hass.states.get(entity_id)
+    assert state.state == "-0.5"
+    assert state.attributes["unit_of_measurement"] == "°C"
+
+    await call_service(hass, "number", "set_value", entity_id, value=1.2)
+
+    assert controller.writes[-2:] == [
+        ("c1000.th00_temperature_offset", "12"),
+        ("c1000.th00_config1_req", "1"),
+    ]
+
+
 @pytest.mark.parametrize("suffix", ["h", "c"])
 async def test_number_per_hvac_mode(
     hass: HomeAssistant,

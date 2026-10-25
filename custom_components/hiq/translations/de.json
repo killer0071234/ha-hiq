@@ -310,6 +310,9 @@
       "setpoint_offset_h": {
         "name": "Sollwert Offset heizen"
       },
+      "temperature_offset": {
+        "name": "Temperatur Korrektur"
+      },
       "setpoint_lo": {
         "name": "Sollwert min"
       },
