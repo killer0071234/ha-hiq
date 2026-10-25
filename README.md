@@ -231,6 +231,7 @@ To set some parameters in the controller, there are some `number` Entities expos
 | `cXXXX.thYY thermostat setpoint offset`                      | Setpoint correction, used to affect regulated temperature without changing setpoint.             | `cXXXX.thYY_setpoint_offset`        |
 | `cXXXX.thYY thermostat setpoint offset cooling`              | Setpoint correction for cooling, used to affect regulated temperature without changing setpoint. | `cXXXX.thYY_setpoint_offset_c`      |
 | `cXXXX.thYY thermostat setpoint offset heating`              | Setpoint correction for heating, used to affect regulated temperature without changing setpoint. | `cXXXX.thYY_setpoint_offset_h`      |
+| `cXXXX.thYY thermostat temperature offset`                   | Measurement correction of the thermostat temperature sensor.                                     | `cXXXX.thYY_temperature_offset`     |
 | `cXXXX.thYY thermostat hystheresis`                          | Hysteresis for on/off regulation. Defined as distance between on and off points.                 | `cXXXX.thYY_setpoint_hystheresis`   |
 | `cXXXX.thYY thermostat hystheresis cooling`                  | Hysteresis for on/off regulation in cooling mode. Defined as distance between on and off points. | `cXXXX.thYY_setpoint_hystheresis_c` |
 | `cXXXX.thYY thermostat hystheresis heating`                  | Hysteresis for on/off regulation in heating mode. Defined as distance between on and off points. | `cXXXX.thYY_setpoint_hystheresis_h` |

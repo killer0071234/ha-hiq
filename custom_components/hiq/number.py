@@ -71,6 +71,7 @@ class HiqNumberEntityDescription(NumberEntityDescription):
 TH_TEMPERATURE_NUMBERS: dict[str, tuple[float, float, EntityCategory | None]] = {
     "setpoint_idle": (0.0, 40.0, None),
     "setpoint_offset": (-5.0, 5.0, EntityCategory.CONFIG),
+    "temperature_offset": (-5.0, 5.0, EntityCategory.CONFIG),
     "setpoint_lo": (0.0, 40.0, EntityCategory.CONFIG),
     "setpoint_hi": (0.0, 40.0, EntityCategory.CONFIG),
     "hysteresis": (0.1, 10.0, EntityCategory.CONFIG),
