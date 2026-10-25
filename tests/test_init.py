@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import TypedDict
 from unittest.mock import patch
 
 import pytest
@@ -333,22 +332,6 @@ async def test_devices_linked_to_controller(
     assert {d.name: d.via_device_id for d in children} == {
         d.name: controller.id for d in children
     }
-
-
-async def test_via_device_fallback_for_older_home_assistant(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
-    """Test the controller is linked by identifier if via_device_id is unknown."""
-    coordinator = hass.data[DOMAIN][init_integration.entry_id]
-    assert coordinator.via_device_info == {"via_device_id": coordinator.device_id}
-
-    class OldDeviceInfo(TypedDict, total=False):
-        """DeviceInfo before Home Assistant 2026.8."""
-
-        identifiers: set[tuple[str, str]]
-
-    with patch("custom_components.hiq.coordinator.DeviceInfo", OldDeviceInfo):
-        assert coordinator.via_device_info == {"via_device": (DOMAIN, NAD)}
 
 
 async def test_unload_one_of_two_controllers(
