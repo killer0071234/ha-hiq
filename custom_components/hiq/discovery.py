@@ -7,6 +7,8 @@ devices that send sockets but don't answer requests are never offered.
 
 from __future__ import annotations
 
+from typing import Any
+
 from cybro import CybroDirect
 from cybro import CybroError
 from cybro.abus import AbusTransport
@@ -71,9 +73,26 @@ async def _async_found(
     checked: dict[int, str | None],
 ) -> None:
     """Handle a controller that answered the scan."""
-    nad, ip = result.nad, result.ip
-    if async_ip_seen(hass, nad, ip):
+    if async_ip_seen(hass, result.nad, result.ip):
         return
+    if data := await async_discovery_data(hass, transport, result, checked):
+        discovery_flow.async_create_flow(
+            hass, DOMAIN, context={"source": SOURCE_INTEGRATION_DISCOVERY}, data=data
+        )
+
+
+async def async_discovery_data(
+    hass: HomeAssistant,
+    transport: AbusTransport,
+    result: ScanResult,
+    checked: dict[int, str | None],
+) -> dict[str, Any] | None:
+    """Return the flow data of a controller that isn't connected directly.
+
+    An scgi entry of the controller is offered the direct connection. Other
+    controllers are only offered if they run the HIQ program, else None.
+    """
+    nad, ip = result.nad, result.ip
     entries = [
         entry
         for entry in hass.config_entries.async_entries(DOMAIN, include_ignore=False)
@@ -83,20 +102,17 @@ async def _async_found(
     if not entries:
         # variables can only be read from a running program
         if not result.status.ok:
-            return
+            return None
         if nad not in checked:
             try:
                 checked[nad] = await _async_hiq_version(transport, nad, ip)
             except CybroError as err:
                 LOGGER.debug("Can't read the program of c%s: %s", nad, err)
-                return
+                return None
         if checked[nad] is None:
-            return
+            return None
         data[CONF_VERSION] = checked[nad]
-    # an entry using the scgi server is offered the direct connection
-    discovery_flow.async_create_flow(
-        hass, DOMAIN, context={"source": SOURCE_INTEGRATION_DISCOVERY}, data=data
-    )
+    return data
 
 
 async def _async_hiq_version(transport: AbusTransport, nad: int, ip: str) -> str | None:

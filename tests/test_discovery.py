@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
 from unittest.mock import patch
 
 import pytest
@@ -24,33 +23,10 @@ from custom_components.hiq.discovery import async_discover
 from custom_components.hiq.transport import async_current_transport
 
 from .const import NAD, OPTIONS, TITLE, UNIQUE_ID
-from .fake_abus import TRANSPORT, direct_entry, start_hiq_controller
+from .fake_abus import HIQ_PROGRAM, TRANSPORT, direct_entry, start_hiq_controller
 from .fake_controller import HIQ_TAGS, FakeController
 
-# variables the HIQ program sets at startup (docs/abus-notes.md)
-HIQ_PROGRAM = {
-    "program_id": "3",
-    "version_major": "6",
-    "version_minor": "1",
-    "version_release": "1",
-}
 CUSTOM_SENSOR = {"tag": "lc00_qx00", "name": "Custom", "unique_id": "abc"}
-
-
-@pytest.fixture
-async def hiq_controller(
-    socket_enabled: None,
-) -> AsyncGenerator[FakeAbusController]:
-    """Return a controller running the HIQ program, found by broadcast."""
-    fake = await start_hiq_controller(NAD, HIQ_TAGS | HIQ_PROGRAM)
-    with (
-        patch(f"{TRANSPORT}.BIND_HOST", "127.0.0.1"),
-        patch(f"{TRANSPORT}.LOCAL_PORT", 0),
-        patch(f"{TRANSPORT}.CONTROLLER_PORT", fake.port),
-        patch(f"{TRANSPORT}.BROADCAST", "127.0.0.1"),
-    ):
-        yield fake
-    fake.close()
 
 
 async def _discover(hass: HomeAssistant, checked: dict | None = None) -> list[dict]:

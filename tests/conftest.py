@@ -18,8 +18,8 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 from custom_components.hiq.const import DOMAIN
 
 from .const import NAD, OPTIONS, TITLE, UNIQUE_ID
-from .fake_abus import TRANSPORT, start_hiq_controller
-from .fake_controller import FakeController
+from .fake_abus import HIQ_PROGRAM, TRANSPORT, start_hiq_controller
+from .fake_controller import HIQ_TAGS, FakeController
 
 
 @pytest.fixture(autouse=True)
@@ -109,6 +109,22 @@ async def abus_controller(
 ) -> AsyncGenerator[FakeAbusController]:
     """Return a HIQ controller on a fake A-bus, reached via 127.0.0.1."""
     fake = await start_hiq_controller(NAD)
+    with (
+        patch(f"{TRANSPORT}.BIND_HOST", "127.0.0.1"),
+        patch(f"{TRANSPORT}.LOCAL_PORT", 0),
+        patch(f"{TRANSPORT}.CONTROLLER_PORT", fake.port),
+        patch(f"{TRANSPORT}.BROADCAST", "127.0.0.1"),
+    ):
+        yield fake
+    fake.close()
+
+
+@pytest.fixture
+async def hiq_controller(
+    socket_enabled: None,
+) -> AsyncGenerator[FakeAbusController]:
+    """Return a controller running the HIQ program, found by broadcast."""
+    fake = await start_hiq_controller(NAD, HIQ_TAGS | HIQ_PROGRAM)
     with (
         patch(f"{TRANSPORT}.BIND_HOST", "127.0.0.1"),
         patch(f"{TRANSPORT}.LOCAL_PORT", 0),

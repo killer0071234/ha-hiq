@@ -12,15 +12,16 @@ import voluptuous as vol
 from cybro import Cybro
 from cybro import CybroConnectionError
 from cybro import CybroDirect
+from cybro import CybroError
 from cybro import Device
 from cybro.abus import AbusResponseError
+from cybro.abus import scan
 from homeassistant.components.select import DOMAIN as SELECT_DOMAIN
 from homeassistant.components.sensor import CONF_STATE_CLASS
 from homeassistant.components.sensor import DEVICE_CLASS_UNITS
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorStateClass
-from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY
 from homeassistant.config_entries import SOURCE_RECONFIGURE
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.config_entries import ConfigFlow
@@ -44,6 +45,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.schema_config_entry_flow import SchemaCommonFlowHandler
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.schema_config_entry_flow import SchemaFlowError
 from homeassistant.helpers.schema_config_entry_flow import SchemaFlowFormStep
 from homeassistant.helpers.schema_config_entry_flow import SchemaFlowMenuStep
@@ -71,8 +73,11 @@ from .const import DOCS_URL
 from .const import DOMAIN
 from .const import LOGGER
 from .discovery import CONF_VERSION
+from .discovery import async_discovery_data
+from .listener import async_ip_seen
 from .transport import async_get_transport
 from .transport import async_release_transport
+from .transport import async_scan_transport
 
 PLC_SETUP = {
     vol.Required(CONF_HOST, default=DEFAULT_HOST): TextSelector(
@@ -551,7 +556,8 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
 
     VERSION = 3
 
-    _discovered: dict[str, Any]
+    # the found controller (scan or DHCP)
+    _discovered: dict[str, Any] | None = None
     # scgi entry of a found controller, switched to the direct connection
     _switch_entry: ConfigEntry | None = None
 
@@ -607,6 +613,28 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
         return await self._async_step_connection(
             "reconfigure_scgi", DATA_SCHEMA_PLC, _scgi_options, user_input
         )
+
+    async def async_step_dhcp(
+        self, discovery_info: DhcpServiceInfo
+    ) -> ConfigFlowResult:
+        """Find the NAD of a Cybrotech device that got an IP address."""
+        data = None
+        try:
+            async with async_scan_transport(self.hass) as transport:
+                result = next(
+                    (r for r in await scan(transport) if r.ip == discovery_info.ip),
+                    None,
+                )
+                if result is not None:
+                    if async_ip_seen(self.hass, result.nad, result.ip):
+                        return self.async_abort(reason="already_configured")
+                    data = await async_discovery_data(self.hass, transport, result, {})
+        except (CybroError, OSError) as err:
+            LOGGER.debug("Scan for %s failed: %s", discovery_info.ip, err)
+        if data is None:
+            # no answer from that IP, or no running HIQ program
+            return self.async_abort(reason="not_hiq")
+        return await self.async_step_integration_discovery(data)
 
     async def async_step_integration_discovery(
         self, discovery_info: dict[str, Any]
@@ -665,7 +693,7 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
         """Return the placeholders of a form."""
         if step_id.endswith("scgi"):
             return {"docs_url": DOCS_URL}
-        if self.source != SOURCE_INTEGRATION_DISCOVERY:
+        if self._discovered is None:
             return None
         placeholders = {
             "nad": str(self._discovered[CONF_ADDRESS]),

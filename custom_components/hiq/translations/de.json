@@ -106,7 +106,8 @@
       "reconfigure_successful": "Die Verbindung wurde geändert.",
       "wrong_controller": "Das ist eine andere Steuerung (andere NAD). Um sie hinzuzufügen, verwende Integration hinzufügen.",
       "switched": "Die Steuerung ist jetzt direkt verbunden.",
-      "already_in_progress": "Diese HIQ Steuerung wird bereits eingerichtet. Schließe zuerst den Vorgang unter Entdeckt ab oder ignoriere ihn."
+      "already_in_progress": "Diese HIQ Steuerung wird bereits eingerichtet. Schließe zuerst den Vorgang unter Entdeckt ab oder ignoriere ihn.",
+      "not_hiq": "Unter dieser Adresse wurde keine HIQ Steuerung mit laufendem Programm gefunden."
     }
   },
   "options": {

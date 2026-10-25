@@ -130,8 +130,8 @@ def test_flow_steps_translated(language: str) -> None:
     """Test every step of the config flow that shows a form or menu has a text."""
     source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
     steps = set(re.findall(r"async def async_step_(\w+)\(", source))
-    # only forwards to the confirm steps
-    steps -= {"integration_discovery"}
+    # only forward to the confirm steps
+    steps -= {"dhcp", "integration_discovery"}
 
     assert {"user", "discovery_confirm"} <= steps
     assert sorted(steps - set(_translation(language)["config"]["step"])) == []
@@ -155,6 +155,7 @@ def test_flow_abort_translated(language: str) -> None:
     reasons |= {
         "already_configured",
         "already_in_progress",
+        "not_hiq",
         "reconfigure_successful",
         "switched",
     }

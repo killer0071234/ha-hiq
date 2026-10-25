@@ -340,9 +340,18 @@ set blind `bc00_blinds_position_01` to 30 %, 80 % and open (setpoints 70,
   live.
   *Done when:* a socket frame from an unknown NAD creates no flow, one from a
   configured NAD with a new IP updates `CONF_IP`.
-- [ ] **T15 (S) DHCP discovery.** `manifest.json` matcher `00CB00*` +
+- [x] **T15 (S) DHCP discovery.** `manifest.json` matcher `00CB00*` +
   `async_step_dhcp` → broadcast scan, take the answer whose source IP matches
   → same confirm step.
+  *Done (2026-10-25):* the scan and the DHCP step share
+  `discovery.async_discovery_data` (switch offer for an scgi entry, HIQ
+  check otherwise). A direct entry gets the new IP (`already_configured`),
+  no answer from that IP or no running HIQ program aborts silently
+  (`not_hiq`). The HIQ check isn't cached for DHCP (the integration may
+  not be loaded yet).
+  HAOS: not matched live yet. The DHCP watcher's startup scan saw only 2
+  hosts (no controller); its next network scan is hourly, DHCP requests
+  only come from controllers that use DHCP.
 
 **Checkpoint 4:** a new controller on the LAN appears in "Discovered" without
 user action (at least through one of the three ways).

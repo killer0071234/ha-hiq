@@ -15,6 +15,14 @@ from .fake_controller import HIQ_TAGS
 # module of the shared socket, its addresses are patched in the tests
 TRANSPORT = "custom_components.hiq.transport"
 
+# variables the HIQ program sets at startup (docs/abus-notes.md)
+HIQ_PROGRAM = {
+    "program_id": "3",
+    "version_major": "6",
+    "version_minor": "1",
+    "version_release": "1",
+}
+
 
 def hiq_variables(tags: dict[str, str]) -> list[FakeVar]:
     """Return the variables of a controller holding the given tags."""

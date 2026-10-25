@@ -106,7 +106,8 @@
       "reconfigure_successful": "The connection was changed.",
       "wrong_controller": "This is another controller (other NAD). To add it, use Add integration instead.",
       "switched": "The controller is now connected directly.",
-      "already_in_progress": "This HIQ controller is already being set up. Finish or ignore the flow shown under Discovered first."
+      "already_in_progress": "This HIQ controller is already being set up. Finish or ignore the flow shown under Discovered first.",
+      "not_hiq": "No HIQ controller with a running program was found at this address."
     }
   },
   "options": {
