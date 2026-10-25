@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import pytest
 from homeassistant.components.light import ColorMode
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    mock_restore_cache_with_extra_data,
+)
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMocker,
 )
@@ -333,3 +336,163 @@ async def test_no_lights(
     await setup_with_tags(hass, aioclient_mock, mock_config_entry, {})
 
     assert hass.states.async_entity_ids("light") == []
+
+
+# LD-D10: color mode per output, color written through shared registers
+D10_TAGS = {
+    "ld05_general_error": "0",
+    "ld05_qw00": "40",
+    "ld05_qw01": "60",
+    "ld05_qw02": "80",
+    "ld05_color_mode_00": "0",
+    "ld05_color_mode_01": "1",
+    "ld05_color_mode_02": "2",
+    "ld05_rgb_index": "0",
+    "ld05_rgb_hue": "0",
+    "ld05_rgb_saturation": "0",
+    "ld05_rgb_req": "0",
+}
+D10_DIMMER = "light.lights_light_c1000_ld05_qw00_light"
+D10_RGB = "light.lights_light_c1000_ld05_qw01_light"
+D10_WHITE = "light.lights_light_c1000_ld05_qw02_light"
+
+
+async def _setup_d10(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> FakeController:
+    """Set up a controller with an LD-D10 module."""
+    return await setup_with_tags(hass, aioclient_mock, mock_config_entry, D10_TAGS)
+
+
+async def test_d10_color_modes(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test every LD-D10 output is a light with its own color mode."""
+    await _setup_d10(hass, aioclient_mock, mock_config_entry)
+
+    assert sorted(hass.states.async_entity_ids("light")) == sorted(
+        [D10_DIMMER, D10_RGB, D10_WHITE]
+    )
+    for entity_id, mode in (
+        (D10_DIMMER, ColorMode.BRIGHTNESS),
+        (D10_RGB, ColorMode.HS),
+        (D10_WHITE, ColorMode.COLOR_TEMP),
+    ):
+        state = hass.states.get(entity_id)
+        assert state.attributes["color_mode"] == mode
+        assert state.attributes["supported_color_modes"] == [mode]
+    white = hass.states.get(D10_WHITE)
+    assert white.attributes["min_color_temp_kelvin"] == 2700
+    assert white.attributes["max_color_temp_kelvin"] == 6500
+    # the color can not be read from the module
+    assert hass.states.get(D10_RGB).attributes["hs_color"] is None
+
+
+async def test_d10_write_rgb(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test the color of an output is written with its index and a request."""
+    controller = await _setup_d10(hass, aioclient_mock, mock_config_entry)
+
+    await call_service(hass, "light", "turn_on", D10_RGB, hs_color=(120, 50))
+
+    assert controller.writes[-4:] == [
+        ("c1000.ld05_rgb_index", "1"),
+        ("c1000.ld05_rgb_hue", "33"),
+        ("c1000.ld05_rgb_saturation", "50"),
+        ("c1000.ld05_rgb_req", "1"),
+    ]
+    assert controller.written("c1000.ld05_qw01") == []
+    assert tuple(hass.states.get(D10_RGB).attributes["hs_color"]) == (120, 50)
+
+
+@pytest.mark.parametrize(
+    ("kelvin", "percent"),
+    [(2700, "0"), (4600, "50"), (6500, "100")],
+)
+async def test_d10_write_white_temperature(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+    kelvin: int,
+    percent: str,
+) -> None:
+    """Test the white temperature is written as 0..100 % into the hue."""
+    controller = await _setup_d10(hass, aioclient_mock, mock_config_entry)
+
+    await call_service(hass, "light", "turn_on", D10_WHITE, color_temp_kelvin=kelvin)
+
+    assert controller.writes[-3:] == [
+        ("c1000.ld05_rgb_index", "2"),
+        ("c1000.ld05_rgb_hue", percent),
+        ("c1000.ld05_rgb_req", "1"),
+    ]
+    assert hass.states.get(D10_WHITE).attributes["color_temp_kelvin"] == kelvin
+
+
+async def test_d10_write_color_and_brightness(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test brightness is still written to the output with a color."""
+    controller = await _setup_d10(hass, aioclient_mock, mock_config_entry)
+
+    await call_service(
+        hass, "light", "turn_on", D10_RGB, hs_color=(180, 40), brightness=255
+    )
+
+    assert controller.written("c1000.ld05_rgb_hue") == ["50"]
+    assert controller.written("c1000.ld05_qw01") == ["100"]
+
+
+async def test_d10_brightness_and_off(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test brightness and off without a color only use the output."""
+    controller = await _setup_d10(hass, aioclient_mock, mock_config_entry)
+
+    await call_service(hass, "light", "turn_on", D10_RGB, brightness=128)
+    await call_service(hass, "light", "turn_off", D10_RGB)
+
+    assert controller.written("c1000.ld05_qw01") == ["50", "0"]
+    assert controller.written("c1000.ld05_rgb_req") == []
+
+
+async def test_d10_restores_color(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+    enable_all_entities: None,
+) -> None:
+    """Test the last written color is restored after a restart."""
+    mock_restore_cache_with_extra_data(
+        hass,
+        [
+            (
+                State(D10_RGB, "off"),
+                {"hs_color": [240.0, 30.0], "color_temp_kelvin": None},
+            ),
+            (
+                State(D10_WHITE, "off"),
+                {"hs_color": None, "color_temp_kelvin": 3000},
+            ),
+        ],
+    )
+    await _setup_d10(hass, aioclient_mock, mock_config_entry)
+
+    assert tuple(hass.states.get(D10_RGB).attributes["hs_color"]) == (240, 30)
+    assert hass.states.get(D10_WHITE).attributes["color_temp_kelvin"] == 3000

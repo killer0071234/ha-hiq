@@ -178,6 +178,10 @@ STARTUP_TAGS = {
     "ld10_general_error": "0",
     "ld10_qw00": "40",
     "ld10_rgb_mode": "1",
+    "ld11_general_error": "0",
+    "ld11_qw00": "40",
+    "ld11_rgb_index": "0",
+    "ld11_color_mode_00": "1",
 }
 
 
@@ -207,6 +211,7 @@ async def test_startup_tags_not_polled_after_setup(
     assert "_iex_card_id" not in polled
     assert "_firmware_version" not in polled
     assert "c1000.ld10_rgb_mode" not in polled
+    assert "c1000.ld11_color_mode_00" not in polled
 
 
 async def test_startup_tags_used_during_setup(
@@ -222,6 +227,8 @@ async def test_startup_tags_used_during_setup(
     )
     assert (device.model, device.sw_version) == ("TH-2-IQ", "1.0.0.0")
     light = hass.states.get("light.lights_light_c1000_ld10_qw00_light")
+    assert light.attributes["supported_color_modes"] == ["hs"]
+    light = hass.states.get("light.lights_light_c1000_ld11_qw00_light")
     assert light.attributes["supported_color_modes"] == ["hs"]
 
 

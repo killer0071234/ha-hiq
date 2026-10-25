@@ -144,14 +144,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     # Entities are only created for working modules (and the power meter voltage
-    # scale, rgb lights and device info depend on their values), so read these
+    # scale, color lights and device info depend on their values), so read these
     # before the platforms are set up
     startup_vars = [
         var
         for var in coordinator.data.plc_info.plc_vars
         if search(
             r"(_general_error|_meter_error|power_meter_voltage\d*|_rgb_mode(_2)?"
-            r"|_iex_card_id|_firmware_version)$",
+            r"|_color_mode_\d+|_iex_card_id|_firmware_version)$",
             var,
         )
     ]
