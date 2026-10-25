@@ -368,7 +368,8 @@ user action (at least through one of the three ways).
   requirements, Docker host networking, port 8442 conflict, discovery, when to
   still use SCGI mode (remote/NAT).
 - [ ] **T17 (S) Release:** python-cybro 1.0.0 final → `manifest.json` pin →
-  ha-hiq 0.7.0. Attribution for the ported Edge Toolkit code in the
+  ha-hiq 0.7.0. *(cybro 1.0.0 on PyPI 2026-10-25, same code as 1.0.0b1,
+  pinned; the version bump follows in a release PR like 0.6.0.)* Attribution for the ported Edge Toolkit code in the
   python-cybro README/NOTICE.
 
 ## 6. Risks
