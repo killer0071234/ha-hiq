@@ -270,8 +270,10 @@ with a real controller in direct mode, add-on stopped: all entities available,
 writes work, reprogramming the controller reloads the ALC.
 *HAOS (2026-10-25), c10000 direct:* polling every 5 s works. After a new
 program was sent from CyPro, one poll took 0.368 s (ALC download, other
-polls < 0.02 s) and all polls succeeded, no restart. Writes from the UI
-were not checked separately.
+polls < 0.02 s) and all polls succeeded, no restart. Writes: an automation
+set blind `bc00_blinds_position_01` to 30 %, 80 % and open (setpoints 70,
+20, 0); the position followed each one within ~35 s, no errors.
+**Checkpoint 3 passed.**
 
 ### Phase 4: Discovery (ha-hiq, scope set by Phase 0, see docs/abus-notes.md)
 
