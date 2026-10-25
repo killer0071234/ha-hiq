@@ -5,6 +5,10 @@
     "forwardPorts": [
         8123
     ],
+    "runArgs": [
+        "-p",
+        "8442:8442/udp"
+    ],
     "portsAttributes": {
         "8123": {
             "label": "Home Assistant",
