@@ -13,7 +13,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 from custom_components.hiq.const import DOMAIN
 
 from .common import call_service, refresh, setup_with_tags
-from .const import NAD, OPTIONS, TITLE
+from .const import NAD, OPTIONS, TITLE, UNIQUE_ID
 
 CUSTOM_SELECT = {
     # the tag has the translation key of a built-in select
@@ -27,9 +27,9 @@ CUSTOM_SELECT = {
 def _entry(**options: object) -> MockConfigEntry:
     return MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=TITLE,
-        unique_id=TITLE,
+        unique_id=UNIQUE_ID,
         options={**OPTIONS, **options},
     )
 

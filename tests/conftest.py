@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 from unittest.mock import PropertyMock, patch
 
 import backoff._async
 import pytest
+from cybro.testing import FakeAbusController
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
@@ -16,8 +17,9 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 
 from custom_components.hiq.const import DOMAIN
 
-from .const import OPTIONS, TITLE
-from .fake_controller import FakeController
+from .const import NAD, OPTIONS, TITLE, UNIQUE_ID
+from .fake_abus import HIQ_PROGRAM, TRANSPORT, start_hiq_controller
+from .fake_controller import HIQ_TAGS, FakeController
 
 
 @pytest.fixture(autouse=True)
@@ -39,6 +41,16 @@ class _NoSleepAsyncio:
 def no_backoff_delay() -> Generator[None]:
     """Let cybro retry failed requests without waiting."""
     with patch.object(backoff._async, "asyncio", _NoSleepAsyncio()):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def no_discovery_scan() -> Generator[None]:
+    """Don't scan the LAN on the integration's schedule.
+
+    The discovery tests call async_discover themselves.
+    """
+    with patch("custom_components.hiq.discovery.async_discover"):
         yield
 
 
@@ -66,9 +78,9 @@ def mock_config_entry() -> MockConfigEntry:
     """Return a config entry for the fake controller."""
     return MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=TITLE,
-        unique_id=TITLE,
+        unique_id=UNIQUE_ID,
         data={},
         options=OPTIONS,
     )
@@ -89,3 +101,35 @@ async def init_integration(
     await hass.data[DOMAIN][mock_config_entry.entry_id].async_refresh()
     await hass.async_block_till_done()
     return mock_config_entry
+
+
+@pytest.fixture
+async def abus_controller(
+    socket_enabled: None,
+) -> AsyncGenerator[FakeAbusController]:
+    """Return a HIQ controller on a fake A-bus, reached via 127.0.0.1."""
+    fake = await start_hiq_controller(NAD)
+    with (
+        patch(f"{TRANSPORT}.BIND_HOST", "127.0.0.1"),
+        patch(f"{TRANSPORT}.LOCAL_PORT", 0),
+        patch(f"{TRANSPORT}.CONTROLLER_PORT", fake.port),
+        patch(f"{TRANSPORT}.BROADCAST", "127.0.0.1"),
+    ):
+        yield fake
+    fake.close()
+
+
+@pytest.fixture
+async def hiq_controller(
+    socket_enabled: None,
+) -> AsyncGenerator[FakeAbusController]:
+    """Return a controller running the HIQ program, found by broadcast."""
+    fake = await start_hiq_controller(NAD, HIQ_TAGS | HIQ_PROGRAM)
+    with (
+        patch(f"{TRANSPORT}.BIND_HOST", "127.0.0.1"),
+        patch(f"{TRANSPORT}.LOCAL_PORT", 0),
+        patch(f"{TRANSPORT}.CONTROLLER_PORT", fake.port),
+        patch(f"{TRANSPORT}.BROADCAST", "127.0.0.1"),
+    ):
+        yield fake
+    fake.close()

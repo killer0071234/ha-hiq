@@ -2,41 +2,58 @@
 
 from __future__ import annotations
 
+import ipaddress
 import uuid
+from collections.abc import Callable
 from collections.abc import Mapping
 from typing import Any
 
 import voluptuous as vol
 from cybro import Cybro
 from cybro import CybroConnectionError
+from cybro import CybroDirect
+from cybro import CybroError
 from cybro import Device
+from cybro.abus import AbusResponseError
+from cybro.abus import scan
 from homeassistant.components.select import DOMAIN as SELECT_DOMAIN
 from homeassistant.components.sensor import CONF_STATE_CLASS
 from homeassistant.components.sensor import DEVICE_CLASS_UNITS
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorStateClass
+from homeassistant.config_entries import SOURCE_RECONFIGURE
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigFlow
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.const import CONF_DEVICE_CLASS
 from homeassistant.const import CONF_HOST
+from homeassistant.const import CONF_IP_ADDRESS
 from homeassistant.const import CONF_NAME
 from homeassistant.const import CONF_OPTIONS
+from homeassistant.const import CONF_PASSWORD
 from homeassistant.const import CONF_PORT
 from homeassistant.const import CONF_UNIQUE_ID
 from homeassistant.const import CONF_UNIT_OF_MEASUREMENT
 from homeassistant.const import CONF_VALUE_TEMPLATE
+from homeassistant.core import HomeAssistant
 from homeassistant.core import async_get_hass
+from homeassistant.core import callback
+from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.schema_config_entry_flow import SchemaCommonFlowHandler
-from homeassistant.helpers.schema_config_entry_flow import SchemaConfigFlowHandler
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.schema_config_entry_flow import SchemaFlowError
 from homeassistant.helpers.schema_config_entry_flow import SchemaFlowFormStep
 from homeassistant.helpers.schema_config_entry_flow import SchemaFlowMenuStep
+from homeassistant.helpers.schema_config_entry_flow import SchemaOptionsFlowHandler
 from homeassistant.helpers.selector import NumberSelector
 from homeassistant.helpers.selector import NumberSelectorConfig
 from homeassistant.helpers.selector import NumberSelectorMode
+from homeassistant.helpers.selector import SelectOptionDict
 from homeassistant.helpers.selector import SelectSelector
 from homeassistant.helpers.selector import SelectSelectorConfig
 from homeassistant.helpers.selector import SelectSelectorMode
@@ -46,13 +63,22 @@ from homeassistant.helpers.selector import TextSelectorConfig
 from homeassistant.helpers.selector import TextSelectorType
 
 from . import COMBINED_SCHEMA
+from .const import CONF_CONNECTION
 from .const import CONF_INDEX
 from .const import CONF_TAG
+from .const import CONNECTION_DIRECT
+from .const import CONNECTION_SCGI
 from .const import DEFAULT_HOST
 from .const import DEFAULT_PORT
 from .const import DOCS_URL
 from .const import DOMAIN
 from .const import LOGGER
+from .discovery import CONF_VERSION
+from .discovery import async_discovery_data
+from .listener import async_ip_seen
+from .transport import async_get_transport
+from .transport import async_release_transport
+from .transport import async_scan_transport
 
 PLC_SETUP = {
     vol.Required(CONF_HOST, default=DEFAULT_HOST): TextSelector(
@@ -65,6 +91,27 @@ PLC_SETUP = {
         NumberSelectorConfig(min=1, step=1, mode=NumberSelectorMode.BOX)
     ),
 }
+
+DIRECT_SETUP = {
+    vol.Required(CONF_ADDRESS): NumberSelector(
+        NumberSelectorConfig(min=1, step=1, mode=NumberSelectorMode.BOX)
+    ),
+    vol.Optional(CONF_IP_ADDRESS): TextSelector(),
+    # the A-bus password is sent as 16 bit transaction id
+    vol.Optional(CONF_PASSWORD): NumberSelector(
+        NumberSelectorConfig(min=0, max=65535, step=1, mode=NumberSelectorMode.BOX)
+    ),
+}
+
+# options that describe how the controller is reached (the rest are entities)
+CONNECTION_KEYS = (
+    CONF_CONNECTION,
+    CONF_ADDRESS,
+    CONF_HOST,
+    CONF_PORT,
+    CONF_IP_ADDRESS,
+    CONF_PASSWORD,
+)
 
 
 def _tag_selector(handler: SchemaCommonFlowHandler) -> SelectSelector:
@@ -164,51 +211,109 @@ SELECT_SETUP = {
 
 DATA_SCHEMA_PLC = vol.Schema(PLC_SETUP)
 
+DATA_SCHEMA_DIRECT = vol.Schema(DIRECT_SETUP)
+
+# choice of a controller found by the scan when adding one
+CONF_CONTROLLER = "controller"
+CHOICE_MANUAL = "manual"
+
+# a found controller: NAD and IP come from the scan
+DATA_SCHEMA_DISCOVERED = vol.Schema(
+    {key: value for key, value in DIRECT_SETUP.items() if key == CONF_PASSWORD}
+)
+
 DATA_SCHEMA_EDIT_SELECT = vol.Schema(SELECT_SETUP)
 
 DATA_SCHEMA_EDIT_SENSOR = vol.Schema(SENSOR_SETUP)
 
 
-async def validate_plc_setup(
-    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
-) -> dict[str, Any]:
-    """Validate new plc setup."""
-    hass = async_get_hass()
+class ControllerError(Exception):
+    """The controller can't be reached, the error is shown in the form."""
 
-    plc_config: dict[str, Any] = COMBINED_SCHEMA(user_input)
+    def __init__(self, error: str) -> None:
+        """Initialize with the error key."""
+        super().__init__(error)
+        self.error = error
 
-    # abort if the config already exists
-    handler.parent_handler._async_abort_entries_match(
-        {
-            CONF_HOST: plc_config[CONF_HOST],
-            CONF_PORT: plc_config[CONF_PORT],
-            CONF_ADDRESS: plc_config[CONF_ADDRESS],
-        }
-    )
 
-    # convert values to int
-    plc_config[CONF_PORT] = int(plc_config[CONF_PORT])
-    plc_config[CONF_ADDRESS] = int(plc_config[CONF_ADDRESS])
+def _scgi_options(user_input: dict[str, Any]) -> dict[str, Any]:
+    """Return the options of a controller reached through the scgi server."""
+    config: dict[str, Any] = COMBINED_SCHEMA(user_input)
+    return {
+        CONF_HOST: config[CONF_HOST],
+        CONF_PORT: int(config[CONF_PORT]),
+        CONF_ADDRESS: int(config[CONF_ADDRESS]),
+        CONF_CONNECTION: CONNECTION_SCGI,
+    }
+
+
+def _direct_options(user_input: dict[str, Any]) -> dict[str, Any]:
+    """Return the options of a directly connected controller."""
+    options: dict[str, Any] = {
+        CONF_ADDRESS: int(user_input[CONF_ADDRESS]),
+        CONF_CONNECTION: CONNECTION_DIRECT,
+    }
+    if ip := user_input.get(CONF_IP_ADDRESS, "").strip():
+        try:
+            ipaddress.IPv4Address(ip)
+        except ValueError:
+            raise ControllerError("invalid_ip") from None
+        options[CONF_IP_ADDRESS] = ip
+    if (password := user_input.get(CONF_PASSWORD)) is not None:
+        options[CONF_PASSWORD] = int(password)
+    return options
+
+
+def _title(options: Mapping[str, Any]) -> str:
+    """Return the config entry title."""
+    if options[CONF_CONNECTION] == CONNECTION_DIRECT:
+        return f"c{options[CONF_ADDRESS]}"
+    return f"c{options[CONF_ADDRESS]}@{options[CONF_HOST]}:{options[CONF_PORT]}"
+
+
+async def _async_check_scgi(hass: HomeAssistant, options: dict[str, Any]) -> None:
+    """Check the scgi server reaches a running controller."""
     try:
         device = await _async_get_device(
-            hass,
-            plc_config[CONF_HOST],
-            plc_config[CONF_PORT],
-            plc_config[CONF_ADDRESS],
+            hass, options[CONF_HOST], options[CONF_PORT], options[CONF_ADDRESS]
         )
     except CybroConnectionError:
         LOGGER.error(
             "Can not connect to cybro scgi server: %s:%s",
-            plc_config[CONF_HOST],
-            plc_config[CONF_PORT],
+            options[CONF_HOST],
+            options[CONF_PORT],
         )
-        raise SchemaFlowError("cannot_connect")
+        raise ControllerError("cannot_connect") from None
 
     # scgi server 3.x reports a running controller as "ok", 2.x as "run"
     if device.plc_info.plc_status not in ("ok", "run"):
-        raise SchemaFlowError("plc_not_existing")
+        raise ControllerError("plc_not_existing")
 
-    return plc_config
+
+async def _async_check_direct(
+    hass: HomeAssistant, options: dict[str, Any], flow_id: str
+) -> None:
+    """Check the controller answers and runs a program."""
+    nad = options[CONF_ADDRESS]
+    transport = await async_get_transport(hass, flow_id)
+    try:
+        cybro = CybroDirect(
+            transport,
+            nad,
+            ip=options.get(CONF_IP_ADDRESS),
+            password=options.get(CONF_PASSWORD),
+        )
+        response = await cybro.request({f"c{nad}.sys.plc_status": ""})
+    except AbusResponseError as err:
+        LOGGER.error("Controller c%s refused the connection: %s", nad, err)
+        raise ControllerError("access_denied") from None
+    except CybroConnectionError as err:
+        LOGGER.error("Controller c%s doesn't answer: %s", nad, err)
+        raise ControllerError("no_answer") from None
+    finally:
+        async_release_transport(hass, flow_id)
+    if response["var"]["value"] != "ok":
+        raise ControllerError("no_program")
 
 
 async def _async_get_device(hass, host: str, port: int, address: int) -> Device:
@@ -412,19 +517,6 @@ async def validate_remove_entity(
     return {}
 
 
-async def get_user_placeholders(handler: SchemaCommonFlowHandler) -> dict[str, str]:
-    """Return description placeholders for the user step."""
-    return {"docs_url": DOCS_URL}
-
-
-CONFIG_FLOW = {
-    "user": SchemaFlowFormStep(
-        schema=DATA_SCHEMA_PLC,
-        validate_user_input=validate_plc_setup,
-        description_placeholders=get_user_placeholders,
-    )
-}
-
 OPTIONS_FLOW = {
     "init": SchemaFlowMenuStep(["add_entity", "select_edit_entity", "remove_entity"]),
     "add_entity": SchemaFlowMenuStep(
@@ -464,14 +556,289 @@ OPTIONS_FLOW = {
 }
 
 
-class HiqFlowHandler(SchemaConfigFlowHandler, domain=DOMAIN):
+class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
     """Handle a HIQ-Home config flow."""
 
-    VERSION = 2
+    VERSION = 3
 
-    config_flow = CONFIG_FLOW
-    options_flow = OPTIONS_FLOW
+    # the found controller (scan or DHCP)
+    _discovered: dict[str, Any] | None = None
+    # HIQ controllers on the LAN by NAD, None: not scanned yet
+    _found: dict[int, dict[str, Any]] | None = None
+    # scgi entry of a found controller, switched to the direct connection
+    _switch_entry: ConfigEntry | None = None
 
-    def async_config_entry_title(self, options: Mapping[str, Any]) -> str:
-        """Return config entry title."""
-        return f"c{options[CONF_ADDRESS]}@{options[CONF_HOST]}:{options[CONF_PORT]}"
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> SchemaOptionsFlowHandler:
+        """Return the options flow (custom entities)."""
+        return SchemaOptionsFlowHandler(config_entry, OPTIONS_FLOW)
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose how the controller is reached."""
+        return self.async_show_menu(step_id="user", menu_options=["direct", "scgi"])
+
+    async def async_step_direct(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Add a controller reached directly over A-bus (UDP)."""
+        if self._found is None:
+            # first setup: the integration doesn't scan before it is loaded
+            self._found = await self._async_scan()
+            if self._found:
+                return await self.async_step_direct_pick()
+        return await self._async_step_connection(
+            "direct", DATA_SCHEMA_DIRECT, _direct_options, user_input
+        )
+
+    async def async_step_direct_pick(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose a HIQ controller found on the LAN, or enter the NAD."""
+        if user_input is not None:
+            if user_input[CONF_CONTROLLER] == CHOICE_MANUAL:
+                return await self.async_step_direct()
+            self._discovered = self._found[int(user_input[CONF_CONTROLLER])]
+            # aborts if the controller is offered under Discovered
+            await self.async_set_unique_id(f"c{self._discovered[CONF_ADDRESS]}")
+            return await self.async_step_discovery_confirm()
+        choices = [
+            SelectOptionDict(
+                value=str(nad),
+                label=f"c{nad} ({data[CONF_IP_ADDRESS]}, HIQ {data[CONF_VERSION]})",
+            )
+            for nad, data in self._found.items()
+        ]
+        choices.append(SelectOptionDict(value=CHOICE_MANUAL, label=CHOICE_MANUAL))
+        return self.async_show_form(
+            step_id="direct_pick",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_CONTROLLER): SelectSelector(
+                        SelectSelectorConfig(
+                            options=choices,
+                            mode=SelectSelectorMode.LIST,
+                            translation_key="direct_pick",
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def _async_scan(self) -> dict[int, dict[str, Any]]:
+        """Return the HIQ controllers on the LAN that aren't set up."""
+        configured = {
+            entry.options.get(CONF_ADDRESS)
+            for entry in self._async_current_entries(include_ignore=False)
+        }
+        found: dict[int, dict[str, Any]] = {}
+        try:
+            async with async_scan_transport(self.hass) as transport:
+                for result in await scan(transport):
+                    if result.nad not in configured and (
+                        data := await async_discovery_data(
+                            self.hass, transport, result, {}
+                        )
+                    ):
+                        found[result.nad] = data
+        except (CybroError, OSError) as err:
+            LOGGER.debug("Controller scan failed: %s", err)
+        return found
+
+    async def async_step_scgi(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Add a controller reached through the scgi server."""
+        return await self._async_step_connection(
+            "scgi", DATA_SCHEMA_PLC, _scgi_options, user_input
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose the new connection of the controller."""
+        return self.async_show_menu(
+            step_id="reconfigure",
+            menu_options=["reconfigure_direct", "reconfigure_scgi"],
+        )
+
+    async def async_step_reconfigure_direct(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Connect the controller directly."""
+        return await self._async_step_connection(
+            "reconfigure_direct", DATA_SCHEMA_DIRECT, _direct_options, user_input
+        )
+
+    async def async_step_reconfigure_scgi(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Connect the controller through the scgi server."""
+        return await self._async_step_connection(
+            "reconfigure_scgi", DATA_SCHEMA_PLC, _scgi_options, user_input
+        )
+
+    async def async_step_dhcp(
+        self, discovery_info: DhcpServiceInfo
+    ) -> ConfigFlowResult:
+        """Find the NAD of a Cybrotech device that got an IP address."""
+        data = None
+        try:
+            async with async_scan_transport(self.hass) as transport:
+                result = next(
+                    (r for r in await scan(transport) if r.ip == discovery_info.ip),
+                    None,
+                )
+                if result is not None:
+                    if async_ip_seen(self.hass, result.nad, result.ip):
+                        return self.async_abort(reason="already_configured")
+                    data = await async_discovery_data(self.hass, transport, result, {})
+        except (CybroError, OSError) as err:
+            LOGGER.debug("Scan for %s failed: %s", discovery_info.ip, err)
+        if data is None:
+            # no answer from that IP, or no running HIQ program
+            return self.async_abort(reason="not_hiq")
+        return await self.async_step_integration_discovery(data)
+
+    async def async_step_integration_discovery(
+        self, discovery_info: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Offer a controller found by the A-bus scan."""
+        nad = discovery_info[CONF_ADDRESS]
+        self._discovered = discovery_info
+        self.context["title_placeholders"] = {"name": f"c{nad}"}
+        entry = next(
+            (
+                entry
+                for entry in self._async_current_entries(include_ignore=False)
+                if entry.options.get(CONF_ADDRESS) == nad
+            ),
+            None,
+        )
+        if entry is not None:
+            # own unique id: ignoring the offer must not touch the entry's id
+            await self.async_set_unique_id(f"c{nad}_switch")
+            self._abort_if_unique_id_configured()
+            self._switch_entry = entry
+            return await self.async_step_discovery_switch()
+        await self.async_set_unique_id(f"c{nad}")
+        self._abort_if_unique_id_configured()
+        return await self.async_step_discovery_confirm()
+
+    async def async_step_discovery_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Add the found controller."""
+        return await self._async_step_connection(
+            "discovery_confirm",
+            DATA_SCHEMA_DISCOVERED,
+            self._discovered_options,
+            user_input,
+        )
+
+    async def async_step_discovery_switch(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Connect the found controller of an scgi entry directly."""
+        return await self._async_step_connection(
+            "discovery_switch",
+            DATA_SCHEMA_DISCOVERED,
+            self._discovered_options,
+            user_input,
+        )
+
+    def _discovered_options(self, user_input: dict[str, Any]) -> dict[str, Any]:
+        """Return the options of the found controller (found by broadcast)."""
+        return _direct_options(
+            {**user_input, CONF_ADDRESS: self._discovered[CONF_ADDRESS]}
+        )
+
+    def _description_placeholders(self, step_id: str) -> dict[str, str] | None:
+        """Return the placeholders of a form."""
+        if step_id.endswith("scgi"):
+            return {"docs_url": DOCS_URL}
+        if self._discovered is None:
+            return None
+        placeholders = {
+            "nad": str(self._discovered[CONF_ADDRESS]),
+            "ip": self._discovered[CONF_IP_ADDRESS],
+        }
+        if self._switch_entry is not None:
+            return placeholders | {"title": self._switch_entry.title}
+        return placeholders | {"version": self._discovered[CONF_VERSION]}
+
+    def _connection_entry(self) -> ConfigEntry | None:
+        """Return the entry whose connection is changed, None for a new one."""
+        if self.source == SOURCE_RECONFIGURE:
+            return self._get_reconfigure_entry()
+        return self._switch_entry
+
+    async def _async_step_connection(
+        self,
+        step_id: str,
+        schema: vol.Schema,
+        get_options: Callable[[dict[str, Any]], dict[str, Any]],
+        user_input: dict[str, Any] | None,
+    ) -> ConfigFlowResult:
+        """Show a connection form, check it and create or update the entry."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                options = get_options(user_input)
+                await self._async_check_controller(options)
+            except ControllerError as err:
+                field = CONF_IP_ADDRESS if err.error == "invalid_ip" else "base"
+                errors[field] = err.error
+            else:
+                return self._async_finish(options)
+        suggested = user_input
+        if suggested is None and self.source == SOURCE_RECONFIGURE:
+            suggested = self._get_reconfigure_entry().options
+        return self.async_show_form(
+            step_id=step_id,
+            data_schema=self.add_suggested_values_to_schema(schema, suggested),
+            errors=errors,
+            description_placeholders=self._description_placeholders(step_id),
+        )
+
+    async def _async_check_controller(self, options: dict[str, Any]) -> None:
+        """Abort for a controller that is already set up, check it answers."""
+        nad = options[CONF_ADDRESS]
+        if (entry := self._connection_entry()) is not None:
+            if nad != entry.options[CONF_ADDRESS]:
+                raise AbortFlow("wrong_controller")
+        else:
+            # entries of the same controller from before version 3 keep an
+            # old unique id, so also compare the NAD
+            await self.async_set_unique_id(f"c{nad}")
+            self._abort_if_unique_id_configured()
+            self._async_abort_entries_match({CONF_ADDRESS: nad})
+        if options[CONF_CONNECTION] == CONNECTION_DIRECT:
+            await _async_check_direct(self.hass, options, self.flow_id)
+        else:
+            await _async_check_scgi(self.hass, options)
+
+    @callback
+    def _async_finish(self, options: dict[str, Any]) -> ConfigFlowResult:
+        """Create the entry, or update the connection of an existing one."""
+        if (entry := self._connection_entry()) is None:
+            return self.async_create_entry(
+                title=_title(options), data={}, options=options
+            )
+        entities = {
+            key: value
+            for key, value in entry.options.items()
+            if key not in CONNECTION_KEYS
+        }
+        return self.async_update_reload_and_abort(
+            entry,
+            title=_title(options),
+            options=options | entities,
+            reason=(
+                "reconfigure_successful"
+                if self.source == SOURCE_RECONFIGURE
+                else "switched"
+            ),
+        )

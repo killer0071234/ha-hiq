@@ -3,6 +3,26 @@
     "flow_title": "{name}",
     "step": {
       "user": {
+        "description": "Wie erreicht Home Assistant die HIQ Steuerung?",
+        "menu_options": {
+          "direct": "Direkt über das Netzwerk (empfohlen)",
+          "scgi": "Über den CybroScgiServer"
+        }
+      },
+      "direct": {
+        "description": "Verbinde eine HIQ Steuerung direkt über das Netzwerk (UDP-Port 8442), ohne SCGI Server.",
+        "data": {
+          "address": "Adresse der Steuerung (NAD)",
+          "ip_address": "IP-Adresse",
+          "password": "A-Bus Passwort"
+        },
+        "data_description": {
+          "address": "Netzwerkadresse (NAD) der HIQ Steuerung, z. B. 1000.",
+          "ip_address": "Leer lassen, um die Steuerung im lokalen Netzwerk zu suchen. Die IP-Adresse eintragen, z. B. 192.168.1.50, wenn sie in einem anderen Netzwerksegment ist.",
+          "password": "Nur nötig, wenn in der Steuerung ein A-Bus Passwort gesetzt ist."
+        }
+      },
+      "scgi": {
         "description": "Verbinde eine HIQ Steuerung über den CybroScgiServer.\nDer SCGI Server muss laufen, bevor du fortfährst. Siehe [Dokumentation]({docs_url}).",
         "data": {
           "host": "SCGI Server Host",
@@ -14,6 +34,68 @@
           "port": "Port des SCGI Servers. Für das CybroScgiServer Add-on 4000 verwenden.",
           "address": "Netzwerkadresse (NAD) der HIQ Steuerung, z. B. 1000."
         }
+      },
+      "reconfigure": {
+        "description": "Wie soll Home Assistant die Steuerung künftig erreichen? Entitäten und eigene Entitäten bleiben erhalten.",
+        "menu_options": {
+          "reconfigure_direct": "Direkt über das Netzwerk",
+          "reconfigure_scgi": "Über den CybroScgiServer"
+        }
+      },
+      "reconfigure_direct": {
+        "description": "Verbinde die Steuerung direkt über das Netzwerk (UDP-Port 8442). Die Adresse (NAD) muss gleich bleiben.",
+        "data": {
+          "address": "Adresse der Steuerung (NAD)",
+          "ip_address": "IP-Adresse",
+          "password": "A-Bus Passwort"
+        },
+        "data_description": {
+          "address": "Netzwerkadresse (NAD) der HIQ Steuerung, z. B. 1000.",
+          "ip_address": "Leer lassen, um die Steuerung im lokalen Netzwerk zu suchen. Die IP-Adresse eintragen, z. B. 192.168.1.50, wenn sie in einem anderen Netzwerksegment ist.",
+          "password": "Nur nötig, wenn in der Steuerung ein A-Bus Passwort gesetzt ist."
+        }
+      },
+      "reconfigure_scgi": {
+        "description": "Verbinde die Steuerung über den CybroScgiServer. Die Adresse (NAD) muss gleich bleiben. Siehe [Dokumentation]({docs_url}).",
+        "data": {
+          "host": "SCGI Server Host",
+          "port": "SCGI Server Port",
+          "address": "Adresse der Steuerung (NAD)"
+        },
+        "data_description": {
+          "host": "Hostname oder IP-Adresse des SCGI Servers. Für das CybroScgiServer Add-on 85493909-cybroscgiserver verwenden.",
+          "port": "Port des SCGI Servers. Für das CybroScgiServer Add-on 4000 verwenden.",
+          "address": "Netzwerkadresse (NAD) der HIQ Steuerung, z. B. 1000."
+        }
+      },
+      "discovery_confirm": {
+        "title": "HIQ Steuerung c{nad}",
+        "description": "Unter {ip} wurde eine HIQ Steuerung (Programmversion {version}) gefunden. Füge sie mit direkter Verbindung (UDP-Port 8442) hinzu, ohne SCGI Server.",
+        "data": {
+          "password": "A-Bus Passwort"
+        },
+        "data_description": {
+          "password": "Nur nötig, wenn in der Steuerung ein A-Bus Passwort gesetzt ist."
+        }
+      },
+      "discovery_switch": {
+        "title": "c{nad} direkt verbinden",
+        "description": "Die Steuerung von {title} wurde im lokalen Netzwerk unter {ip} gefunden. Soll sie direkt (UDP-Port 8442) statt über den SCGI Server verbunden werden? Ihre Entitäten und eigenen Sensoren bleiben erhalten.",
+        "data": {
+          "password": "A-Bus Passwort"
+        },
+        "data_description": {
+          "password": "Nur nötig, wenn in der Steuerung ein A-Bus Passwort gesetzt ist."
+        }
+      },
+      "direct_pick": {
+        "description": "Diese HIQ Steuerungen wurden im lokalen Netzwerk gefunden. Wähle die Steuerung zum Hinzufügen oder gib ihre Adresse (NAD) selbst ein.",
+        "data": {
+          "controller": "Steuerung"
+        },
+        "data_description": {
+          "controller": "Bereits eingerichtete Steuerungen werden nicht angezeigt."
+        }
       }
     },
     "error": {
@@ -22,10 +104,19 @@
       "select_options_empty": "Füge mindestens eine Option hinzu.",
       "select_option_invalid": "Gib jede Option als Bezeichnung=Wert mit einer ganzen Zahl als Wert ein, z. B. eco=1.",
       "select_option_duplicate_label": "Jede Bezeichnung darf nur einmal verwendet werden.",
-      "select_option_duplicate_value": "Jeder Wert darf nur einmal verwendet werden."
+      "select_option_duplicate_value": "Jeder Wert darf nur einmal verwendet werden.",
+      "no_answer": "Die Steuerung antwortet nicht. Prüfe NAD und IP-Adresse, ob die Steuerung erreichbar ist und ob UDP-Port 8442 zwischen Home Assistant und Steuerung blockiert ist.",
+      "access_denied": "Die Steuerung hat die Verbindung abgelehnt. Prüfe das A-Bus Passwort.",
+      "no_program": "Die Steuerung antwortet, aber es läuft kein Programm oder die Allokationstabelle fehlt. Starte das Programm oder sende die Allokationstabelle in CyPro an die Steuerung.",
+      "invalid_ip": "Gib eine IPv4-Adresse ein, z. B. 192.168.1.50, oder lass das Feld leer."
     },
     "abort": {
-      "already_configured": "Diese HIQ Steuerung ist bereits eingerichtet."
+      "already_configured": "Diese HIQ Steuerung ist bereits eingerichtet.",
+      "reconfigure_successful": "Die Verbindung wurde geändert.",
+      "wrong_controller": "Das ist eine andere Steuerung (andere NAD). Um sie hinzuzufügen, verwende Integration hinzufügen.",
+      "switched": "Die Steuerung ist jetzt direkt verbunden.",
+      "already_in_progress": "Diese HIQ Steuerung wird bereits eingerichtet. Schließe zuerst den Vorgang unter Entdeckt ab oder ignoriere ihn.",
+      "not_hiq": "Unter dieser Adresse wurde keine HIQ Steuerung mit laufendem Programm gefunden."
     }
   },
   "options": {
@@ -494,6 +585,38 @@
           "name": "Wert",
           "description": "Wert, der geschrieben wird, z. B. 10. Negative Werte und Kommazahlen sind erlaubt."
         }
+      }
+    }
+  },
+  "issues": {
+    "port_in_use": {
+      "title": "UDP-Port {port} ist belegt",
+      "description": "Ein anderes Programm auf dem Home Assistant Host verwendet den UDP-Port {port}, zum Beispiel die App CybroScgiServer oder Cybro Edge Toolkit. Direkt verbundene Steuerungen funktionieren trotzdem, können aber nicht von sich aus Daten an Home Assistant senden. Beende das andere Programm oder stelle seine Steuerungen auf die direkte Verbindung um und lade dann die HIQ-Home Einträge neu."
+    },
+    "port_in_use_app": {
+      "title": "UDP-Port {port} wird von {app} verwendet",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "{app} beenden",
+            "description": "Direkt verbundene Steuerungen funktionieren trotzdem, können aber nicht von sich aus Daten an Home Assistant senden, solange {app} den UDP-Port 8442 belegt.\n\nSende ab, um {app} zu beenden und den Start beim Booten auszuschalten. Die direkt verbundenen Steuerungen werden danach neu verbunden."
+          },
+          "confirm_scgi": {
+            "title": "{app} beenden",
+            "description": "Direkt verbundene Steuerungen funktionieren trotzdem, können aber nicht von sich aus Daten an Home Assistant senden, solange {app} den UDP-Port 8442 belegt.\n\nDiese Einträge verwenden noch einen SCGI Server und funktionieren nicht mehr, wenn {app} beendet ist: {entries}. Stelle sie zuerst auf die direkte Verbindung um (Neu konfigurieren im Menü des Eintrags) oder sende ab, um {app} trotzdem zu beenden und den Start beim Booten auszuschalten."
+          }
+        },
+        "abort": {
+          "stop_failed": "Eine App konnte nicht beendet werden. Beende sie unter Einstellungen > Apps.",
+          "still_in_use": "Die Apps sind beendet, aber ein anderes Programm verwendet den Port noch."
+        }
+      }
+    }
+  },
+  "selector": {
+    "direct_pick": {
+      "options": {
+        "manual": "Adresse (NAD) selbst eingeben"
       }
     }
   }

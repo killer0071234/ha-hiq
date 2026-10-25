@@ -126,10 +126,22 @@ def test_flow_steps_described(language: str) -> None:
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
+def test_flow_steps_translated(language: str) -> None:
+    """Test every step of the config flow that shows a form or menu has a text."""
+    source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
+    steps = set(re.findall(r"async def async_step_(\w+)\(", source))
+    # only forward to the confirm steps
+    steps -= {"dhcp", "integration_discovery"}
+
+    assert {"user", "discovery_confirm"} <= steps
+    assert sorted(steps - set(_translation(language)["config"]["step"])) == []
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
 def test_flow_errors_translated(language: str) -> None:
     """Test every error of the config flow has a text."""
     source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
-    errors = set(re.findall(r'SchemaFlowError\("(\w+)"\)', source))
+    errors = set(re.findall(r'(?:SchemaFlowError|ControllerError)\("(\w+)"\)', source))
 
     assert errors
     assert sorted(errors - set(_translation(language)["config"]["error"])) == []
@@ -137,8 +149,38 @@ def test_flow_errors_translated(language: str) -> None:
 
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_flow_abort_translated(language: str) -> None:
-    """Test the abort reason of the config flow has a text."""
-    assert "already_configured" in _translation(language)["config"].get("abort", {})
+    """Test every abort reason of the config flow has a text."""
+    source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
+    reasons = set(re.findall(r'AbortFlow\("(\w+)"\)', source))
+    reasons |= {
+        "already_configured",
+        "already_in_progress",
+        "not_hiq",
+        "reconfigure_successful",
+        "switched",
+    }
+
+    assert "wrong_controller" in reasons
+    assert (
+        sorted(reasons - set(_translation(language)["config"].get("abort", {}))) == []
+    )
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_flow_menus_translated(language: str) -> None:
+    """Test every option of the config flow menus has a label."""
+    source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
+    menus = dict(
+        re.findall(
+            r'step_id="(\w+)",\s*menu_options=\[([^\]]*)\]', source, re.MULTILINE
+        )
+    )
+    steps = _translation(language)["config"]["step"]
+
+    assert set(menus) == {"user", "reconfigure"}
+    assert {
+        step: sorted(re.findall(r'"(\w+)"', options)) for step, options in menus.items()
+    } == {step: sorted(steps[step]["menu_options"]) for step in menus}
 
 
 def test_strings_match_english() -> None:
@@ -277,3 +319,10 @@ def test_homeassistant_versions_match() -> None:
 def test_iot_class_polling() -> None:
     """Test the manifest declares polling, as the coordinator polls the server."""
     assert _json(INTEGRATION / "manifest.json")["iot_class"] == "local_polling"
+
+
+def test_manifest_keys_sorted() -> None:
+    """Test the manifest keys are ordered like hassfest wants them."""
+    keys = list(_json(INTEGRATION / "manifest.json"))
+
+    assert keys == ["domain", "name", *sorted(keys[2:])]

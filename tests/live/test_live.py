@@ -73,6 +73,9 @@ async def test_config_flow(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "scgi"}
+    )
     result = await hass.config_entries.flow.async_configure(result["flow_id"], OPTIONS)
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -88,11 +91,11 @@ async def test_setup(
     caplog.set_level(logging.WARNING)
     entry = MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=f"c{NAD}@{HOST}:{PORT}",
-        unique_id=f"c{NAD}@{HOST}:{PORT}",
+        unique_id=f"c{NAD}",
         data={},
-        options=OPTIONS,
+        options={**OPTIONS, "connection": "scgi"},
     )
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
@@ -136,11 +139,11 @@ async def test_thermostat_device_info(
     """Test thermostat devices show the card id and firmware of their module."""
     entry = MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        version=3,
         title=f"c{NAD}@{HOST}:{PORT}",
-        unique_id=f"c{NAD}@{HOST}:{PORT}",
+        unique_id=f"c{NAD}",
         data={},
-        options=OPTIONS,
+        options={**OPTIONS, "connection": "scgi"},
     )
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)

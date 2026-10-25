@@ -1,15 +1,23 @@
 {
   "domain": "hiq",
   "name": "HIQ-Home",
+  "after_dependencies": [
+    "hassio"
+  ],
   "codeowners": [
     "@killer0071234"
   ],
   "config_flow": true,
+  "dhcp": [
+    {
+      "macaddress": "00CB00*"
+    }
+  ],
   "documentation": "https://github.com/killer0071234/ha-hiq",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/killer0071234/ha-hiq/issues",
   "requirements": [
-    "cybro==0.4.1"
+    "cybro==1.0.0"
   ],
   "version": "0.6.0"
 }

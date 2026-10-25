@@ -23,9 +23,13 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.trigger_template_entity import (
     TEMPLATE_SENSOR_BASE_SCHEMA,
 )
+from homeassistant.helpers.typing import ConfigType
 
 from .const import AREA_SYSTEM
+from .const import CONF_CONNECTION
 from .const import CONF_TAG
+from .const import CONNECTION_DIRECT
+from .const import CONNECTION_SCGI
 from .const import DEFAULT_HOST
 from .const import DEFAULT_PORT
 from .const import DEVICE_DESCRIPTION
@@ -43,6 +47,9 @@ from .const import SERVICE_PRECEDE
 from .const import SERVICE_PRESENCE_SIGNAL
 from .const import SERVICE_WRITE_TAG
 from .coordinator import HiqDataUpdateCoordinator
+from .discovery import async_setup_discovery
+from .transport import async_get_transport
+from .transport import async_release_transport
 from .scene import scene_status_tags
 
 PLATFORMS = [
@@ -107,6 +114,12 @@ SERVICE_WRITE_TAG_SCHEMA = SERVICE_SCHEMA.extend(
 )
 
 
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Find more controllers on the LAN, once an entry loads the integration."""
+    async_setup_discovery(hass)
+    return True
+
+
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate an old config entry."""
     version = entry.version
@@ -134,6 +147,21 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             version=version,
         )
 
+    # 2 -> 3: add the connection type, the controller (NAD) is the unique id
+    if version == 2:
+        version = 3
+
+        unique_id = f"c{entry.options[CONF_ADDRESS]}"
+        if hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, unique_id):
+            # another entry reaches the same controller, keep the old id
+            unique_id = entry.unique_id
+        hass.config_entries.async_update_entry(
+            entry,
+            unique_id=unique_id,
+            options={**entry.options, CONF_CONNECTION: CONNECTION_SCGI},
+            version=version,
+        )
+
     LOGGER.info("Migration to version %s successful", version)
 
     return True
@@ -141,7 +169,11 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HIQ from a config entry."""
-    coordinator = HiqDataUpdateCoordinator(hass, entry=entry)
+    transport = None
+    if entry.options.get(CONF_CONNECTION) == CONNECTION_DIRECT:
+        transport = await async_get_transport(hass, entry.entry_id)
+        entry.async_on_unload(lambda: async_release_transport(hass, entry.entry_id))
+    coordinator = HiqDataUpdateCoordinator(hass, entry=entry, transport=transport)
 
     await coordinator.async_config_entry_first_refresh()
 
@@ -295,7 +327,7 @@ def _get_tag_list(hass: HomeAssistant, data: dict, tag_name: str) -> list:
     # read all possible adresses from HA
     addresses = [
         f"c{entity_id.options[CONF_ADDRESS]}"
-        for entity_id in hass.config_entries.async_entries(DOMAIN)
+        for entity_id in hass.config_entries.async_entries(DOMAIN, include_ignore=False)
     ]
     target_entities = []
 

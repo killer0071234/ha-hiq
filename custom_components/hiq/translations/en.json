@@ -3,6 +3,26 @@
     "flow_title": "{name}",
     "step": {
       "user": {
+        "description": "How does Home Assistant reach the HIQ controller?",
+        "menu_options": {
+          "direct": "Directly over the network (recommended)",
+          "scgi": "Through the CybroScgiServer"
+        }
+      },
+      "direct": {
+        "description": "Connect a HIQ controller directly over the network (UDP port 8442), no scgi server needed.",
+        "data": {
+          "address": "Controller address (NAD)",
+          "ip_address": "IP address",
+          "password": "A-bus password"
+        },
+        "data_description": {
+          "address": "Network address (NAD) of the HIQ controller, e.g. 1000.",
+          "ip_address": "Leave empty to find the controller in the local network. Enter its IP address, e.g. 192.168.1.50, if it is in another network segment.",
+          "password": "Only needed if an A-bus password is set in the controller."
+        }
+      },
+      "scgi": {
         "description": "Connect a HIQ controller through the CybroScgiServer.\nThe scgi server must be running before you continue. See the [documentation]({docs_url}).",
         "data": {
           "host": "scgi server host",
@@ -14,6 +34,68 @@
           "port": "Port of the scgi server. For the CybroScgiServer add-on use 4000.",
           "address": "Network address (NAD) of the HIQ controller, e.g. 1000."
         }
+      },
+      "reconfigure": {
+        "description": "How should Home Assistant reach the controller from now on? Entities and custom entities are kept.",
+        "menu_options": {
+          "reconfigure_direct": "Directly over the network",
+          "reconfigure_scgi": "Through the CybroScgiServer"
+        }
+      },
+      "reconfigure_direct": {
+        "description": "Connect the controller directly over the network (UDP port 8442). The address (NAD) must stay the same.",
+        "data": {
+          "address": "Controller address (NAD)",
+          "ip_address": "IP address",
+          "password": "A-bus password"
+        },
+        "data_description": {
+          "address": "Network address (NAD) of the HIQ controller, e.g. 1000.",
+          "ip_address": "Leave empty to find the controller in the local network. Enter its IP address, e.g. 192.168.1.50, if it is in another network segment.",
+          "password": "Only needed if an A-bus password is set in the controller."
+        }
+      },
+      "reconfigure_scgi": {
+        "description": "Connect the controller through the CybroScgiServer. The address (NAD) must stay the same. See the [documentation]({docs_url}).",
+        "data": {
+          "host": "scgi server host",
+          "port": "scgi server port",
+          "address": "Controller address (NAD)"
+        },
+        "data_description": {
+          "host": "Host name or IP address of the scgi server. For the CybroScgiServer add-on use 85493909-cybroscgiserver.",
+          "port": "Port of the scgi server. For the CybroScgiServer add-on use 4000.",
+          "address": "Network address (NAD) of the HIQ controller, e.g. 1000."
+        }
+      },
+      "discovery_confirm": {
+        "title": "HIQ controller c{nad}",
+        "description": "A HIQ controller (program version {version}) was found at {ip}. Add it with a direct connection (UDP port 8442), no scgi server needed.",
+        "data": {
+          "password": "A-bus password"
+        },
+        "data_description": {
+          "password": "Only needed if an A-bus password is set in the controller."
+        }
+      },
+      "discovery_switch": {
+        "title": "Connect c{nad} directly",
+        "description": "The controller of {title} was found in the local network at {ip}. Connect it directly (UDP port 8442) instead of through the scgi server? Its entities and custom sensors stay.",
+        "data": {
+          "password": "A-bus password"
+        },
+        "data_description": {
+          "password": "Only needed if an A-bus password is set in the controller."
+        }
+      },
+      "direct_pick": {
+        "description": "These HIQ controllers were found in the local network. Choose the one to add, or enter its address (NAD) yourself.",
+        "data": {
+          "controller": "Controller"
+        },
+        "data_description": {
+          "controller": "Controllers that are already set up aren't listed."
+        }
       }
     },
     "error": {
@@ -22,10 +104,19 @@
       "select_options_empty": "Add at least one option.",
       "select_option_invalid": "Enter each option as label=value with a whole number as value, e.g. eco=1.",
       "select_option_duplicate_label": "Each option label may only be used once.",
-      "select_option_duplicate_value": "Each option value may only be used once."
+      "select_option_duplicate_value": "Each option value may only be used once.",
+      "no_answer": "The controller doesn't answer. Check the NAD and the IP address, that the controller is online and that UDP port 8442 isn't blocked between Home Assistant and the controller.",
+      "access_denied": "The controller refused the connection. Check the A-bus password.",
+      "no_program": "The controller answers, but runs no program or has no allocation table. Start the program, or send the allocation table to the controller in CyPro.",
+      "invalid_ip": "Enter an IPv4 address, e.g. 192.168.1.50, or leave the field empty."
     },
     "abort": {
-      "already_configured": "This HIQ controller is already configured."
+      "already_configured": "This HIQ controller is already configured.",
+      "reconfigure_successful": "The connection was changed.",
+      "wrong_controller": "This is another controller (other NAD). To add it, use Add integration instead.",
+      "switched": "The controller is now connected directly.",
+      "already_in_progress": "This HIQ controller is already being set up. Finish or ignore the flow shown under Discovered first.",
+      "not_hiq": "No HIQ controller with a running program was found at this address."
     }
   },
   "options": {
@@ -204,6 +295,11 @@
     "sensor_unit_of_measurement": {
       "options": {
         "none": "No unit of measurement"
+      }
+    },
+    "direct_pick": {
+      "options": {
+        "manual": "Enter the address (NAD) manually"
       }
     }
   },
@@ -561,6 +657,31 @@
         "value": {
           "name": "Value",
           "description": "Value to write, e.g. 10. Negative and decimal values are allowed."
+        }
+      }
+    }
+  },
+  "issues": {
+    "port_in_use": {
+      "title": "UDP port {port} is in use",
+      "description": "Another program on the Home Assistant host uses UDP port {port}, for example the CybroScgiServer or Cybro Edge Toolkit app. Controllers connected directly still work, but they can't send data to Home Assistant on their own. Stop the other program, or switch its controllers to the direct connection, then reload the HIQ-Home entries."
+    },
+    "port_in_use_app": {
+      "title": "UDP port {port} is used by {app}",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Stop {app}",
+            "description": "Controllers connected directly still work, but they can't send data to Home Assistant on their own while UDP port 8442 is held by {app}.\n\nSubmit to stop {app} and turn off start on boot. The directly connected controllers are then reconnected."
+          },
+          "confirm_scgi": {
+            "title": "Stop {app}",
+            "description": "Controllers connected directly still work, but they can't send data to Home Assistant on their own while UDP port 8442 is held by {app}.\n\nThese entries still use an scgi server and stop working when {app} is stopped: {entries}. Switch them to the direct connection first (Reconfigure in the entry menu), or submit to stop {app} anyway and turn off start on boot."
+          }
+        },
+        "abort": {
+          "stop_failed": "An app could not be stopped. Stop it in Settings > Apps.",
+          "still_in_use": "The apps are stopped, but another program still uses the port."
         }
       }
     }
