@@ -7,6 +7,9 @@ In the tables, `XXXX` is the NAD of the controller, `YY` the number of the
 expansion unit or thermostat, `ZZ` the output of a unit, and `YYYY` the IEX
 module prefix (e.g. `lc00`, `bc02`).
 
+**Name** is the name of the entity as shown in Home Assistant, after the name of
+its device (e.g. device `c1000.th00 thermostat`, entity `Setpoint eco`).
+
 When the integration starts, it scans the controller for supported units and
 creates their entities. A unit with `general_error` set is skipped (as the HIQ
 software does).
@@ -98,33 +101,31 @@ The weather station has no condition (sunny, rainy, ...).
 
 ## binary_sensor
 
-### Controller
+### Device `cXXXX diagnostic`
 
-| Entity name            | Description                                                                        | Enabled |
-| ---------------------- | ---------------------------------------------------------------------------------- | ------- |
-| `cXXXX.general_error`  | Logical or of IEX general errors, indicates that at least one module has an error. | no      |
-| `cXXXX.retentive_fail` | Indicates that retentive memory failed.                                            | no      |
-| `cXXXX.scan_overrun`   | Too long scan execution caused scan overrun error.                                 | no      |
+| Name                                 | Controller var             | Enabled by default |
+| ------------------------------------ | -------------------------- | ------------------ |
+| Presence                             | `cXXXX.presence_indicator`  | yes                |
+| Nighttime                            | `cXXXX.low_light_indicator` | yes                |
+| General error                        | `cXXXX.general_error`       | no                 |
+| Controller program cycle overrun     | `cXXXX.scan_overrun`        | no                 |
+| Controller retentive memory failure  | `cXXXX.retentive_fail`      | no                 |
+| `YYYY` general error (per IEX unit)  | `cXXXX.YYYY_general_error`  | no                 |
+| EnOcean general error                | `cXXXX.eno_general_error`   | no                 |
 
-### Indicators of the controller
+`General error` is the logical or of the IEX general errors: at least one unit
+has an error. The error of a unit means timeout or program error, the unit is
+not operational.
 
-| Entity name                  | Description                              | Controller var              | Enabled |
-| ---------------------------- | ---------------------------------------- | --------------------------- | ------- |
-| `cXXXX diagnostic presence`  | Indicates that somebody is at home.      | `cXXXX.presence_indicator`  | yes     |
-| `cXXXX diagnostic nighttime` | Indicates that the sun is below horizon. | `cXXXX.low_light_indicator` | yes     |
+### Device `cXXXX.thYY thermostat`
 
-### Every IEX expansion unit
+| Name   | Controller var       | Enabled by default |
+| ------ | -------------------- | ------------------ |
+| Window | `cXXXX.thYY_ix00`    | no                 |
+| Output | `cXXXX.thYY_output`  | no                 |
 
-| Entity name                | Description                                                                  | Enabled |
-| -------------------------- | ---------------------------------------------------------------------------- | ------- |
-| `cXXXX.YYYY_general_error` | Combined system error (timeout or program error), module is not operational. | no      |
-
-### Every TH (thermostat) expansion unit
-
-| Entity name                    | Description                            | Controller var      | Enabled |
-| ------------------------------ | -------------------------------------- | ------------------- | ------- |
-| `cXXXX.thYY thermostat window` | Indicate state of window switch input. | `cXXXX.thYY_ix00`   | no      |
-| `cXXXX.thYY thermostat output` | Radiator output.                       | `cXXXX.thYY_output` | no      |
+`Window` is the window switch input, on (open) when the input is `0`.
+`Output` is the radiator output.
 
 ---
 
@@ -133,55 +134,79 @@ The weather station has no condition (sunny, rainy, ...).
 Custom sensors from any controller variable can be added too, see
 [Custom entities](../README.md#custom-entities).
 
-### Controller
+### Device `cXXXX diagnostic`
 
-| Entity name                | Description                                                         | Enabled |
-| -------------------------- | ------------------------------------------------------------------- | ------- |
-| `cXXXX.scan_time`          | Last scan execution time [ms].                                      | no      |
-| `cXXXX.scan_time_max`      | Maximal scan execution time encountered since program started [ms]. | no      |
-| `cXXXX.scan_frequency`     | Actual number of scans per second.                                  | no      |
-| `cXXXX.cybro_power_supply` | Measured power supply voltage [V]. Measuring range is 0..40V.       | no      |
-| `cXXXX.cybro_uptime`       | Number of operating hours since power-on [h].                       | no      |
-| `cXXXX.operating_hours`    | Total number of operating hours [h].                                | no      |
-| `cXXXX.sys.ip_port`        | IP address and UDP port of the controller.                          | no      |
+| Name                       | Controller var                | Unit | Enabled by default |
+| -------------------------- | ----------------------------- | ---- | ------------------ |
+| Controller address         | `cXXXX.sys.ip_port`           |      | no                 |
+| Scan time                  | `cXXXX.scan_time`             | ms   | no                 |
+| Scan time maximum          | `cXXXX.scan_time_max`         | ms   | no                 |
+| Controller program cycles  | `cXXXX.scan_frequency`        | Hz   | no                 |
+| Controller uptime          | `cXXXX.cybro_uptime`          | h    | no                 |
+| Controller operation hours | `cXXXX.operating_hours`       | h    | no                 |
+| Controller supply voltage  | `cXXXX.cybro_power_supply`    | V    | no                 |
+| IEX voltage                | `cXXXX.iex_power_supply`      | V    | no                 |
+| `YYYY` IEX voltage         | `cXXXX.YYYY_iex_power_supply` | V    | no                 |
 
-### Every IEX expansion unit
+`Controller address` is the IP address and UDP port of the controller.
+`Scan time maximum` is the longest scan since the program started. The supply
+voltages are measured in the range 0..40 V.
 
-| Entity name                   | Description                                                   | Enabled |
-| ----------------------------- | ------------------------------------------------------------- | ------- |
-| `cXXXX.YYYY_iex_power_supply` | Measured power supply voltage [V]. Measuring range is 0..40V. | no      |
+### Device `cXXXX temperatures`
 
-### Power meter
+For the temperature / humidity units (`opYY`, `tsYY`, `fcYY`). Units with
+`general_error` set are skipped.
 
-| Entity name                 | Description                     | Enabled |
-| --------------------------- | ------------------------------- | ------- |
-| `cXXXX.power_meter_power`   | Measured power consumption [W]. | yes     |
-| `cXXXX.power_meter_energy`  | Energy consumption total [kWh]. | yes     |
-| `cXXXX.power_meter_voltage` | Measured AC voltage [V].        | no      |
+| Name                          | Controller var             | Unit | Enabled by default |
+| ----------------------------- | -------------------------- | ---- | ------------------ |
+| `YYYY` temperature            | `cXXXX.YYYY_temperature`   | °C   | yes                |
+| `YYYY` internal temperature   | `cXXXX.YYYY_temperature_0` | °C   | yes                |
+| `YYYY` external temperature   | `cXXXX.YYYY_temperature_1` | °C   | yes                |
+| `YYYY` humidity               | `cXXXX.YYYY_humidity`      | %    | yes                |
 
-### Temperature / humidity sensors of expansion units
+### Device `cXXXX power meter`
 
-| Entity name              | Description                             | Enabled                          |
-| ------------------------ | --------------------------------------- | -------------------------------- |
-| `cXXXX.YYYY_temperature` | Measured temperature [°C].              | if module has no `general_error` |
-| `cXXXX.YYYY_humidity`    | Measured relative humidity (0..100%rh). | if module has no `general_error` |
+Created only while `cXXXX.power_meter_error` is `0`. `N` is the phase (1, 2, 3).
 
-### Every TH (thermostat) expansion unit
+| Name          | Controller var                     | Unit | Enabled by default |
+| ------------- | ---------------------------------- | ---- | ------------------ |
+| Power         | `cXXXX.power_meter_power`          | W    | yes                |
+| Power LN      | `cXXXX.power_meter_powerN`         | W    | yes                |
+| Energy        | `cXXXX.power_meter_energy`         | kWh  | yes                |
+| Energy real   | `cXXXX.power_meter_energy_real`    | kWh  | no                 |
+| Energy (Wh)   | `cXXXX.power_meter_energy_watthours` | Wh | no                 |
+| Voltage       | `cXXXX.power_meter_voltage`        | V    | no                 |
+| Voltage LN    | `cXXXX.power_meter_voltageN`       | V    | no                 |
+| Current LN    | `cXXXX.power_meter_currentN`       | mA   | no                 |
 
-| Entity name                           | Description                                          | Controller var             | Enabled |
-| ------------------------------------- | ---------------------------------------------------- | -------------------------- | ------- |
-| `cXXXX.thYY thermostat temperature`   | Measured temperature (internal, external or remote). | `cXXXX.thYY_temperature`   | yes     |
-| `cXXXX.thYY thermostat temperature 1` | Measured external temperature.                       | `cXXXX.thYY_temperature_1` | yes     |
-| `cXXXX.thYY thermostat humidity`      | Measured relative humidity.                          | `cXXXX.thYY_humidity`      | yes     |
+A voltage above 300 is taken as 0.1 V steps (some meters report it so).
 
-### HVAC (internal)
+### Device `cXXXX.thYY thermostat`
 
-| Entity name                            | Description                                        | Controller var               | Enabled               |
-| -------------------------------------- | -------------------------------------------------- | ---------------------------- | --------------------- |
-| `cXXXX.thYY HVAC outdoor temperature`  | Measured outdoor temperature.                      | `cXXXX.outdoor_temperature`  | if `zz_enable` is set |
-| `cXXXX.thYY HVAC wall temperature`     | Measured temperature within building construction. | `cXXXX.wall_temperature`     | if `zz_enable` is set |
-| `cXXXX.thYY HVAC water temperature`    | Measured temperature of heating/cooling medium.    | `cXXXX.water_temperature`    | if `zz_enable` is set |
-| `cXXXX.thYY HVAC auxilary temperature` | Measured temperature of auxilary sensor.           | `cXXXX.auxilary_temperature` | if `zz_enable` is set |
+Thermostats with `general_error` set are skipped.
+
+| Name                       | Controller var             | Unit | Enabled by default |
+| -------------------------- | -------------------------- | ---- | ------------------ |
+| Temperature                | `cXXXX.thYY_temperature`   | °C   | yes                |
+| External temperature       | `cXXXX.thYY_temperature_1` | °C   | yes                |
+| Humidity                   | `cXXXX.thYY_humidity`      | %    | yes                |
+| Light sensor               | `cXXXX.thYY_light_sensor`  | %    | no                 |
+| Max function remain timer  | `cXXXX.thYY_max_timer`     | s    | no                 |
+
+`Temperature` is the regulated temperature (internal, external or remote,
+see `Temperature source sensor`).
+
+### Device `cXXXX HVAC`
+
+| Name                  | Controller var               | Unit | Enabled by default                         |
+| --------------------- | ---------------------------- | ---- | ------------------------------------------ |
+| Outdoor temperature   | `cXXXX.outdoor_temperature`  | °C   | if `cXXXX.outdoor_temperature_enable` is 1   |
+| Wall temperature      | `cXXXX.wall_temperature`     | °C   | if `cXXXX.wall_temperature_enable` is 1      |
+| Water temperature     | `cXXXX.water_temperature`    | °C   | if `cXXXX.water_temperature_enable` is 1     |
+| Auxiliary temperature | `cXXXX.auxilary_temperature` | °C   | if `cXXXX.auxilary_temperature_enable` is 1  |
+
+The wall temperature is measured within the building construction, the water
+temperature is the one of the heating / cooling medium.
 
 ---
 
@@ -189,35 +214,55 @@ Custom sensors from any controller variable can be added too, see
 
 All `number` entities are disabled by default.
 
-### Every TH (thermostat) expansion unit
+### Device `cXXXX.thYY thermostat`
 
-| Entity name                                                  | Description                                                                                      | Controller var                      |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------- |
-| `cXXXX.thYY thermostat setpoint idle`                        | Secondary setpoint, used when thermostat is off. Zero means output is off.                       | `cXXXX.thYY_setpoint_idle`          |
-| `cXXXX.thYY thermostat setpoint idle cooling`                | Secondary setpoint for cooling, used when thermostat is off. Zero means output is off.           | `cXXXX.thYY_setpoint_idle_c`        |
-| `cXXXX.thYY thermostat setpoint idle heating`                | Secondary heating setpoint, used when thermostat is off. Zero means output is off.               | `cXXXX.thYY_setpoint_idle_h`        |
-| `cXXXX.thYY thermostat setpoint offset`                      | Setpoint correction, used to affect regulated temperature without changing setpoint.             | `cXXXX.thYY_setpoint_offset`        |
-| `cXXXX.thYY thermostat setpoint offset cooling`              | Setpoint correction for cooling, used to affect regulated temperature without changing setpoint. | `cXXXX.thYY_setpoint_offset_c`      |
-| `cXXXX.thYY thermostat setpoint offset heating`              | Setpoint correction for heating, used to affect regulated temperature without changing setpoint. | `cXXXX.thYY_setpoint_offset_h`      |
-| `cXXXX.thYY thermostat temperature offset`                   | Measurement correction of the thermostat temperature sensor.                                     | `cXXXX.thYY_temperature_offset`     |
-| `cXXXX.thYY thermostat hystheresis`                          | Hysteresis for on/off regulation. Defined as distance between on and off points.                 | `cXXXX.thYY_setpoint_hystheresis`   |
-| `cXXXX.thYY thermostat hystheresis cooling`                  | Hysteresis for on/off regulation in cooling mode. Defined as distance between on and off points. | `cXXXX.thYY_setpoint_hystheresis_c` |
-| `cXXXX.thYY thermostat hystheresis heating`                  | Hysteresis for on/off regulation in heating mode. Defined as distance between on and off points. | `cXXXX.thYY_setpoint_hystheresis_h` |
-| `cXXXX.thYY thermostat activation time max function`         | Activation period for max function [s].                                                          | `cXXXX.thYY_max_time`               |
-| `cXXXX.thYY thermostat activation time max function cooling` | Activation period for max function in cooling [s].                                               | `cXXXX.thYY_max_time_c`             |
-| `cXXXX.thYY thermostat activation time max function heating` | Activation period for max function in heating [s].                                               | `cXXXX.thYY_max_time_h`             |
-| `cXXXX.thYY thermostat max temp external`                    | External sensor max temperature setpoint.                                                        | `cXXXX.thYY_max_temp`               |
+Most values exist in three variants: plain, for cooling (`_c`) and for heating
+(`_h`), e.g. `Setpoint eco`, `Setpoint eco cooling` and `Setpoint eco heating`.
 
-### Every LC / LD / BC output (on the device of the light or blind)
+| Name                          | Controller var                         | Unit | Range      |
+| ----------------------------- | -------------------------------------- | ---- | ---------- |
+| Setpoint eco                  | `cXXXX.thYY_setpoint_idle[_c\|_h]`     | °C   | 0..40      |
+| Setpoint offset               | `cXXXX.thYY_setpoint_offset[_c\|_h]`   | °C   | -5..5      |
+| Setpoint min                  | `cXXXX.thYY_setpoint_lo[_c\|_h]`       | °C   | 0..40      |
+| Setpoint max                  | `cXXXX.thYY_setpoint_hi[_c\|_h]`       | °C   | 0..40      |
+| Hysteresis                    | `cXXXX.thYY_hysteresis[_c\|_h]`        | °C   | 0.1..10    |
+| Activation time max function  | `cXXXX.thYY_max_time[_c\|_h]`          | s    | 0..3600    |
+| Temperature offset            | `cXXXX.thYY_temperature_offset`        | °C   | -5..5      |
+| Max temperature external      | `cXXXX.thYY_max_temp`                  | °C   | 0..40      |
 
-| Entity name        | Description                                                       | Controller var                                            |
-| ------------------ | ----------------------------------------------------------------- | --------------------------------------------------------- |
-| `output timer`     | Timer that turns off the output automatically, 0 is no timer [s]. | `cXXXX.lcYY_output_mode_ZZ`, `cXXXX.ldYY_output_timer_ZZ` |
-| `travel time up`   | Travel time of the blind from bottom to top [s].                  | `cXXXX.bcYY_blinds_time_up_ZZ`                            |
-| `travel time down` | Travel time of the blind from top to bottom [s].                  | `cXXXX.bcYY_blinds_time_dn_ZZ`                            |
+- **Setpoint eco**: secondary setpoint, used when the thermostat is off. Zero
+  means the output is off.
+- **Setpoint offset**: correction of the regulated temperature without changing
+  the setpoint.
+- **Hysteresis**: distance between the on and off points of the on / off
+  regulation.
+- **Temperature offset**: measurement correction of the thermostat sensor. It is
+  sent to the thermostat with `cXXXX.thYY_config1_req`.
+- **Max temperature external**: max temperature of the external sensor.
 
-These are written through registers shared by all outputs of the module (index,
-data and write request), as described by the module.
+### Device `cXXXX HVAC`
+
+| Name                  | Controller var                  | Unit | Range |
+| --------------------- | ------------------------------- | ---- | ----- |
+| Setpoint eco heating  | `cXXXX.setpoint_idle_heating`   | °C   | 0..40 |
+| Setpoint min heating  | `cXXXX.setpoint_lo_heating`     | °C   | 0..40 |
+| Setpoint max heating  | `cXXXX.setpoint_hi_heating`     | °C   | 0..40 |
+| Setpoint eco cooling  | `cXXXX.setpoint_idle_cooling`   | °C   | 0..40 |
+| Setpoint min cooling  | `cXXXX.setpoint_lo_cooling`     | °C   | 0..40 |
+| Setpoint max cooling  | `cXXXX.setpoint_hi_cooling`     | °C   | 0..40 |
+
+### Device of every LC / LD / BC output (light or blind)
+
+| Name             | Controller var                                            | Unit | Range    |
+| ---------------- | --------------------------------------------------------- | ---- | -------- |
+| Output timer     | `cXXXX.lcYY_output_mode_ZZ`, `cXXXX.ldYY_output_timer_ZZ` | s    | 0..9999  |
+| Travel time up   | `cXXXX.bcYY_blinds_time_up_ZZ`                            | s    | 0..999.9 |
+| Travel time down | `cXXXX.bcYY_blinds_time_dn_ZZ`                            | s    | 0..999.9 |
+
+`Output timer` turns off the output automatically, 0 is no timer. The travel
+times are the ones of the blind from bottom to top and back. These values are
+written through registers shared by all outputs of the module (index, data and
+write request), as described by the module.
 
 ---
 
@@ -226,27 +271,30 @@ data and write request), as described by the module.
 All built-in `select` entities are disabled by default. Custom selects can be
 added too, see [Custom entities](../README.md#custom-entities).
 
-### Every TH (thermostat) expansion unit
+### Device `cXXXX.thYY thermostat`
 
-| Entity name                                | Description                                                                                         | Controller var                  |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------- |
-| `cXXXX.thYY thermostat temperature source` | Source of measured temperature: 0-internal sensor, 1-external sensor, 2-remote from another device. | `cXXXX.thYY_temperature_source` |
-| `cXXXX.thYY thermostat display mode`       | Select what to display when thermostat is off: 0-nothing, 1- ---, 2-temperature.                    | `cXXXX.thYY_display_mode`       |
+| Name                      | Controller var                  | Options                                                   |
+| ------------------------- | ------------------------------- | --------------------------------------------------------- |
+| Temperature source sensor | `cXXXX.thYY_temperature_source` | 0 internal, 1 external, 2 remote from another device      |
+| Display mode              | `cXXXX.thYY_display_mode`       | what is shown when off: 0 nothing, 1 `---`, 2 temperature |
+| Fan mode limit            | `cXXXX.thYY_fan_limit`          | 0 off, 1 fan 1, 2 fan 2, 3 fan 3, 4 max                   |
 
-### HVAC (internal)
+### Device `cXXXX HVAC`
 
-| Entity name                                       | Description                                                                  | Controller var                  |
-| ------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------- |
-| `cXXXX HVAC mode`                                 | Hvac mode: 0-off, 1-heating, 2-cooling.                                      | `cXXXX.hvac_mode`               |
-| `cXXXX HVAC thermostat config display mode`       | What to display when thermostat is off: 0-nothing, 1-dashes, 2-temperature.  | `cXXXX.hvac_display_mode`       |
-| `cXXXX HVAC thermostat config temperature source` | Select temperature source: 0-internal, 1-external, 2-remote from controller. | `cXXXX.hvac_temperature_source` |
+| Name                      | Controller var                  | Options                                                   |
+| ------------------------- | ------------------------------- | --------------------------------------------------------- |
+| Operation mode HVAC       | `cXXXX.hvac_mode`               | 0 off, 1 heating, 2 cooling                               |
+| Temperature source sensor | `cXXXX.hvac_temperature_source` | 0 internal, 1 external, 2 remote from the controller      |
+| Display mode              | `cXXXX.hvac_display_mode`       | what is shown when off: 0 nothing, 1 `---`, 2 temperature |
 
-### Every LC / LD output (on the device of the light)
+### Device of every LC / LD output (light)
 
-| Entity name  | Description                                                                                                                                                                  | Controller var                                         |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `input mode` | How the input affects the output: toggle, staircase timer, motion sensor timer (also night only), inverse / door sensor (also night only), direct / doorbell or event only. | `cXXXX.lcYY_input_mode_ZZ`, `cXXXX.ldYY_input_mode_ZZ` |
-| `color mode` | LD only: standard dimmer, RGB dimmer or white temperature. The light follows after a reload of the integration.                                                              | `cXXXX.ldYY_color_mode_ZZ`                             |
+| Name       | Controller var                                         | Options                                                                                                                                        |
+| ---------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Input mode | `cXXXX.lcYY_input_mode_ZZ`, `cXXXX.ldYY_input_mode_ZZ` | 0 toggle, 1 staircase timer, 2 motion sensor timer, 3 motion night only, 4 inverse / door sensor, 5 inverse night only, 6 direct / doorbell, 7 event only |
+| Color mode | `cXXXX.ldYY_color_mode_ZZ` (LD only)                   | 0 standard dimmer, 1 RGB, 2 white temperature                                                                                                  |
+
+The light follows a changed color mode after a reload of the integration.
 
 ---
 
@@ -254,26 +302,26 @@ added too, see [Custom entities](../README.md#custom-entities).
 
 All `switch` entities are disabled by default.
 
-### Every TH (thermostat) expansion unit
+### Device `cXXXX.thYY thermostat`
 
-| Entity name                                  | Description                                                                                   | Controller var             |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------- |
-| `cXXXX.thYY thermostat window switch enable` | Select how window switch input is handled: 0-ignore input, 1-use input to disable thermostat. | `cXXXX.thYY_window_enable` |
-| `cXXXX.thYY thermostat demand enable`        | Enable thermostat to control energy source: 0-off, 1-on.                                      | `cXXXX.thYY_demand_enable` |
+| Name                 | Controller var             | When on                                    |
+| -------------------- | -------------------------- | ------------------------------------------ |
+| Window switch enable | `cXXXX.thYY_window_enable` | an open window input disables the thermostat |
+| Demand enable        | `cXXXX.thYY_demand_enable` | the thermostat controls the energy source  |
 
-### HVAC (internal)
+### Device `cXXXX HVAC`
 
-| Entity name                                     | Description                                                                   | Controller var                      |
-| ----------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
-| `cXXXX HVAC outdoor temperature enable`         | Enable outdoor temperature measurement: 0-off, 1-on.                          | `cXXXX.outdoor_temperature_enable`  |
-| `cXXXX HVAC wall temperature enable`            | Enable wall temperature measurement: 0-off, 1-on.                             | `cXXXX.wall_temperature_enable`     |
-| `cXXXX HVAC water temperature enable`           | Enable water temperature measurement: 0-off, 1-on.                            | `cXXXX.water_temperature_enable`    |
-| `cXXXX HVAC auxilary temperature enable`        | Enable auxilary temperature measurement: 0-off, 1-on.                         | `cXXXX.auxilary_temperature_enable` |
-| `cXXXX HVAC automatic setpoint limits enable`   | Automatically set when operation mode is changed between heating and cooling. | `cXXXX.auto_limits_enable`          |
-| `cXXXX HVAC thermostat fan option speed auto 1` | Enable fan speed auto 1.                                                      | `cXXXX.hvac_fan_option_b01`         |
-| `cXXXX HVAC thermostat fan option speed auto 2` | Enable fan speed auto 2.                                                      | `cXXXX.hvac_fan_option_b02`         |
-| `cXXXX HVAC thermostat fan option speed auto 3` | Enable fan speed auto 3.                                                      | `cXXXX.hvac_fan_option_b03`         |
-| `cXXXX HVAC thermostat fan option speed max`    | Enable fan speed max.                                                         | `cXXXX.hvac_fan_option_b04`         |
+| Name                             | Controller var                      | When on                                                       |
+| -------------------------------- | ----------------------------------- | ------------------------------------------------------------- |
+| Enable outdoor temperature       | `cXXXX.outdoor_temperature_enable`  | outdoor temperature is measured                               |
+| Enable wall temperature          | `cXXXX.wall_temperature_enable`     | wall temperature is measured                                  |
+| Enable water temperature         | `cXXXX.water_temperature_enable`    | water temperature is measured                                 |
+| Enable auxiliary temperature     | `cXXXX.auxilary_temperature_enable` | auxiliary temperature is measured                             |
+| Enable automatic setpoint limits | `cXXXX.auto_limits_enable`          | setpoint limits are set when switching heating / cooling      |
+| Fan auto speed limit 1           | `cXXXX.hvac_fan_option_b01`         | fan speed auto 1 is allowed                                   |
+| Fan auto speed limit 2           | `cXXXX.hvac_fan_option_b02`         | fan speed auto 2 is allowed                                   |
+| Fan auto speed limit 3           | `cXXXX.hvac_fan_option_b03`         | fan speed auto 3 is allowed                                   |
+| Fan speed limit max              | `cXXXX.hvac_fan_option_b04`         | fan speed max is allowed                                      |
 
 ---
 
@@ -281,25 +329,39 @@ All `switch` entities are disabled by default.
 
 All `button` entities are disabled by default.
 
-### Every TH (thermostat) expansion unit
+### Device `cXXXX.thYY thermostat`
 
-| Entity name                                | Description                                                                        | Controller var                |
-| ------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------- |
-| `cXXXX HVAC thYY config request`           | Set to update configuration parameters. It will reset automatically after sending. | `cXXXX.thYY_config1_req`      |
-| `cXXXX HVAC thYY config read back request` | Request to read options back from thermostat.                                      | `cXXXX.thYY_options_back_req` |
+Only when the controller has the HVAC parameters (e.g.
+`cXXXX.hvac_display_mode`).
 
-### Every defined scene
+| Name                 | Controller var                | What it does                                        |
+| -------------------- | ----------------------------- | --------------------------------------------------- |
+| Config write request | `cXXXX.thYY_config1_req`      | Sends the configuration parameters to the thermostat |
+| Config read request  | `cXXXX.thYY_options_back_req` | Reads the options back from the thermostat          |
 
-| Entity name                   | Description                                      | Controller var                |
-| ----------------------------- | ------------------------------------------------ | ----------------------------- |
-| `cXXXX scenes store scene YY` | Store the current lights and blinds as scene YY. | `cXXXX.global_memory_request` |
+### Device `cXXXX scenes`
+
+| Name           | Controller var                | What it does                                          |
+| -------------- | ----------------------------- | ----------------------------------------------------- |
+| Store scene YY | `cXXXX.global_memory_request` | Stores the current lights and blinds as scene YY       |
+
+One button for every defined scene.
 
 ---
 
 ## Devices
 
-A device is created for each HIQ controller (diagnostics) and for every light,
-blind, thermostat, HVAC and weather station.
+| Device                  | Holds                                                               |
+| ----------------------- | ------------------------------------------------------------------- |
+| `cXXXX diagnostic`      | Diagnostics of the controller and the error flags of the IEX units |
+| `cXXXX temperatures`    | Temperature / humidity units                                        |
+| `cXXXX power meter`     | Power meter                                                         |
+| `cXXXX HVAC`            | HVAC parameters and temperatures                                    |
+| `cXXXX.thYY thermostat` | Climate entity and parameters of a thermostat                       |
+| `cXXXX scenes`          | Scenes and their store buttons                                      |
+| `cXXXX weather`         | Weather station                                                     |
+| `cXXXX custom`          | Custom sensors and selects                                          |
+| light / blind           | One per LC / LD / BC output, with its parameters                    |
 
 Newer controllers report the card id and firmware of every IEX expansion unit
 (`cXXXX.mmYY_iex_card_id` and `cXXXX.mmYY_firmware_version`). They are read once
@@ -319,6 +381,7 @@ integration is reloaded.
 
 ## Common attributes
 
-| Attribute     | Value                                 |
-| ------------- | ------------------------------------- |
-| `description` | The description text from the PLC tag |
+| Attribute     | Value                                       |
+| ------------- | ------------------------------------------- |
+| `description` | The description text from the PLC tag       |
+| `variable`    | The controller variable behind the entity   |
