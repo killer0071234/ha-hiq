@@ -268,6 +268,10 @@ direct vs SCGI values identical for all user variables of the HIQ controller.
 **Checkpoint 3:** `scripts/test` + `scripts/lint` green. `scripts/develop`
 with a real controller in direct mode, add-on stopped: all entities available,
 writes work, reprogramming the controller reloads the ALC.
+*HAOS (2026-10-25), c10000 direct:* polling every 5 s works. After a new
+program was sent from CyPro, one poll took 0.368 s (ALC download, other
+polls < 0.02 s) and all polls succeeded, no restart. Writes from the UI
+were not checked separately.
 
 ### Phase 4: Discovery (ha-hiq, scope set by Phase 0, see docs/abus-notes.md)
 
