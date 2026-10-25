@@ -129,7 +129,7 @@ def test_flow_steps_described(language: str) -> None:
 def test_flow_errors_translated(language: str) -> None:
     """Test every error of the config flow has a text."""
     source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
-    errors = set(re.findall(r'SchemaFlowError\("(\w+)"\)', source))
+    errors = set(re.findall(r'(?:SchemaFlowError|ControllerError)\("(\w+)"\)', source))
 
     assert errors
     assert sorted(errors - set(_translation(language)["config"]["error"])) == []
@@ -137,8 +137,32 @@ def test_flow_errors_translated(language: str) -> None:
 
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_flow_abort_translated(language: str) -> None:
-    """Test the abort reason of the config flow has a text."""
-    assert "already_configured" in _translation(language)["config"].get("abort", {})
+    """Test every abort reason of the config flow has a text."""
+    source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
+    reasons = set(re.findall(r'AbortFlow\("(\w+)"\)', source))
+    reasons |= {"already_configured", "reconfigure_successful"}
+
+    assert "wrong_controller" in reasons
+    assert (
+        sorted(reasons - set(_translation(language)["config"].get("abort", {}))) == []
+    )
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_flow_menus_translated(language: str) -> None:
+    """Test every option of the config flow menus has a label."""
+    source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
+    menus = dict(
+        re.findall(
+            r'step_id="(\w+)",\s*menu_options=\[([^\]]*)\]', source, re.MULTILINE
+        )
+    )
+    steps = _translation(language)["config"]["step"]
+
+    assert set(menus) == {"user", "reconfigure"}
+    assert {
+        step: sorted(re.findall(r'"(\w+)"', options)) for step, options in menus.items()
+    } == {step: sorted(steps[step]["menu_options"]) for step in menus}
 
 
 def test_strings_match_english() -> None:

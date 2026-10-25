@@ -3,7 +3,60 @@
     "flow_title": "{name}",
     "step": {
       "user": {
+        "description": "How does Home Assistant reach the HIQ controller?",
+        "menu_options": {
+          "direct": "Directly over the network (recommended)",
+          "scgi": "Through the CybroScgiServer"
+        }
+      },
+      "direct": {
+        "description": "Connect a HIQ controller directly over the network (UDP port 8442), no scgi server needed.",
+        "data": {
+          "address": "Controller address (NAD)",
+          "ip_address": "IP address",
+          "password": "A-bus password"
+        },
+        "data_description": {
+          "address": "Network address (NAD) of the HIQ controller, e.g. 1000.",
+          "ip_address": "Leave empty to find the controller in the local network. Enter its IP address, e.g. 192.168.1.50, if it is in another network segment.",
+          "password": "Only needed if an A-bus password is set in the controller."
+        }
+      },
+      "scgi": {
         "description": "Connect a HIQ controller through the CybroScgiServer.\nThe scgi server must be running before you continue. See the [documentation]({docs_url}).",
+        "data": {
+          "host": "scgi server host",
+          "port": "scgi server port",
+          "address": "Controller address (NAD)"
+        },
+        "data_description": {
+          "host": "Host name or IP address of the scgi server. For the CybroScgiServer add-on use 85493909-cybroscgiserver.",
+          "port": "Port of the scgi server. For the CybroScgiServer add-on use 4000.",
+          "address": "Network address (NAD) of the HIQ controller, e.g. 1000."
+        }
+      },
+      "reconfigure": {
+        "description": "How should Home Assistant reach the controller from now on? Entities and custom entities are kept.",
+        "menu_options": {
+          "reconfigure_direct": "Directly over the network",
+          "reconfigure_scgi": "Through the CybroScgiServer"
+        }
+      },
+      "reconfigure_direct": {
+        "description": "Connect the controller directly over the network (UDP port 8442). The address (NAD) must stay the same.",
+        "data": {
+          "address": "Controller address (NAD)",
+          "ip_address": "IP address",
+          "password": "A-bus password"
+        },
+        "data_description": {
+          "address": "Network address (NAD) of the HIQ controller, e.g. 1000.",
+          "ip_address": "Leave empty to find the controller in the local network. Enter its IP address, e.g. 192.168.1.50, if it is in another network segment.",
+          "password": "Only needed if an A-bus password is set in the controller."
+        }
+      },
+      "reconfigure_scgi": {
+        "description": "Connect the controller through the CybroScgiServer. The address (NAD) must stay the same. See the [documentation]({docs_url}).",
         "data": {
           "host": "scgi server host",
           "port": "scgi server port",
@@ -22,10 +75,16 @@
       "select_options_empty": "Add at least one option.",
       "select_option_invalid": "Enter each option as label=value with a whole number as value, e.g. eco=1.",
       "select_option_duplicate_label": "Each option label may only be used once.",
-      "select_option_duplicate_value": "Each option value may only be used once."
+      "select_option_duplicate_value": "Each option value may only be used once.",
+      "no_answer": "The controller doesn't answer. Check the NAD and the IP address, that the controller is online and that UDP port 8442 isn't blocked between Home Assistant and the controller.",
+      "access_denied": "The controller refused the connection. Check the A-bus password.",
+      "no_program": "The controller answers, but runs no program or has no allocation table. Start the program, or send the allocation table to the controller in CyPro.",
+      "invalid_ip": "Enter an IPv4 address, e.g. 192.168.1.50, or leave the field empty."
     },
     "abort": {
-      "already_configured": "This HIQ controller is already configured."
+      "already_configured": "This HIQ controller is already configured.",
+      "reconfigure_successful": "The connection was changed.",
+      "wrong_controller": "This is another controller (other NAD). To add it, use Add integration instead."
     }
   },
   "options": {

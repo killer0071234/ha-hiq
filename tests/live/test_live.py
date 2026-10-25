@@ -73,6 +73,9 @@ async def test_config_flow(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "scgi"}
+    )
     result = await hass.config_entries.flow.async_configure(result["flow_id"], OPTIONS)
 
     assert result["type"] is FlowResultType.CREATE_ENTRY

@@ -18,11 +18,18 @@ from .fake_controller import FakeController
 
 
 async def _start_user_flow(hass: HomeAssistant) -> dict:
+    """Start adding a controller through the scgi server."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    assert result["type"] is FlowResultType.FORM
+    assert result["type"] is FlowResultType.MENU
     assert result["step_id"] == "user"
+    assert result["menu_options"] == ["direct", "scgi"]
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "scgi"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "scgi"
     assert result["description_placeholders"] == {"docs_url": DOCS_URL}
     return result
 

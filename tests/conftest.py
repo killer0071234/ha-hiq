@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 from unittest.mock import PropertyMock, patch
 
 import backoff._async
 import pytest
+from cybro.testing import FakeAbusController
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
@@ -16,7 +17,8 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 
 from custom_components.hiq.const import DOMAIN
 
-from .const import OPTIONS, TITLE, UNIQUE_ID
+from .const import NAD, OPTIONS, TITLE, UNIQUE_ID
+from .fake_abus import TRANSPORT, start_hiq_controller
 from .fake_controller import FakeController
 
 
@@ -89,3 +91,19 @@ async def init_integration(
     await hass.data[DOMAIN][mock_config_entry.entry_id].async_refresh()
     await hass.async_block_till_done()
     return mock_config_entry
+
+
+@pytest.fixture
+async def abus_controller(
+    socket_enabled: None,
+) -> AsyncGenerator[FakeAbusController]:
+    """Return a HIQ controller on a fake A-bus, reached via 127.0.0.1."""
+    fake = await start_hiq_controller(NAD)
+    with (
+        patch(f"{TRANSPORT}.BIND_HOST", "127.0.0.1"),
+        patch(f"{TRANSPORT}.LOCAL_PORT", 0),
+        patch(f"{TRANSPORT}.CONTROLLER_PORT", fake.port),
+        patch(f"{TRANSPORT}.BROADCAST", "127.0.0.1"),
+    ):
+        yield fake
+    fake.close()

@@ -256,13 +256,13 @@ direct vs SCGI values identical for all user variables of the HIQ controller.
   value formatting, writes, broadcast locate, timeout/unavailable, setup
   retry, one socket for all entries, and the busy port; the entity logic
   above `request()` is the same in both modes.
-- [ ] **T11 (M) Config flow rewrite.** `ConfigFlow` + menu (direct/scgi),
+- [x] **T11 (M) Config flow rewrite.** `ConfigFlow` + menu (direct/scgi),
   direct step (NAD, optional IP/password, validation via locate + status),
   reconfigure step. Options flow unchanged.
   *Done when:* config flow tests cover direct OK, NAD not found, password
   denied, no program, already configured, and reconfigure scgi → direct (same
   entities).
-- [ ] **T12 (S) Strings + translations** (en/de) for new steps, errors and repair.
+- [x] **T12 (S) Strings + translations** (en/de) for new steps, errors and repair.
   Consistency tests stay green.
 
 **Checkpoint 3:** `scripts/test` + `scripts/lint` green. `scripts/develop`

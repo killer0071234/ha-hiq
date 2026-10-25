@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import socket
-from collections.abc import AsyncGenerator
-from typing import Any
 from unittest.mock import patch
 
-import pytest
 from cybro import CybroDirect
 from cybro.testing import FakeAbusController
 from homeassistant.config_entries import ConfigEntryState
@@ -22,43 +19,9 @@ from custom_components.hiq.transport import async_current_transport
 
 from .common import call_service, refresh
 from .const import NAD
-from .fake_abus import start_hiq_controller
+from .fake_abus import TRANSPORT, direct_entry, start_hiq_controller
 
 LIGHT = "light.lights_light_c1000_lc00_qx00_light"
-TRANSPORT = "custom_components.hiq.transport"
-
-
-@pytest.fixture
-async def abus_controller(
-    socket_enabled: None,
-) -> AsyncGenerator[FakeAbusController]:
-    """Return a HIQ controller on a fake A-bus, reached via 127.0.0.1."""
-    fake = await start_hiq_controller(NAD)
-    with (
-        patch(f"{TRANSPORT}.BIND_HOST", "127.0.0.1"),
-        patch(f"{TRANSPORT}.LOCAL_PORT", 0),
-        patch(f"{TRANSPORT}.CONTROLLER_PORT", fake.port),
-        patch(f"{TRANSPORT}.BROADCAST", "127.0.0.1"),
-    ):
-        yield fake
-    fake.close()
-
-
-def direct_entry(nad: int = NAD, **options: Any) -> MockConfigEntry:
-    """Return a config entry of a directly connected controller."""
-    options = {
-        "address": nad,
-        "connection": "direct",
-        "ip_address": "127.0.0.1",
-        **options,
-    }
-    return MockConfigEntry(
-        domain=DOMAIN,
-        version=3,
-        title=f"c{nad}",
-        unique_id=f"c{nad}",
-        options={key: value for key, value in options.items() if value is not None},
-    )
 
 
 async def setup_entry(hass: HomeAssistant, entry: MockConfigEntry) -> None:
