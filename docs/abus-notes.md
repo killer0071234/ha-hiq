@@ -77,6 +77,36 @@ controllers with this value.
    `str(value)`, not rounding, so templates and custom sensors see the same
    text in both modes.
 
+## Home Assistant OS test (2026-10-25)
+
+HAOS 2026.10.4 (qemux86-64) at 192.168.10.201, branch copied to
+`/config/custom_components/hiq`.
+
+- **Discovery works.** c10000 (HIQ program 6.1.1, SCGI entry) was offered
+  the switch to direct. c32215, c8352 and c8372 (no `program_id`) were not
+  offered. After the switch, polling over UDP worked.
+- **The port conflict goes both ways.** CybroScgiServer and Cybro Edge
+  Toolkit use host networking and bind UDP 8442 (and TCP 4000):
+  - Integration set up while the app holds the port: `[Errno 98] Address
+    in use`, fallback to any port, polling still works.
+  - App started shortly before Home Assistant: the integration got 8442
+    before the scgi server bound it. The server then reached no controller
+    (`c10000.sys.plc_status` = `?`) and doesn't retry. So the integration
+    must not take 8442 while such an app runs.
+- **Apps are found by their declared ports.** `ha apps info <slug>` shows
+  `host_network: true` and `network: {"4000/tcp": 4000, "8442/udp": 8442}`
+  for both apps, from the Edge repository (`0fb96a21_…`) and the official
+  one (`85493909_…`).
+- **The two apps can't run together.** With both started, CybroScgiServer
+  crashed with `TCPPortError: [Errno 98] Address in use` (TCP 4000).
+- **Restored issues are inactive.** A non-persistent repair issue of the
+  last run is loaded with `active=False`; checking only that it exists
+  hid the warning after a restart.
+- The repair's Fix stopped the app, turned off its start on boot and
+  reconnected c10000 on 8442.
+- `ha core logs` shows only the last 100 lines by default (`-n 3000` for
+  more); the Supervisor API returns 401 from the SSH app.
+
 ## Golden frames (for T1 tests)
 
 All 390 captured frames (`frames.jsonl`, `frames1.jsonl`; READ_CODE and

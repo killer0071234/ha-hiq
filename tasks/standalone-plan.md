@@ -313,9 +313,15 @@ writes work, reprogramming the controller reloads the ALC.
     stopped controller or a read error is checked again on the next scan.
   - Fixed on the way: the services crashed with `KeyError` once an ignored
     entry existed (`_get_tag_list` now skips ignored entries).
+- [x] **T13a (S) Repair for apps on the A-bus port** (from the HAOS test,
+  see notes "Home Assistant OS test"). The port is left to running apps
+  that declare UDP 8442; the repair stops them, turns off their start on
+  boot and reconnects the direct entries. Busy port logged once per run.
 - [ ] **T14 (S) Passive listener.** Socket frames (to_nad 0 + ACK) from a
   configured NAD with a new IP → update the entry. Unknown NADs are ignored
   (no flow). REQ frames are ignored. Only works while bound to 8442.
+  Also retry binding 8442 on each scan while the fallback port is used
+  (eg: after the app was stopped by hand), so a reload isn't needed.
   *Done when:* a socket frame from an unknown NAD creates no flow, one from a
   configured NAD with a new IP updates `CONF_IP`.
 - [ ] **T15 (S) DHCP discovery.** `manifest.json` matcher `00CB00*` +
