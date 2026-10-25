@@ -7,6 +7,7 @@ from re import sub
 from typing import Any
 
 from homeassistant.components.light import ATTR_BRIGHTNESS
+from homeassistant.components.light import ATTR_COLOR_TEMP_KELVIN
 from homeassistant.components.light import ATTR_HS_COLOR
 from homeassistant.components.light import ColorMode
 from homeassistant.components.light import LightEntity
@@ -16,6 +17,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import ExtraStoredData
+from homeassistant.helpers.restore_state import RestoredExtraData
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import AREA_LIGHTS
 from .const import ATTR_DESCRIPTION
@@ -116,6 +120,23 @@ def find_dimm_lights(
         if not (
             ".ld" in key and "_qw" in key and is_general_error_ok(coordinator, key)
         ):
+            continue
+        module, output = key.split("_")[:2]
+        if f"{module}_rgb_index" in coordinator.data.plc_info.plc_vars:
+            # LD-D10: every output is a light with its own color mode
+            res.append(
+                HiqColorChannelLight(
+                    coordinator,
+                    entity_description=HiqLightEntityDescription(
+                        key=key,
+                        translation_key="light",
+                    ),
+                    dev_info=_light_device_info(coordinator, key),
+                    dimming_out=key,
+                    module=module,
+                    channel=int(output.removeprefix("qw")),
+                )
+            )
             continue
         is_rgb_light = _is_rgb_light(coordinator, key)
         rgb_hue_out = None
@@ -309,3 +330,106 @@ class HiqUpdateLight(HiqEntity, LightEntity):
             ATTR_DESCRIPTION: desc,
             ATTR_VARIABLE: self._attr_unique_id,
         }
+
+
+# white temperature 0..100 % on the controller, warm to cold
+COLOR_TEMP_MIN_KELVIN = 2700
+COLOR_TEMP_MAX_KELVIN = 6500
+
+
+class HiqColorChannelLight(HiqUpdateLight, RestoreEntity):
+    """Defines a dimmer output of a module with shared color registers (LD-D10).
+
+    The color of an output is written by selecting it with rgb_index, so it can
+    not be polled: the last written color is kept and restored after a restart.
+    """
+
+    _attr_min_color_temp_kelvin = COLOR_TEMP_MIN_KELVIN
+    _attr_max_color_temp_kelvin = COLOR_TEMP_MAX_KELVIN
+
+    def __init__(
+        self,
+        coordinator: HiqDataUpdateCoordinator,
+        entity_description: HiqLightEntityDescription,
+        dev_info: DeviceInfo,
+        dimming_out: str,
+        module: str,
+        channel: int,
+    ) -> None:
+        """Initialize a color channel, eg: c1000.ld00 channel 3."""
+        super().__init__(
+            coordinator,
+            entity_description=entity_description,
+            dev_info=dev_info,
+            dimming_out=dimming_out,
+        )
+        self._module = module
+        self._channel = channel
+        self._hs: tuple[float, float] | None = None
+        self._kelvin: int | None = None
+        # read during setup, before the platforms (0 standard, 1 rgb, 2 white)
+        res = coordinator.data.vars.get(f"{module}_color_mode_{channel:02d}")
+        color_mode = res.value if res is not None else "0"
+        LOGGER.debug("%s color mode -> %s", self._attr_unique_id, color_mode)
+        if color_mode == "1":
+            self._attr_color_mode = ColorMode.HS
+        elif color_mode == "2":
+            self._attr_color_mode = ColorMode.COLOR_TEMP
+        self._attr_supported_color_modes = {self._attr_color_mode}
+
+    async def async_added_to_hass(self) -> None:
+        """Restore the last written color."""
+        await super().async_added_to_hass()
+        if (data := await self.async_get_last_extra_data()) is None:
+            return
+        color = data.as_dict()
+        if hs := color.get("hs_color"):
+            self._hs = tuple(hs)
+        self._kelvin = color.get("color_temp_kelvin")
+
+    @property
+    def extra_restore_state_data(self) -> ExtraStoredData:
+        """Return the color to restore, also kept while the light is off."""
+        return RestoredExtraData(
+            {"hs_color": self._hs, "color_temp_kelvin": self._kelvin}
+        )
+
+    @property
+    def hs_color(self) -> tuple[float, float] | None:
+        """Return the last written hue and saturation."""
+        return self._hs if self._attr_color_mode == ColorMode.HS else None
+
+    @property
+    def color_temp_kelvin(self) -> int | None:
+        """Return the last written white temperature."""
+        if self._attr_color_mode == ColorMode.COLOR_TEMP:
+            return self._kelvin
+        return None
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn on the light, writing the color through the shared registers."""
+        hs_color = kwargs.pop(ATTR_HS_COLOR, None)
+        kelvin = kwargs.pop(ATTR_COLOR_TEMP_KELVIN, None)
+        if hs_color is None and kelvin is None:
+            await super().async_turn_on(**kwargs)
+            return
+        tags = {f"{self._module}_rgb_index": str(self._channel)}
+        if hs_color is not None:
+            hue, sat = hs_color
+            tags[f"{self._module}_rgb_hue"] = str(int(int(hue) / 3.6))
+            tags[f"{self._module}_rgb_saturation"] = str(int(sat))
+        else:
+            span = COLOR_TEMP_MAX_KELVIN - COLOR_TEMP_MIN_KELVIN
+            percent = (int(kelvin) - COLOR_TEMP_MIN_KELVIN) * 100 / span
+            tags[f"{self._module}_rgb_hue"] = str(round(min(100, max(0, percent))))
+        tags[f"{self._module}_rgb_req"] = "1"
+        LOGGER.debug("Light '%s' color -> %s", self._attr_unique_id, tags)
+        await self.coordinator.cybro.request(tags)
+        if hs_color is not None:
+            self._hs = (float(hs_color[0]), float(hs_color[1]))
+        else:
+            self._kelvin = int(kelvin)
+        if kwargs:
+            await super().async_turn_on(**kwargs)
+        else:
+            await self.coordinator.async_refresh()

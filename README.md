@@ -63,11 +63,17 @@ Supported HIQ expansion units:
 
 - LC-10-IQ (light on / off supported)
 - LC-8-IQ (light on / off supported)
-- LD-D10-IQ (light on / off, brightness and RGB supported)
+- LD-D10-IQ (light on / off, brightness, RGB and white temperature supported)
 - LD-D8-IQ (light on / off and brightness supported)
 - LD-P4-IQ (light on / off, brightness and RGB supported)
 - LD-V4-IQ (light on / off, brightness and RGB supported)
 - Virtual LC (light on / off supported)
+
+The color mode of each LD-D10-IQ output (`ldNN_color_mode_MM`: standard dimmer,
+RGB or white temperature) is read when the integration starts. The color of an
+output can only be written, not read back from the module, so the last color set
+from Home Assistant is shown (and kept over a restart). White temperature 0..100 %
+is shown as 2700..6500 K.
 
 ---
 
