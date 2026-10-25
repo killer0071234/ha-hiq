@@ -44,6 +44,16 @@ def no_backoff_delay() -> Generator[None]:
         yield
 
 
+@pytest.fixture(autouse=True)
+def no_discovery_scan() -> Generator[None]:
+    """Don't scan the LAN on the integration's schedule.
+
+    The discovery tests call async_discover themselves.
+    """
+    with patch("custom_components.hiq.discovery.async_discover"):
+        yield
+
+
 @pytest.fixture
 def enable_all_entities() -> Generator[None]:
     """Create entities that are disabled by default as enabled."""

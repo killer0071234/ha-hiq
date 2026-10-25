@@ -271,7 +271,7 @@ writes work, reprogramming the controller reloads the ALC.
 
 ### Phase 4: Discovery (ha-hiq, scope set by Phase 0, see docs/abus-notes.md)
 
-- [ ] **T13 (M) Active scan + discovery flow.** `discovery.py`: broadcast
+- [x] **T13 (M) Active scan + discovery flow.** `discovery.py`: broadcast
   READ_STATUS to NAD 0 at start and every 15 min. Unknown `from_nad` →
   `integration_discovery` flow (deduplicated, ignores configured NADs and
   entries the user ignored). The confirm step shows NAD + IP and checks
@@ -293,6 +293,26 @@ writes work, reprogramming the controller reloads the ALC.
   discovered flow. Confirming it creates a direct entry. A configured direct NAD
   whose IP changed gets its IP updated. A NAD configured in SCGI mode gets the
   switch offer; accepting keeps all entity IDs.
+  *Done (2026-10-25):* `discovery.py` scans after HA started and every
+  15 min, `config_flow.py` has `integration_discovery` → `discovery_confirm`
+  (NAD, IP, version; optional password) or `discovery_switch` (SCGI entry,
+  reason `switched`). `tests/test_discovery.py` covers the done-when items
+  above. Decisions and deviations:
+  - **A fresh install is only found through DHCP (T15).** HA loads a custom
+    integration only once it has an entry, so the scan only finds
+    *more* controllers.
+  - Discovered entries store **no static IP**: `CybroDirect` finds the
+    controller by broadcast and relearns the IP after a timeout. The scan
+    only updates entries with a static IP that changed.
+  - The scan uses the shared socket if a direct entry has it open, else a
+    temporary socket on any port. Opening 8442 itself would raise the
+    `port_in_use` repair for SCGI-only users who run the add-on.
+  - The switch flow has the unique ID `c{nad}_switch`, so ignoring it
+    doesn't clash with the SCGI entry's `c{nad}`.
+  - The HIQ check (ALC + `program_id`) runs once per NAD and HA run. A
+    stopped controller or a read error is checked again on the next scan.
+  - Fixed on the way: the services crashed with `KeyError` once an ignored
+    entry existed (`_get_tag_list` now skips ignored entries).
 - [ ] **T14 (S) Passive listener.** Socket frames (to_nad 0 + ACK) from a
   configured NAD with a new IP → update the entry. Unknown NADs are ignored
   (no flow). REQ frames are ignored. Only works while bound to 8442.

@@ -20,6 +20,7 @@ from homeassistant.components.sensor import DEVICE_CLASS_UNITS
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorStateClass
+from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY
 from homeassistant.config_entries import SOURCE_RECONFIGURE
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.config_entries import ConfigFlow
@@ -69,6 +70,7 @@ from .const import DEFAULT_PORT
 from .const import DOCS_URL
 from .const import DOMAIN
 from .const import LOGGER
+from .discovery import CONF_VERSION
 from .transport import async_get_transport
 from .transport import async_release_transport
 
@@ -204,6 +206,11 @@ SELECT_SETUP = {
 DATA_SCHEMA_PLC = vol.Schema(PLC_SETUP)
 
 DATA_SCHEMA_DIRECT = vol.Schema(DIRECT_SETUP)
+
+# a found controller: NAD and IP come from the scan
+DATA_SCHEMA_DISCOVERED = vol.Schema(
+    {key: value for key, value in DIRECT_SETUP.items() if key == CONF_PASSWORD}
+)
 
 DATA_SCHEMA_EDIT_SELECT = vol.Schema(SELECT_SETUP)
 
@@ -544,6 +551,10 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
 
     VERSION = 3
 
+    _discovered: dict[str, Any]
+    # scgi entry of a found controller, switched to the direct connection
+    _switch_entry: ConfigEntry | None = None
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> SchemaOptionsFlowHandler:
@@ -597,6 +608,79 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
             "reconfigure_scgi", DATA_SCHEMA_PLC, _scgi_options, user_input
         )
 
+    async def async_step_integration_discovery(
+        self, discovery_info: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Offer a controller found by the A-bus scan."""
+        nad = discovery_info[CONF_ADDRESS]
+        self._discovered = discovery_info
+        self.context["title_placeholders"] = {"name": f"c{nad}"}
+        entry = next(
+            (
+                entry
+                for entry in self._async_current_entries(include_ignore=False)
+                if entry.options.get(CONF_ADDRESS) == nad
+            ),
+            None,
+        )
+        if entry is not None:
+            # own unique id: ignoring the offer must not touch the entry's id
+            await self.async_set_unique_id(f"c{nad}_switch")
+            self._abort_if_unique_id_configured()
+            self._switch_entry = entry
+            return await self.async_step_discovery_switch()
+        await self.async_set_unique_id(f"c{nad}")
+        self._abort_if_unique_id_configured()
+        return await self.async_step_discovery_confirm()
+
+    async def async_step_discovery_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Add the found controller."""
+        return await self._async_step_connection(
+            "discovery_confirm",
+            DATA_SCHEMA_DISCOVERED,
+            self._discovered_options,
+            user_input,
+        )
+
+    async def async_step_discovery_switch(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Connect the found controller of an scgi entry directly."""
+        return await self._async_step_connection(
+            "discovery_switch",
+            DATA_SCHEMA_DISCOVERED,
+            self._discovered_options,
+            user_input,
+        )
+
+    def _discovered_options(self, user_input: dict[str, Any]) -> dict[str, Any]:
+        """Return the options of the found controller (found by broadcast)."""
+        return _direct_options(
+            {**user_input, CONF_ADDRESS: self._discovered[CONF_ADDRESS]}
+        )
+
+    def _description_placeholders(self, step_id: str) -> dict[str, str] | None:
+        """Return the placeholders of a form."""
+        if step_id.endswith("scgi"):
+            return {"docs_url": DOCS_URL}
+        if self.source != SOURCE_INTEGRATION_DISCOVERY:
+            return None
+        placeholders = {
+            "nad": str(self._discovered[CONF_ADDRESS]),
+            "ip": self._discovered[CONF_IP_ADDRESS],
+        }
+        if self._switch_entry is not None:
+            return placeholders | {"title": self._switch_entry.title}
+        return placeholders | {"version": self._discovered[CONF_VERSION]}
+
+    def _connection_entry(self) -> ConfigEntry | None:
+        """Return the entry whose connection is changed, None for a new one."""
+        if self.source == SOURCE_RECONFIGURE:
+            return self._get_reconfigure_entry()
+        return self._switch_entry
+
     async def _async_step_connection(
         self,
         step_id: str,
@@ -622,16 +706,14 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(schema, suggested),
             errors=errors,
-            description_placeholders=(
-                {"docs_url": DOCS_URL} if step_id.endswith("scgi") else None
-            ),
+            description_placeholders=self._description_placeholders(step_id),
         )
 
     async def _async_check_controller(self, options: dict[str, Any]) -> None:
         """Abort for a controller that is already set up, check it answers."""
         nad = options[CONF_ADDRESS]
-        if self.source == SOURCE_RECONFIGURE:
-            if nad != self._get_reconfigure_entry().options[CONF_ADDRESS]:
+        if (entry := self._connection_entry()) is not None:
+            if nad != entry.options[CONF_ADDRESS]:
                 raise AbortFlow("wrong_controller")
         else:
             # entries of the same controller from before version 3 keep an
@@ -646,17 +728,23 @@ class HiqFlowHandler(ConfigFlow, domain=DOMAIN):
 
     @callback
     def _async_finish(self, options: dict[str, Any]) -> ConfigFlowResult:
-        """Create the entry, or update the connection of the reconfigured one."""
-        if self.source != SOURCE_RECONFIGURE:
+        """Create the entry, or update the connection of an existing one."""
+        if (entry := self._connection_entry()) is None:
             return self.async_create_entry(
                 title=_title(options), data={}, options=options
             )
-        entry = self._get_reconfigure_entry()
         entities = {
             key: value
             for key, value in entry.options.items()
             if key not in CONNECTION_KEYS
         }
         return self.async_update_reload_and_abort(
-            entry, title=_title(options), options=options | entities
+            entry,
+            title=_title(options),
+            options=options | entities,
+            reason=(
+                "reconfigure_successful"
+                if self.source == SOURCE_RECONFIGURE
+                else "switched"
+            ),
         )

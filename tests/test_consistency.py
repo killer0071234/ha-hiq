@@ -126,6 +126,18 @@ def test_flow_steps_described(language: str) -> None:
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
+def test_flow_steps_translated(language: str) -> None:
+    """Test every step of the config flow that shows a form or menu has a text."""
+    source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
+    steps = set(re.findall(r"async def async_step_(\w+)\(", source))
+    # only forwards to the confirm steps
+    steps -= {"integration_discovery"}
+
+    assert {"user", "discovery_confirm"} <= steps
+    assert sorted(steps - set(_translation(language)["config"]["step"])) == []
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
 def test_flow_errors_translated(language: str) -> None:
     """Test every error of the config flow has a text."""
     source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
@@ -140,7 +152,12 @@ def test_flow_abort_translated(language: str) -> None:
     """Test every abort reason of the config flow has a text."""
     source = (INTEGRATION / "config_flow.py").read_text(encoding="utf-8")
     reasons = set(re.findall(r'AbortFlow\("(\w+)"\)', source))
-    reasons |= {"already_configured", "reconfigure_successful"}
+    reasons |= {
+        "already_configured",
+        "already_in_progress",
+        "reconfigure_successful",
+        "switched",
+    }
 
     assert "wrong_controller" in reasons
     assert (

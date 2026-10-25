@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
 from cybro.abus import ABUS_PORT, AbusTransport
@@ -56,6 +58,26 @@ def async_release_transport(hass: HomeAssistant, entry_id: str) -> None:
     if not shared.entries and shared.transport is not None:
         shared.transport.close()
         shared.transport = None
+
+
+@asynccontextmanager
+async def async_scan_transport(hass: HomeAssistant) -> AsyncIterator[AbusTransport]:
+    """Use the shared socket, or one on any port while no entry has it open.
+
+    Answers come back to the sending port, so a scan doesn't need port 8442.
+    Binding it here would also report the scgi app as a port conflict to
+    users who only use the scgi server.
+    """
+    if (transport := async_current_transport(hass)) is not None:
+        yield transport
+        return
+    transport = await AbusTransport.create(
+        (BIND_HOST, 0), broadcast=BROADCAST, port=CONTROLLER_PORT
+    )
+    try:
+        yield transport
+    finally:
+        transport.close()
 
 
 async def _async_create(hass: HomeAssistant) -> AbusTransport:

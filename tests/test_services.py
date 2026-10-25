@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 import voluptuous as vol
+from homeassistant.config_entries import SOURCE_IGNORE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -68,6 +69,26 @@ async def test_write_tag_by_device(
         DOMAIN,
         "write_tag",
         {"device_id": [device_id], "tag": "lc00_qx00", "value": "0"},
+        blocking=True,
+    )
+
+    assert controller.writes == [("c1000.lc00_qx00", "0")]
+
+
+async def test_write_tag_with_ignored_entry(
+    hass: HomeAssistant,
+    controller: FakeController,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test an ignored (discovered) controller, which has no options, is skipped."""
+    MockConfigEntry(domain=DOMAIN, source=SOURCE_IGNORE, unique_id="c2000").add_to_hass(
+        hass
+    )
+
+    await hass.services.async_call(
+        DOMAIN,
+        "write_tag",
+        {"entity_id": [LIGHT], "tag": "lc00_qx00", "value": "0"},
         blocking=True,
     )
 

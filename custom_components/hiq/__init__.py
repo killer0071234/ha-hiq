@@ -23,6 +23,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.trigger_template_entity import (
     TEMPLATE_SENSOR_BASE_SCHEMA,
 )
+from homeassistant.helpers.typing import ConfigType
 
 from .const import AREA_SYSTEM
 from .const import CONF_CONNECTION
@@ -46,6 +47,7 @@ from .const import SERVICE_PRECEDE
 from .const import SERVICE_PRESENCE_SIGNAL
 from .const import SERVICE_WRITE_TAG
 from .coordinator import HiqDataUpdateCoordinator
+from .discovery import async_setup_discovery
 from .transport import async_get_transport
 from .transport import async_release_transport
 from .scene import scene_status_tags
@@ -110,6 +112,12 @@ SERVICE_PRECEDE_SCHEMA = SERVICE_SCHEMA.extend(
 SERVICE_WRITE_TAG_SCHEMA = SERVICE_SCHEMA.extend(
     {vol.Required("tag"): cv.string, vol.Required("value"): cv.string}
 )
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Find more controllers on the LAN, once an entry loads the integration."""
+    async_setup_discovery(hass)
+    return True
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -319,7 +327,7 @@ def _get_tag_list(hass: HomeAssistant, data: dict, tag_name: str) -> list:
     # read all possible adresses from HA
     addresses = [
         f"c{entity_id.options[CONF_ADDRESS]}"
-        for entity_id in hass.config_entries.async_entries(DOMAIN)
+        for entity_id in hass.config_entries.async_entries(DOMAIN, include_ignore=False)
     ]
     target_entities = []
 

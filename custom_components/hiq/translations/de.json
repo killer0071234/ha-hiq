@@ -67,6 +67,26 @@
           "port": "Port des SCGI Servers. Für das CybroScgiServer Add-on 4000 verwenden.",
           "address": "Netzwerkadresse (NAD) der HIQ Steuerung, z. B. 1000."
         }
+      },
+      "discovery_confirm": {
+        "title": "HIQ Steuerung c{nad}",
+        "description": "Unter {ip} wurde eine HIQ Steuerung (Programmversion {version}) gefunden. Füge sie mit direkter Verbindung (UDP-Port 8442) hinzu, ohne SCGI Server.",
+        "data": {
+          "password": "A-Bus Passwort"
+        },
+        "data_description": {
+          "password": "Nur nötig, wenn in der Steuerung ein A-Bus Passwort gesetzt ist."
+        }
+      },
+      "discovery_switch": {
+        "title": "c{nad} direkt verbinden",
+        "description": "Die Steuerung von {title} wurde im lokalen Netzwerk unter {ip} gefunden. Soll sie direkt (UDP-Port 8442) statt über den SCGI Server verbunden werden? Ihre Entitäten und eigenen Sensoren bleiben erhalten.",
+        "data": {
+          "password": "A-Bus Passwort"
+        },
+        "data_description": {
+          "password": "Nur nötig, wenn in der Steuerung ein A-Bus Passwort gesetzt ist."
+        }
       }
     },
     "error": {
@@ -84,7 +104,9 @@
     "abort": {
       "already_configured": "Diese HIQ Steuerung ist bereits eingerichtet.",
       "reconfigure_successful": "Die Verbindung wurde geändert.",
-      "wrong_controller": "Das ist eine andere Steuerung (andere NAD). Um sie hinzuzufügen, verwende Integration hinzufügen."
+      "wrong_controller": "Das ist eine andere Steuerung (andere NAD). Um sie hinzuzufügen, verwende Integration hinzufügen.",
+      "switched": "Die Steuerung ist jetzt direkt verbunden.",
+      "already_in_progress": "Diese HIQ Steuerung wird bereits eingerichtet. Schließe zuerst den Vorgang unter Entdeckt ab oder ignoriere ihn."
     }
   },
   "options": {
