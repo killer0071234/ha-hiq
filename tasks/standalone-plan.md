@@ -364,7 +364,7 @@ user action (at least through one of the three ways).
 
 ### Phase 5: Docs and release
 
-- [ ] **T16 (S) README + docs/abus-notes.md:** direct mode, network
+- [x] **T16 (S) README + docs/abus-notes.md:** direct mode, network
   requirements, Docker host networking, port 8442 conflict, discovery, when to
   still use SCGI mode (remote/NAT).
 - [ ] **T17 (S) Release:** python-cybro 1.0.0 final → `manifest.json` pin →

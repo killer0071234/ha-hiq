@@ -16,16 +16,47 @@
 
 This integration enables basic support for HIQ-Controllers (Cybro 2/3 PLC with HIQ software running on it from Robotina D.o.o or Cybrotech).
 
-## Functionality
+## Prerequisites
 
-This integration is a local polling integration that connects to a running CybroScgiServer from Cybrotech.
-To use this integration you need to have a running scgi server.
-Please use one of the 3 methods to run the scgi server.
-Without a running scgi server it is not possible to use this integration!
+The integration polls the HIQ controllers in the local network. It reaches a
+controller in one of two ways, chosen per controller when it is added:
 
-- Homeassistant Addon CybroScgiServer (Recommended)
+- **Direct connection** (recommended): Home Assistant talks to the controller
+  over UDP port 8442 (A-bus), no scgi server needed.
+- **Through the CybroScgiServer**: the way of the versions before 0.7.0. Still
+  useful for controllers that Home Assistant can't reach directly (another
+  site, behind NAT).
 
-  [![Open this add-on in your Home Assistant instance.][addon-badge]][addon]
+Home Assistant 2026.10 or newer is required. Install the integration from the
+HACS store (or manually, see [Installation](#installation)):
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.][hacs-integration-badge]][hacs-integration]
+
+### Direct connection
+
+- Home Assistant and the controllers should be in the same network segment.
+  The controllers are found by broadcast. For a controller in another segment
+  or VLAN, enter its IP address when adding it.
+- Home Assistant in Docker needs `network_mode: host`. With published ports
+  only, broadcasts don't arrive: enter the IP address of every controller.
+- If an A-bus password is set in the controller, enter it when adding the
+  controller.
+- **UDP port 8442 on the Home Assistant host.** The CybroScgiServer and the
+  Cybro Edge Toolkit apps use this port too. While such an app runs, the
+  integration leaves the port to it and uses another one: polling works, but
+  the controllers can't send data to Home Assistant on their own. A repair
+  under **Settings → System → Repairs** names the app and offers to stop it
+  (and to turn off its start on boot). Entries that still use the scgi server
+  of the app stop working then, so switch them to the direct connection first.
+  If the port is freed in another way, it is taken within 15 minutes.
+
+### Through the scgi server
+
+The scgi server must be running before the controller is added. Use one of:
+
+- Home Assistant app CybroScgiServer
+
+  [![Open this app in your Home Assistant instance.][addon-badge]][addon]
 
 - Own Docker container on own Docker host.
 
@@ -33,10 +64,39 @@ Without a running scgi server it is not possible to use this integration!
 
 - Native manual install from source.
 
-If you had a running CybroScgiServer (from one of the 3 possibilities from above), you can continue and add this integration to Home Assistant from the HACS-store.
+## Adding controllers
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.][hacs-integration-badge]][hacs-integration]
+**Settings → Devices & services → Add integration → HIQ-Home**, then choose
+the connection:
 
+- **Directly over the network** searches the local network first and lists
+  the HIQ controllers that aren't set up yet, with NAD, IP address and HIQ
+  program version. Pick one, or choose to enter the address (NAD) manually.
+- **Through the CybroScgiServer** asks for the host and port of the scgi
+  server and the NAD.
+
+Once one controller is set up, the integration searches the network after
+Home Assistant started and every 15 minutes. New HIQ controllers appear under
+**Settings → Devices & services → Discovered**. A controller that gets its IP
+address by DHCP (Cybrotech MAC address `00:CB:00:…`) can also be found this
+way when it connects to the network.
+
+Only controllers running the HIQ program are offered. Other controllers can
+still be added by entering their NAD.
+
+### Switching an entry to the direct connection
+
+When the search finds a controller that is set up through the scgi server, it
+offers to connect it directly. The entities, custom sensors and custom selects
+stay. The connection of an entry can also be changed with **Reconfigure** in
+the menu of the entry (in both directions).
+
+### IP address changes
+
+Controllers added without IP address are found by broadcast and follow a new
+IP address on their own. For a controller with a fixed IP address in the
+entry, the new address is stored when the search, DHCP or a socket frame of
+the controller shows it.
 
 ## Supported entities
 
@@ -472,6 +532,7 @@ If you prefer new entities to be disabled by default:
 ## Tested Devices
 
 - HC-HIQ v3.0.3 Software running on a Cybro-3 controller with FW: 3.2.3, cybroscgiserver v3.1.3 running in a docker container
+- HC-HIQ v6.1.1 Software on a Cybro-3 controller, direct connection, Home Assistant OS 2026.10.4
 
 ## Contributions are welcome!
 
