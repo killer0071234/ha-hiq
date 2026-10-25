@@ -48,6 +48,9 @@ PLCs running the HIQ software from Robotina d.o.o. / Cybrotech).
 
 {% endif %}
 
+<!-- 0.7.0 and older link to #prerequisites -->
+<a id="prerequisites"></a>
+
 ## Adding a controller
 
 [![Open your Home Assistant instance and start setting up a new integration.][config-flow-badge]][config-flow]
