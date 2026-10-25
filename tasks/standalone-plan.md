@@ -328,9 +328,10 @@ writes work, reprogramming the controller reloads the ALC.
   The scan uses the same update. `transport.async_retry_port` runs before
   each scan: it reconnects the direct entries on 8442 once the port is free
   and no app declares it. HAOS: after the Edge Toolkit was stopped by
-  hand, the next scan took 8442 and the repair was gone (no reload). The
-  listener isn't verified live: c10000, the only configured controller,
-  sends no sockets.
+  hand, the next scan took 8442 and the repair was gone (no reload). With
+  a socket added to c10000 (every 10 s), the debug log shows
+  `c10000 sent a socket from 192.168.10.218`. A changed IP isn't tested
+  live.
   *Done when:* a socket frame from an unknown NAD creates no flow, one from a
   configured NAD with a new IP updates `CONF_IP`.
 - [ ] **T15 (S) DHCP discovery.** `manifest.json` matcher `00CB00*` +

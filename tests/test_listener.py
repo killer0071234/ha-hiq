@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 
+import pytest
 from cybro.abus.frame import Command, Frame
 from cybro.testing import FakeAbusController
 from homeassistant.config_entries import ConfigEntryState
@@ -61,7 +62,9 @@ async def test_static_ip_updated(
 
 
 async def test_learned_ip_updated(
-    hass: HomeAssistant, abus_controller: FakeAbusController
+    hass: HomeAssistant,
+    abus_controller: FakeAbusController,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test an entry without static IP takes the new IP right away."""
     entry = direct_entry(ip_address=None)
@@ -75,6 +78,7 @@ async def test_learned_ip_updated(
 
     assert client.ip == "127.0.0.2"
     assert entry.options == {"address": NAD, "connection": "direct"}
+    assert f"c{NAD} sent a push from 127.0.0.2" in caplog.text
     moved.close()
 
 

@@ -51,4 +51,5 @@ def async_frame_received(hass: HomeAssistant, frame: Frame, addr: tuple) -> None
     # push, socket and broadcast frames; requests of other A-bus masters (scgi
     # servers) and their answers don't tell where the controller is
     if frame.to_nad == 0 and frame.direction == Direction.ACK:
-        async_ip_seen(hass, frame.from_nad, addr[0])
+        if async_ip_seen(hass, frame.from_nad, addr[0]):
+            LOGGER.debug("c%s sent a %s from %s", frame.from_nad, frame.kind, addr[0])
