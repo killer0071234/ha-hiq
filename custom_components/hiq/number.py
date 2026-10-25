@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from functools import partial
 from re import search
 from re import sub
 
@@ -31,6 +33,10 @@ from .light import is_general_error_ok
 from .models import HiqEntity
 from .models import thermostat_device_info
 from .models import hvac_device_info
+from .parameters import ModuleParameterEntity
+from .parameters import find_module_parameters
+from .parameters import module_parameter_tags
+from .parameters import output_device_info
 
 
 async def async_setup_entry(
@@ -52,6 +58,8 @@ async def async_setup_entry(
     )
     if hvac_tags is not None:
         async_add_entities(hvac_tags)
+
+    async_add_entities(add_module_parameters(coordinator))
 
 
 @dataclass
@@ -210,6 +218,52 @@ def add_hvac_tags(
     return None
 
 
+# module output parameters: name -> (max value, scale), durations in seconds
+MODULE_PARAMETER_NUMBERS: dict[str, tuple[float, float]] = {
+    # timer that turns off the output, 0 is no timer
+    "output_mode": (9999, 1.0),  # LC
+    "output_timer": (9999, 1.0),  # LD
+    # blinds travel time [100 ms]
+    "blinds_time_up": (999.9, 0.1),
+    "blinds_time_dn": (999.9, 0.1),
+}
+
+
+def add_module_parameters(
+    coordinator: HiqDataUpdateCoordinator,
+) -> list[HiqNumberEntity]:
+    """Add numbers for the parameters of the light and blind outputs.
+
+    eg: c1000.lc00_output_mode_03, c1000.bc00_blinds_time_up_00
+    """
+    res: list[HiqNumberEntity] = []
+    for key, module, name, output in find_module_parameters(
+        coordinator, tuple(MODULE_PARAMETER_NUMBERS)
+    ):
+        max_value, val_fact = MODULE_PARAMETER_NUMBERS[name]
+        res.append(
+            HiqParameterNumber(
+                coordinator=coordinator,
+                entity_description=HiqNumberEntityDescription(
+                    key=key,
+                    # LC and LD name the output timer differently
+                    translation_key=name.replace("output_mode", "output_timer"),
+                    native_unit_of_measurement=UnitOfTime.SECONDS,
+                    device_class=NumberDeviceClass.DURATION,
+                    entity_category=EntityCategory.CONFIG,
+                    native_min_value=0,
+                    native_max_value=max_value,
+                    entity_registry_enabled_default=False,
+                ),
+                val_fact=val_fact,
+                display_precision=0 if val_fact == 1.0 else 1,
+                write_tags=partial(module_parameter_tags, module, name, output),
+                dev_info=output_device_info(coordinator, module, output),
+            )
+        )
+    return res
+
+
 class HiqNumberEntity(HiqEntity, NumberEntity):
     """Defines a HIQ-Home number entity."""
 
@@ -225,6 +279,7 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         val_fact: float = 1.0,
         display_precision: int = 1,
         var_write_req: str | None = None,
+        write_tags: Callable[[int], dict[str, str]] | None = None,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Initialize a HIQ-Home number entity."""
@@ -232,6 +287,8 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         self.entity_description = entity_description
         self._attr_unique_id = unique_id or entity_description.key
         self._var_write_req = var_write_req
+        # the tags to write a value, if it is not written to the variable itself
+        self._write_tags = write_tags
         self._attr_device_info = dev_info
         self._attr_mode = mode
 
@@ -266,7 +323,11 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
         """Set new number value."""
         # the controller stores scaled values as integer (e.g. 0.1 °C steps)
         new_val = round(value / self._val_fact)
-        if self._var_write_req:
+        if self._write_tags:
+            tags = self._write_tags(new_val)
+            LOGGER.debug("write value: %s -> %s", self._attr_unique_id, tags)
+            await self.coordinator.cybro.request(tags)
+        elif self._var_write_req:
             LOGGER.debug(
                 "write value: %s -> %s (+%s)",
                 self._attr_unique_id,
@@ -283,3 +344,7 @@ class HiqNumberEntity(HiqEntity, NumberEntity):
             LOGGER.debug("write value: %s -> %s", self._attr_unique_id, new_val)
             await self.coordinator.cybro.write_var(self._attr_unique_id, new_val)
         await self.coordinator.async_refresh()
+
+
+class HiqParameterNumber(ModuleParameterEntity, HiqNumberEntity):
+    """Defines a number for a parameter of a module output."""

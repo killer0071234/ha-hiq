@@ -74,19 +74,7 @@ def find_blinds(
             and is_general_error_ok(coordinator, key)
         ):
             continue
-        versions = {"model": DEVICE_DESCRIPTION, "sw_version": DEVICE_SW_VERSION}
-        dev_info = DeviceInfo(
-            identifiers={(DOMAIN, key)},
-            manufacturer=MANUFACTURER,
-            name=f"Blind {key}",
-            suggested_area=AREA_BLINDS,
-            configuration_url=MANUFACTURER_URL,
-            entry_type=None,
-            hw_version=DEVICE_HW_VERSION,
-            # module of the blind, eg: c1000.bc00
-            **(versions | module_device_info(coordinator, key.split("_")[0])),
-            **coordinator.via_device_info,
-        )
+        dev_info = blind_device_info(coordinator, key)
         var_sp, var_up, var_dn = _get_blind_vars(coordinator, key)
         res.append(
             HiqUpdateCover(
@@ -104,6 +92,23 @@ def find_blinds(
     if len(res) > 0:
         return res
     return None
+
+
+def blind_device_info(coordinator: HiqDataUpdateCoordinator, key: str) -> DeviceInfo:
+    """Return the device info of a blind (eg: c1000.bc00_blinds_position_00)."""
+    versions = {"model": DEVICE_DESCRIPTION, "sw_version": DEVICE_SW_VERSION}
+    return DeviceInfo(
+        identifiers={(DOMAIN, key)},
+        manufacturer=MANUFACTURER,
+        name=f"Blind {key}",
+        suggested_area=AREA_BLINDS,
+        configuration_url=MANUFACTURER_URL,
+        entry_type=None,
+        hw_version=DEVICE_HW_VERSION,
+        # module of the blind, eg: c1000.bc00
+        **(versions | module_device_info(coordinator, key.split("_")[0])),
+        **coordinator.via_device_info,
+    )
 
 
 def _get_blind_vars(

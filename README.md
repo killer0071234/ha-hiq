@@ -240,6 +240,17 @@ To set some parameters in the controller, there are some `number` Entities expos
 | `cXXXX.thYY thermostat activation time max function heating` | Activation period for max function in heating [s].                                               | `cXXXX.thYY_max_time_h`             |
 | `cXXXX.thYY thermostat max temp external`                    | External sensor max temperature setpoint.                                                        | `cXXXX.thYY_max_temp`               |
 
+#### For every LC / LD / BC output (on the device of the light or blind):
+
+| Entity name        | Description                                                  | Controller var                                          |
+| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------- |
+| `output timer`     | Timer that turns off the output automatically, 0 is no timer [s]. | `cXXXX.lcYY_output_mode_ZZ`, `cXXXX.ldYY_output_timer_ZZ` |
+| `travel time up`   | Travel time of the blind from bottom to top [s].             | `cXXXX.bcYY_blinds_time_up_ZZ`                          |
+| `travel time down` | Travel time of the blind from top to bottom [s].             | `cXXXX.bcYY_blinds_time_dn_ZZ`                          |
+
+These are written through registers shared by all outputs of the module (index, data and
+write request), as described by the module.
+
 By default all of the `number` entities are disabled.
 
 Note: Not all entities are supported by stock HIQ firmware!
@@ -265,6 +276,13 @@ To set some parameters in the controller, there are some `select` Entities expos
 | `cXXXX HVAC mode`                                 | Hvac mode: 0-off, 1-heating, 2-cooling.                                      | `cXXXX.hvac_mode`               |
 | `cXXXX HVAC thermostat config display mode`       | What to display when thermostat is off: 0-nothing, 1-dashes, 2-temperature.  | `cXXXX.hvac_display_mode`       |
 | `cXXXX HVAC thermostat config temperature source` | Select temperature source: 0-internal, 1-external, 2-remote from controller. | `cXXXX.hvac_temperature_source` |
+
+#### For every LC / LD output (on the device of the light):
+
+| Entity name  | Description                                                                                                                                                                   | Controller var                                          |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `input mode` | How the input affects the output: toggle, staircase timer, motion sensor timer (also night only), inverse / door sensor (also night only), direct / doorbell or event only. | `cXXXX.lcYY_input_mode_ZZ`, `cXXXX.ldYY_input_mode_ZZ` |
+| `color mode` | LD only: standard dimmer, RGB dimmer or white temperature. The light follows after a reload of the integration.                                                               | `cXXXX.ldYY_color_mode_ZZ`                              |
 
 By default all of the `select` entities are disabled.
 

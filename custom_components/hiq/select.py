@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
 from re import search
 from re import sub
 
@@ -31,6 +33,10 @@ from .models import HiqEntity
 from .models import custom_device_info
 from .models import thermostat_device_info
 from .models import hvac_device_info
+from .parameters import ModuleParameterEntity
+from .parameters import find_module_parameters
+from .parameters import module_parameter_tags
+from .parameters import output_device_info
 
 HA_TO_CYBRO_TEMP_SOURCE_MAP = {
     "internal_sensor": 0,
@@ -48,6 +54,25 @@ HA_TO_CYBRO_HVAC_MODE_MAP = {
     "none": 0,
     "heating": 1,
     "cooling": 2,
+}
+
+# how the input affects the output of a light module
+HA_TO_CYBRO_INPUT_MODE_MAP = {
+    "toggle": 0,
+    "staircase": 1,
+    "motion": 2,
+    "motion_night": 3,
+    "inverse": 4,
+    "inverse_night": 5,
+    "direct": 6,
+    "event_only": 7,
+}
+
+# LD output, the light entity follows after a reload
+HA_TO_CYBRO_COLOR_MODE_MAP = {
+    "dimmer": 0,
+    "rgb": 1,
+    "white_temperature": 2,
 }
 
 HA_TO_CYBRO_FAN_LIMIT_MAP = {
@@ -78,6 +103,8 @@ async def async_setup_entry(
     )
     if hvac_tags is not None:
         async_add_entities(hvac_tags)
+
+    async_add_entities(add_module_parameters(coordinator))
 
     async_add_entities(add_custom_selects(coordinator, entry))
 
@@ -211,6 +238,39 @@ def add_hvac_tags(
     return None
 
 
+# module output parameters: name -> options
+MODULE_PARAMETER_SELECTS = {
+    "input_mode": HA_TO_CYBRO_INPUT_MODE_MAP,
+    "color_mode": HA_TO_CYBRO_COLOR_MODE_MAP,
+}
+
+
+def add_module_parameters(
+    coordinator: HiqDataUpdateCoordinator,
+) -> list[HiqSelectEntity]:
+    """Add selects for the parameters of the light outputs.
+
+    eg: c1000.lc00_input_mode_03, c1000.ld00_color_mode_00
+    """
+    return [
+        HiqParameterSelect(
+            coordinator=coordinator,
+            entity_description=HiqSelectEntityDescription(
+                key=key,
+                translation_key=name,
+                entity_category=EntityCategory.CONFIG,
+                entity_registry_enabled_default=False,
+            ),
+            attr_options=MODULE_PARAMETER_SELECTS[name],
+            write_tags=partial(module_parameter_tags, module, name, output),
+            dev_info=output_device_info(coordinator, module, output),
+        )
+        for key, module, name, output in find_module_parameters(
+            coordinator, tuple(MODULE_PARAMETER_SELECTS)
+        )
+    ]
+
+
 class HiqSelectEntity(HiqEntity, SelectEntity):
     """Defines a HIQ-Home select entity."""
 
@@ -221,6 +281,7 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
         entity_description: SelectEntityDescription | None = None,
         unique_id: str | None = None,
         var_write_req: str | None = None,
+        write_tags: Callable[[int], dict[str, str]] | None = None,
         dev_info: DeviceInfo = None,
     ) -> None:
         """Initialize a HIQ-Home select entity."""
@@ -229,6 +290,8 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
         self._var = entity_description.key
         self._attr_unique_id = unique_id or self._var
         self._var_write_req = var_write_req
+        # the tags to write a value, if it is not written to the variable itself
+        self._write_tags = write_tags
         self._attr_device_info = dev_info
 
         LOGGER.debug(self._attr_unique_id)
@@ -257,7 +320,11 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         """Set new option."""
         value = self._var_map[option]
-        if self._var_write_req:
+        if self._write_tags:
+            tags = self._write_tags(value)
+            LOGGER.debug("write value: %s -> %s (%s)", self._var, tags, option)
+            await self.coordinator.cybro.request(tags)
+        elif self._var_write_req:
             LOGGER.debug(
                 "write value: %s -> %s (%s) (+%s)",
                 self._var,
@@ -272,3 +339,7 @@ class HiqSelectEntity(HiqEntity, SelectEntity):
             LOGGER.debug("write value: %s -> %s (%s)", self._var, value, option)
             await self.coordinator.cybro.write_var(self._var, value)
         await self.coordinator.async_refresh()
+
+
+class HiqParameterSelect(ModuleParameterEntity, HiqSelectEntity):
+    """Defines a select for a parameter of a module output."""

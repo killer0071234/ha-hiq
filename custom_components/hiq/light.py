@@ -100,7 +100,7 @@ def find_on_off_lights(
                     key=key,
                     translation_key="light",
                 ),
-                dev_info=_light_device_info(coordinator, key),
+                dev_info=light_device_info(coordinator, key),
             )
         )
 
@@ -131,7 +131,7 @@ def find_dimm_lights(
                         key=key,
                         translation_key="light",
                     ),
-                    dev_info=_light_device_info(coordinator, key),
+                    dev_info=light_device_info(coordinator, key),
                     dimming_out=key,
                     module=module,
                     channel=int(output.removeprefix("qw")),
@@ -163,7 +163,7 @@ def find_dimm_lights(
                     key=key,
                     translation_key="light",
                 ),
-                dev_info=_light_device_info(coordinator, key),
+                dev_info=light_device_info(coordinator, key),
                 dimming_out=key,
                 rgb_hue_out=rgb_hue_out,
                 rgb_sat_out=rgb_sat_out,
@@ -175,7 +175,7 @@ def find_dimm_lights(
     return None
 
 
-def _light_device_info(coordinator: HiqDataUpdateCoordinator, key: str) -> DeviceInfo:
+def light_device_info(coordinator: HiqDataUpdateCoordinator, key: str) -> DeviceInfo:
     """Return the device info of a light output (eg: c1000.lc00_qx00)."""
     versions = {"model": DEVICE_DESCRIPTION, "sw_version": DEVICE_SW_VERSION}
     module = key.split("_")[0]
