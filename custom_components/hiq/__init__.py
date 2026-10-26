@@ -56,6 +56,7 @@ PLATFORMS = [
     Platform.BINARY_SENSOR,
     Platform.BUTTON,
     Platform.COVER,
+    Platform.EVENT,
     Platform.LIGHT,
     Platform.SENSOR,
     Platform.WEATHER,
@@ -214,6 +215,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hw_version=DEVICE_HW_VERSION,
     )
     coordinator.device_id = controller.id
+
+    # button events and faster states of a directly connected controller
+    coordinator.async_setup_socket()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 

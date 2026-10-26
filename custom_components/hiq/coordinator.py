@@ -10,6 +10,7 @@ from cybro import CybroError
 from cybro import Device as HiqDevice
 from cybro import VarType
 from cybro.abus import AbusTransport
+from cybro.abus import SocketMessage
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.const import CONF_HOST
@@ -17,7 +18,9 @@ from homeassistant.const import CONF_IP_ADDRESS
 from homeassistant.const import CONF_PASSWORD
 from homeassistant.const import CONF_PORT
 from homeassistant.core import HomeAssistant
+from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.update_coordinator import UpdateFailed
@@ -26,10 +29,14 @@ from .const import CONF_CONNECTION
 from .const import CONNECTION_DIRECT
 from .const import DEFAULT_HOST
 from .const import DOMAIN
+from .const import HIQ_SOCKET
+from .const import INPUT_EVENT_TYPES
 from .const import LOGGER
 from .const import SCAN_INTERVAL
 from .const import SCAN_INTERVAL_ADDON
 from .const import SCAN_INTERVAL_DIRECT
+from .const import SOCKET_INPUT_EVENT
+from .const import SOCKET_REFRESH_DELAY
 
 
 class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
@@ -79,6 +86,9 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         self.device_id: str | None = None
         # number of entities polling a variable
         self._var_users: dict[str, int] = {}
+        # event entities of the button inputs, by input number
+        self._input_listeners: dict[int, Callable[[str], None]] = {}
+        self.has_socket = False
 
         super().__init__(
             hass,
@@ -103,6 +113,65 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
             ) from error
 
         return device
+
+    @callback
+    def async_setup_socket(self) -> None:
+        """Receive socket 1 of a directly connected HIQ controller.
+
+        Only if all its variables are in the program, so a socket 1 of
+        another program is never read as an HIQ message.
+        """
+        if not isinstance(self.cybro, CybroDirect):
+            return
+        plc_vars = self.data.plc_info.plc_vars
+        if any(
+            f"{self.unique_id}.{name}" not in plc_vars
+            for name, _ in HIQ_SOCKET.slots()
+        ):
+            return
+        self._socket_refresh = Debouncer(
+            self.hass,
+            LOGGER,
+            cooldown=SOCKET_REFRESH_DELAY,
+            immediate=False,
+            function=self.async_refresh,
+        )
+        self.cybro.add_socket(HIQ_SOCKET)
+        self.cybro.on_socket(self._socket_received)
+        self.has_socket = True
+
+    @callback
+    def async_add_input_listener(
+        self, number: int, listener: Callable[[str], None]
+    ) -> Callable[[], None]:
+        """Call listener(event type) for the events of a button input."""
+        self._input_listeners[number] = listener
+        return lambda: self._input_listeners.pop(number, None)
+
+    @callback
+    def _socket_received(self, message: SocketMessage) -> None:
+        """Handle a socket 1 message, refresh the values a second later."""
+        values = message.values
+        LOGGER.debug("c%s sent socket %s: %s", message.nad, message.socket_id, values)
+        # socket_req only makes the program send the socket, it is not checked;
+        # input events are those of the controller's own inputs
+        if (
+            values["socket_command"] == SOCKET_INPUT_EVENT
+            and values["socket_from"] == message.nad
+            and (listener := self._input_listeners.get(values["socket_argument_0"]))
+            and 0 <= (event := values["socket_argument_1"]) < len(INPUT_EVENT_TYPES)
+        ):
+            listener(INPUT_EVENT_TYPES[event])
+        self._socket_refresh.async_schedule_call()
+
+    async def async_shutdown(self) -> None:
+        """Stop the socket handling, eg: when the entry is unloaded."""
+        await super().async_shutdown()
+        if self.has_socket:
+            self._socket_refresh.async_shutdown()
+        # only removes the socket handler of a direct controller, a session of
+        # Home Assistant is never closed
+        await self.cybro.disconnect()
 
     def add_vars(self, variables: dict[str, VarType]) -> None:
         """Poll the variables of an entity."""

@@ -32,16 +32,34 @@ def hiq_variables(tags: dict[str, str]) -> list[FakeVar]:
     ]
 
 
+# variables of socket 1 (HIQ-to-HIQ sync), their types matter
+SOCKET_VARS = [
+    FakeVar("socket_req", "bit"),
+    *(
+        FakeVar(name, "int")
+        for name in (
+            "socket_command",
+            "socket_argument_0",
+            "socket_argument_1",
+            "socket_argument_2",
+            "socket_argument_3",
+        )
+    ),
+    FakeVar("socket_from", "long"),
+    FakeVar("socket_to", "long"),
+]
+
+
 async def start_hiq_controller(
     nad: int,
     tags: dict[str, str] | None = None,
     host: str = "127.0.0.1",
     port: int = 0,
+    extra: list[FakeVar] | None = None,
 ) -> FakeAbusController:
     """Start a fake HIQ controller (port 0: a random port)."""
-    return await FakeAbusController.start(
-        nad, hiq_variables(HIQ_TAGS if tags is None else tags), host=host, port=port
-    )
+    variables = hiq_variables(HIQ_TAGS if tags is None else tags) + (extra or [])
+    return await FakeAbusController.start(nad, variables, host=host, port=port)
 
 
 def direct_entry(nad: int = NAD, **options: Any) -> MockConfigEntry:

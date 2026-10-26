@@ -4,6 +4,8 @@ import logging
 from datetime import timedelta
 from typing import Final
 
+from cybro.abus import SocketDef
+
 # Integration domain
 DOMAIN = "hiq"
 
@@ -114,6 +116,27 @@ HIQ_PROGRAM_ID = "3"
 
 # scenes of lights and blinds (SC-4-IQ), cNAD.scene_status[0..31]
 SCENE_COUNT = 32
+
+# socket 1 of the HIQ program, "HIQ-to-HIQ sync" (tasks/sockets-plan.md):
+# messages of a direct controller, received on UDP port 8442
+HIQ_SOCKET = SocketDef(
+    1,
+    bits=("socket_req",),
+    ints=(
+        "socket_command",
+        "socket_argument_0",
+        "socket_argument_1",
+        "socket_argument_2",
+        "socket_argument_3",
+    ),
+    longs=("socket_from", "socket_to"),
+)
+# socket_command of a button input event: argument 0 is the input number
+# (0..79: lc00..lc07, 100..139: ld00..ld03), argument 1 the event type
+SOCKET_INPUT_EVENT = 0
+INPUT_EVENT_TYPES = ["short_press", "short_release", "long_press", "long_release"]
+# every socket message refreshes the values, not before this delay [s]
+SOCKET_REFRESH_DELAY = 1.0
 
 # how the controller is reached
 CONF_CONNECTION = "connection"

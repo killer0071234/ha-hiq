@@ -24,6 +24,7 @@ under **Settings → Devices & services → HIQ-Home → entities**.
 - [light](#light)
 - [cover](#cover)
 - [scene](#scene)
+- [event](#event)
 - [climate](#climate)
 - [weather](#weather)
 - [binary_sensor](#binary_sensor)
@@ -69,6 +70,42 @@ The scenes of lights and blinds (SC-4-IQ). A scene is created for every defined
 scene of `cXXXX.scene_status[0..31]` (status is not `-1`) when the integration
 starts. Activating a scene writes its number to `cXXXX.global_scene_request`.
 The attribute `active` shows if the scene is active on the controller.
+
+## event
+
+The button inputs of the LC and LD units, **direct connection only**. All
+`event` entities are disabled by default: enable the inputs that have a button.
+
+| Name         | Controller var                          | Event types                                                  |
+| ------------ | --------------------------------------- | ------------------------------------------------------------ |
+| Input ixZZ   | `cXXXX.lcYY_ixZZ`, `cXXXX.ldYY_ixZZ`    | `short_press`, `short_release`, `long_press`, `long_release` |
+
+The device is `Inputs cXXXX.lcYY` / `Inputs cXXXX.ldYY`. The events come from
+socket 1 ("HIQ-to-HIQ sync") of the HIQ program, which the controller sends to
+UDP port 8442 of Home Assistant. They are only created if the program of the
+controller has this socket. A press held for 1 s is a long press. An event can
+be lost on the network, it isn't sent again.
+
+Example automation (the state is the time of the last event, so every press
+triggers, also the same event type twice):
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: event.lights_inputs_c1000_lc00_input_ix03
+    not_from:
+      - unavailable
+      - unknown
+conditions:
+  - condition: state
+    entity_id: event.lights_inputs_c1000_lc00_input_ix03
+    attribute: event_type
+    state: long_press
+actions:
+  - action: light.turn_off
+    target:
+      area_id: living_room
+```
 
 ## climate
 
@@ -359,6 +396,7 @@ One button for every defined scene.
 | `cXXXX HVAC`            | HVAC parameters and temperatures                                    |
 | `cXXXX.thYY thermostat` | Climate entity and parameters of a thermostat                       |
 | `cXXXX scenes`          | Scenes and their store buttons                                      |
+| `Inputs cXXXX.mmYY`     | Button events of the inputs of an LC / LD unit                      |
 | `cXXXX weather`         | Weather station                                                     |
 | `cXXXX custom`          | Custom sensors and selects                                          |
 | light / blind           | One per LC / LD / BC output, with its parameters                    |

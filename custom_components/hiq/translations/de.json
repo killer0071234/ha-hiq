@@ -273,6 +273,21 @@
         "name": "Jalousie"
       }
     },
+    "event": {
+      "button_input": {
+        "name": "Eingang {input}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "short_press": "Kurz gedrückt",
+              "short_release": "Kurz losgelassen",
+              "long_press": "Lang gedrückt",
+              "long_release": "Lang losgelassen"
+            }
+          }
+        }
+      }
+    },
     "light": {
       "light": {
         "name": "Licht"

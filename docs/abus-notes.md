@@ -77,6 +77,38 @@ controllers with this value.
    `str(value)`, not rounding, so templates and custom sensors see the same
    text in both modes.
 
+## Socket 1 of the HIQ program (2026-10-26)
+
+From `[Socket00]` of
+[MC-IQ-v320.cyp](https://cybrotech.com/wp-content/uploads/2024/05/MC-IQ-v320.cyp)
+("HIQ-to-HIQ sync") and the types in the ALC of c10000. As a cybro definition
+(bits; ints; longs), the body is 19 bytes:
+
+```
+1; socket_req; socket_command, socket_argument_0, socket_argument_1, socket_argument_2, socket_argument_3; socket_from, socket_to
+```
+
+The program sends every message as a broadcast: `socket_from` is its own
+NAD and `socket_to` is 0. `socket_req` only makes the program send the socket
+(sending "on request"). A receive always happens, so the integration ignores
+`socket_req`. It only uses input events whose `socket_from` is the sending
+controller.
+
+| `socket_command` | Meaning | arg0 | arg1 |
+|---|---|---|---|
+| 0 | Input event | input number | 0 short press, 1 short release, 2 long press, 3 long release |
+| 1 | Scene sync enable | scene 0..31 | 1 enable, 0 disable |
+| 2 | Scene request | scene | 1 scene, 0 inverse |
+| 3 | Scene memory request | scene | — |
+| 4 | Scene status | scene | status |
+| 5 | Presence indicator | 0/1 | — |
+
+- **Input numbers:** 0..79 = `lc00..lc07_ix00..ix09`, and 100..139 =
+  `ld00..ld03_ix00..ix09` (`read_input()`).
+- **Long press:** an input that is held for 1 s or more.
+- **Not verified:** no socket 1 frame was captured yet. The layout above is
+  taken from the program, not from a frame.
+
 ## Home Assistant OS test (2026-10-25)
 
 HAOS 2026.10.4 (qemux86-64) at 192.168.10.201, branch copied to
