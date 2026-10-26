@@ -346,6 +346,21 @@
         "name": "Blind"
       }
     },
+    "event": {
+      "button_input": {
+        "name": "Input {input}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "short_press": "Short press",
+              "short_release": "Short release",
+              "long_press": "Long press",
+              "long_release": "Long release"
+            }
+          }
+        }
+      }
+    },
     "light": {
       "light": {
         "name": "Light"

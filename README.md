@@ -107,6 +107,11 @@ The scgi server must run before the controller is added. Use one of:
   are found by broadcast. For a controller with a fixed IP address, the new
   address is stored when the search, DHCP or a frame from the controller shows
   it.
+- **The controller sends its events.** A controller running the HIQ program
+  sends button presses and scene and presence changes to Home Assistant at
+  once. Button presses become `event` entities (disabled by default, enable
+  the inputs you use). After an event, all values are read again (at most once
+  a second), so states don't wait for the next poll. Needs UDP port 8442.
 
 ## Entities
 
@@ -117,6 +122,7 @@ the supported expansion units. A unit with `general_error` set is skipped.
 | --------------- | ------------------------------------------------------------------ | ------------------------------------------------------- |
 | `light`         | On / off, brightness, RGB, white temperature (depending on unit)   | LC-10-IQ, LC-8-IQ, LD-D10-IQ, LD-D8-IQ, LD-P4-IQ, LD-V4-IQ, Virtual LC |
 | `cover`         | Open, close, stop, position                                        | BC-5-IQ, Virtual BC                                     |
+| `event`         | Button presses: short / long press and release (direct connection) | inputs of LC-10-IQ, LC-8-IQ, LD units                   |
 | `scene`         | Scenes of lights and blinds                                        | SC-4-IQ                                                 |
 | `climate`       | Heating / cooling, setpoint, presets eco / comfort / boost         | TH-X-IQ                                                 |
 | `weather`       | Temperature, humidity, pressure, wind                              | weather station of the controller                       |
@@ -187,7 +193,8 @@ data:
 
 The CybroScgiServer and the Cybro Edge Toolkit apps use UDP port 8442 too.
 While such an app runs, the integration leaves the port to it and uses another
-one: polling works, but the controllers can't push data to Home Assistant.
+one: polling works, but the controllers can't push data to Home Assistant, so
+there are no button events.
 
 A repair under **Settings → System → Repairs** names the app and offers to stop
 it (and to turn off its start on boot). Entries that still use the scgi server
