@@ -90,9 +90,11 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
         self._input_listeners: dict[int, Callable[[str], None]] = {}
         self.has_socket = False
 
+        # with the entry, async_shutdown runs when it is unloaded
         super().__init__(
             hass,
             LOGGER,
+            config_entry=entry,
             name=DOMAIN,
             update_interval=update_interval,
         )

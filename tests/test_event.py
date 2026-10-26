@@ -112,6 +112,29 @@ async def test_button_events(
     assert hass.states.get(ld_input).attributes["event_type"] == "short_release"
 
 
+@pytest.mark.parametrize(("var", "number"), [("lc00_ix03", 3), ("ld01_ix03", 113)])
+@pytest.mark.parametrize(
+    ("event", "event_type"),
+    [(0, "short_press"), (1, "short_release"), (2, "long_press"), (3, "long_release")],
+)
+async def test_event_types(
+    hass: HomeAssistant,
+    socket_controller: FakeAbusController,
+    enable_all_entities: None,
+    var: str,
+    number: int,
+    event: int,
+    event_type: str,
+) -> None:
+    """Test every event type of LC and LD inputs."""
+    await setup_entry(hass, direct_entry())
+
+    await send(hass, socket_controller, 0, number, event)
+
+    state = hass.states.get(event_entity(hass, var))
+    assert state.attributes["event_type"] == event_type
+
+
 async def test_ignored_messages(
     hass: HomeAssistant,
     socket_controller: FakeAbusController,
