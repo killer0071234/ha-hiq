@@ -143,12 +143,16 @@ Not in scope:
   8442 must be bound (link to the existing troubleshooting section), with an
   automation example. Add the entities to `docs/entities.md`. Add the
   socket 1 layout to `docs/abus-notes.md`.
-- [ ] **Checkpoint:** run `scripts/test` and `scripts/lint`, then a live test
-  on c10000 (the HIQ program):
-  - Short and long presses on an LC/LD input show the right event.
-  - A scene switched on a wall button shows up in HA at once.
-  - The body length (19 bytes) is confirmed, because no socket 1 frame has
-    been captured yet.
+- [x] **Checkpoint:** run `scripts/test` and `scripts/lint`, then a live test
+  on c10000 (HAOS 2026.10.4, 2026-10-26):
+  - [x] The 19-byte layout decodes. The test program's short press and short
+    release on `lc00_ix04` arrive every 10 s, with no frame dropped.
+  - [x] Every message triggers one refresh about 1.0 s later, next to the
+    5 s poll.
+  - [x] Event entities are created for lc00 and ld00 (`Inputs c10000.lc00` /
+    `.ld00`) and are disabled by default.
+  - [ ] A long press on a real button, and a scene switched on a wall
+    button.
 
 ## 6. Notes
 

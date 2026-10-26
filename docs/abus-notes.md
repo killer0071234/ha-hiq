@@ -106,8 +106,13 @@ controller.
 - **Input numbers:** 0..79 = `lc00..lc07_ix00..ix09`, and 100..139 =
   `ld00..ld03_ix00..ix09` (`read_input()`).
 - **Long press:** an input that is held for 1 s or more.
-- **Not verified:** no socket 1 frame was captured yet. The layout above is
-  taken from the program, not from a frame.
+- **Verified on hardware (2026-10-26):** on HAOS, c10000 (at 192.168.10.219)
+  sent socket 1 and every frame decoded with this layout. No frame was
+  dropped. A test program pulses `lc00_ix04` every 10 s, which gave
+  `socket_command` 0, `socket_argument_0` 4, and `socket_argument_1` 0, then
+  1 (short press, then short release). `socket_from` was 10000.
+- **`socket_req` was 3**, not 1. The byte holds more than this one bit, so it
+  can't be compared with 1. The integration ignores it.
 
 ## Home Assistant OS test (2026-10-25)
 
