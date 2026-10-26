@@ -125,8 +125,7 @@ class HiqDataUpdateCoordinator(DataUpdateCoordinator[HiqDevice]):
             return
         plc_vars = self.data.plc_info.plc_vars
         if any(
-            f"{self.unique_id}.{name}" not in plc_vars
-            for name, _ in HIQ_SOCKET.slots()
+            f"{self.unique_id}.{name}" not in plc_vars for name, _ in HIQ_SOCKET.slots()
         ):
             return
         self._socket_refresh = Debouncer(
