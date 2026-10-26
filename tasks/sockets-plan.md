@@ -151,8 +151,9 @@ Not in scope:
     5 s poll.
   - [x] Event entities are created for lc00 and ld00 (`Inputs c10000.lc00` /
     `.ld00`) and are disabled by default.
-  - [ ] A long press on a real button, and a scene switched on a wall
-    button.
+  - [x] A long press on a real button gives `long_press` and then
+    `long_release` (tested by the user).
+  - [ ] A scene switched on a wall button.
 
 ## 6. Notes
 
