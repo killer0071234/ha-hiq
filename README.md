@@ -28,7 +28,30 @@ PLCs running the HIQ software from Robotina d.o.o. / Cybrotech).
 
 ## Installation
 
-### HACS (recommended)
+### Marketplace (recommended, Home Assistant 2026.11 and newer)
+
+Since Home Assistant 2026.11, HACS is built into Home Assistant as the
+**Marketplace**. There is nothing to install first.
+
+[![Open your Home Assistant instance and open this repository in the Marketplace.][hacs-integration-badge]][hacs-integration]
+
+1. Click the button above, or go to **Settings → Marketplace** and search for
+   **HIQ-Home**.
+2. The first time you open the Marketplace, confirm with
+   **I understand the risks and agree**.
+3. Open **HIQ-Home** and select **Install**, check the version and select
+   **Install** again.
+4. Home Assistant opens the setup of the integration right away, no restart
+   needed. Continue with [Adding a controller](#adding-a-controller).
+
+Updates show up under **Settings → Updates**. After an update, restart Home
+Assistant (a repair offers to do it for you).
+
+**Coming from HACS?** Nothing to do: Home Assistant moves HACS and everything
+installed with it to the Marketplace when it starts after the update to
+2026.11. HIQ-Home stays installed and keeps getting updates.
+
+### HACS (Home Assistant 2026.10)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.][hacs-integration-badge]][hacs-integration]
 
